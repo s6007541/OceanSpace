@@ -54,6 +54,8 @@ class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
 
 
 class Chat(Base):
+    __tablename__ = "chat"
+
     id: Mapped[UUID_ID] = mapped_column(GUID, primary_key=True, default=uuid4)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), nullable=False, default=datetime.now
@@ -64,6 +66,8 @@ class Chat(Base):
 
 
 class UserChat(Base):
+    __tablename__ = "user_chat"
+
     user_id: Mapped[UUID_ID] = mapped_column(GUID, primary_key=True)
     chat_id: Mapped[UUID_ID] = mapped_column(GUID, primary_key=True)
     receiver_id: Mapped[UUID_ID] = mapped_column(GUID, nullable=False)
@@ -84,6 +88,8 @@ class UserChat(Base):
 
 
 class Message(Base):
+    __tablename__ = "message"
+
     id: Mapped[UUID_ID] = mapped_column(GUID, primary_key=True, default=uuid4)
     sender_id: Mapped[UUID_ID] = mapped_column(GUID, nullable=False)
     chat_id: Mapped[UUID_ID] = mapped_column(GUID, nullable=False)
