@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import "./chatList.css";
-import AddUser from "./addUser/addUser";
+import OptionMenu from "./optionMenu/optionMenu";
 import { useUserStore } from "../../../lib/userStore";
-// import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
-// import { db } from "../../../lib/firebase";
 import { useChatStore } from "../../../lib/chatStore";
+// TODO import backend_url
+// TODO import socket
 import { LLM_DICT, LLM_LIST  } from "../../../lib/llm_lists"
 import { useNavigate } from "react-router-dom";
 
-const ChatList = () => {
+
+const ChatList = ({ setAddMode }) => {
   const navigate = useNavigate(); 
   
   const goSeeAll = (current_chat_list) =>{ 
@@ -27,10 +28,30 @@ const ChatList = () => {
 
   async function fetchChatList() {
     // Get chat list.
+    try {
+      // get chat data
+      const chatData = await Promise.all(promises);
+      setChats(chatData.sort((a, b) => b.updatedAt - a.updatedAt));
+    } catch (err) {
+      console.log(err);
+    }
   }
 
-  const handleSelect = async (chat) => {
+  // TODO useEffect socket
 
+  // TO useEffect fetch chat list
+  // useEffect(() => {
+  //   if (currentUser.id === null) {
+  //     return;
+  //   }
+  //   fetchChatList();
+  // }, [currentUser.id]);
+
+  
+  const handleSelect = async (chat) => {
+    const { user, ...userChat } = chat;
+    userChat.isSeen = true;
+    // TODO
   };
 
   const handleContextMenu = (e, chat) => {
@@ -52,10 +73,16 @@ const ChatList = () => {
   };
 
   const handleDeleteChat = async () => {
+    // TODO
   };
 
   const handleAddLLM = async (LLMId) => {
-  }
+    // TODO
+    setAddMode(false);
+  };
+  setTimeout(() => {
+    setReady(true);
+  }, 500);
   
   const filteredChats = chats.filter((c) =>
     c.user.username.toLowerCase().includes(input.toLowerCase())
@@ -154,6 +181,8 @@ const ChatList = () => {
       
       }
     </div>
+    
+    
   );
 };
 
