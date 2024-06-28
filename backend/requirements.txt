@@ -1,2 +1,4 @@
+aiosqlite
 fastapi
 fastapi-users[sqlalchemy,oauth]
+SQLAlchemy-Utils
