@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence
+from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple
 from uuid import uuid4
 
 from fastapi import Depends
@@ -20,6 +20,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Row,
     String,
     delete,
     func,
@@ -142,6 +143,11 @@ class ChatDatabase(BaseDatabase):
         result = await self.session.execute(stmt)
         return result.scalar()
 
+    async def update(self, chat: Chat):
+        self.session.add(chat)
+        await self.session.commit()
+        await self.session.refresh(chat)
+
 
 class UserChatDatabase(BaseDatabase):
     async def create(self, user_chat: UserChat) -> UserChat:
@@ -156,7 +162,7 @@ class UserChatDatabase(BaseDatabase):
         result = await self.session.execute(stmt)
         return result.scalar()
 
-    async def get_by_user_id(self, user_id: UUID_ID) -> Sequence[UserChat]:
+    async def get_by_user_id(self, user_id: UUID_ID) -> Sequence[Tuple[UserChat, Chat]]:
         stmt = (
             select(UserChat, Chat)
             .join(Chat, UserChat.chat_id == Chat.id)
@@ -164,26 +170,30 @@ class UserChatDatabase(BaseDatabase):
             .order_by(Chat.updated_at.desc())
         )
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        return [row.tuple() for row in result.fetchall()]
 
     async def get_by_chat_id(self, chat_id: UUID_ID) -> Sequence[UserChat]:
         stmt = select(UserChat).where(UserChat.chat_id == chat_id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def update(self, user_chat: UserChat):
+        self.session.add(user_chat)
+        await self.session.commit()
+        await self.session.refresh(user_chat)
+
     async def delete(self, user_id: UUID_ID, chat_id: UUID_ID):
         stmt = delete(UserChat).where(
             UserChat.user_id == user_id, UserChat.chat_id == chat_id
         )
         await self.session.execute(stmt)
-        await self.session.commit()
 
         if not self.get_by_chat_id(chat_id):
             stmt = delete(Chat).where(Chat.id == chat_id)
             await self.session.execute(stmt)
             stmt = delete(Message).where(Message.chat_id == chat_id)
             await self.session.execute(stmt)
-            await self.session.commit()
+        await self.session.commit()
 
     async def delete_and_return(
         self, user_id: UUID_ID, chat_id: UUID_ID
@@ -200,7 +210,7 @@ class UserChatDatabase(BaseDatabase):
             await self.session.execute(del_stmt)
             del_stmt = delete(Message).where(Message.chat_id == chat_id)
             await self.session.execute(del_stmt)
-            await self.session.commit()
+        await self.session.commit()
 
         return result.scalar()
 

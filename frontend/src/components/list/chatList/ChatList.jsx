@@ -23,7 +23,7 @@ const ChatList = ({ setAddMode }) => {
   const [contextMenu, setContextMenu] = useState(null);
 
   const { currentUser } = useUserStore();
-  const { changeChat } = useChatStore();
+  const { user, changeChat } = useChatStore();
 
   async function fetchChatList() {
     // Get chat list.
@@ -32,8 +32,21 @@ const ChatList = ({ setAddMode }) => {
       const res = await fetch(`${BACKEND_URL}/user-chats`, {
         credentials: "include",
       });
-      const chatList = await res.json();
-      setChats(chatList);
+      const userChats = await res.json();
+      const promises = userChats.map(async (userChat) => {
+        const res = await fetch(
+          `${BACKEND_URL}/user-info/id/${userChat.receiverId}`,
+          { credentials: "include" }
+        );
+        if (!res.ok) {
+          throw new Error("Failed to fetch user info.");
+        }
+        const user = await res.json();
+        return { ...userChat, user };
+      });
+
+      const chatData = await Promise.all(promises);
+      setChats(chatData);
     } catch (err) {
       console.log(err);
     }
@@ -51,7 +64,24 @@ const ChatList = ({ setAddMode }) => {
   const handleSelect = async (chat) => {
     const { user, ...userChat } = chat;
     userChat.isSeen = true;
-    // TODO
+    try {
+      const res = await fetch(`${BACKEND_URL}/user-chats`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userChat),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update chat");
+      }
+
+      changeChat(userChat, user);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const handleContextMenu = (e, chat) => {
@@ -98,7 +128,7 @@ const ChatList = ({ setAddMode }) => {
       if (!res.ok) {
         throw new Error("Failed to get user info");
       }
-      llmInfo = await res.json();
+      const llmInfo = await res.json();
       res = await fetch(`${BACKEND_URL}/user-chats`, {
         method: "POST",
         headers: {
@@ -152,20 +182,13 @@ const ChatList = ({ setAddMode }) => {
               >
                 <img
                   src={
-                    chat.user.blocked.includes(currentUser.id)
-                      ? "./avatar.png"
-                      : // : LLM_DICT[chat.receiverId].avatar
-                        `${BACKEND_URL}/profile-image/${chat.receiverId}` ||
-                        "./avatar.png"
+                    `${BACKEND_URL}/profile-image/${chat.receiverId}` ||
+                    "./avatar.png"
                   }
                   alt=""
                 />
                 <div className="texts">
-                  <span>
-                    {chat.user.blocked.includes(currentUser.id)
-                      ? "User"
-                      : chat.user.username}
-                  </span>
+                  <span>chat.user.username</span>
                   <p>{chat.lastMessage}</p>
                   {/* <p>{chat.lastMessage.length > 0 ? chat.lastMessage.slice(0, 28) + (chat.lastMessage.length > 28 ? "..." : "") : ""}</p> */}
                 </div>

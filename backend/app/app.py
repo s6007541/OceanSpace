@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Any, Dict, List
 from uuid import UUID
 
@@ -8,12 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .db import (
     Chat,
+    ChatDatabase,
     User,
     UserChat,
     UserChatDatabase,
     UserDatabase,
     create_db_and_tables,
     get_async_session,
+    get_chat_db,
     get_user_db,
     get_user_chat_db,
 )
@@ -122,20 +125,22 @@ async def get_current_user_chats(
     user: User = Depends(current_active_user),
     user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
 ) -> List[UserChatModel]:
-    user_chats = await user_chat_db.get_by_user_id(user.id)
+    results = await user_chat_db.get_by_user_id(user.id)
     return [
         UserChatModel(
-            user_id=str(user_chat.user_id),
-            chat_id=str(user_chat.chat_id),
-            receiver_id=str(user_chat.receiver_id),
-            is_seen=user_chat.is_seen,
-            last_message=user_chat.last_message,
+            userId=str(user_chat.user_id),
+            chatId=str(user_chat.chat_id),
+            receiverId=str(user_chat.receiver_id),
+            isSeen=user_chat.is_seen,
+            lastMessage=user_chat.last_message,
             whitelist=user_chat.whitelist,
             blacklist=user_chat.blacklist,
-            topics_of_interest=user_chat.topics_of_interest,
-            unread_messages=user_chat.unread_messages,
+            topicsOfInterest=user_chat.topics_of_interest,
+            unreadMessages=user_chat.unread_messages,
+            createdAt=int(chat.created_at.timestamp() * 1000),
+            updatedAt=int(chat.updated_at.timestamp() * 1000),
         )
-        for user_chat in user_chats
+        for user_chat, chat in results
     ]
 
 
@@ -149,14 +154,51 @@ async def create_user_chat(
     if receiver_id is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
     new_chat = Chat()
+    db.add(new_chat)
+    await db.commit()
+    await db.refresh(new_chat)
+
     new_user_chat = UserChat(
         user_id=user.id,
         chat_id=new_chat.id,
         receiver_id=UUID(receiver_id),
     )
-    db.add(new_chat)
     db.add(new_user_chat)
+
+    receiver = await UserDatabase(db, User).get(UUID(receiver_id))
+    if receiver is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if receiver.is_bot:
+        new_receiver_chat = UserChat(
+            user_id=UUID(receiver_id),
+            chat_id=new_chat.id,
+            receiver_id=user.id,
+        )
+        db.add(new_receiver_chat)
     await db.commit()
+
+
+@app.put("/user-chats", tags=["user chats"])
+async def update_user_chat(
+    user_chat_model: UserChatModel,
+    chat_db: ChatDatabase = Depends(get_chat_db),
+    user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
+):
+    chat = await chat_db.get(UUID(user_chat_model.chatId))
+    user_chat = await user_chat_db.get(
+        UUID(user_chat_model.userId), UUID(user_chat_model.chatId)
+    )
+    if chat is None or user_chat is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    chat.updated_at = datetime.fromtimestamp(user_chat_model.updatedAt / 1000)
+    user_chat.is_seen = user_chat_model.isSeen
+    user_chat.last_message = user_chat_model.lastMessage
+    user_chat.whitelist = user_chat_model.whitelist
+    user_chat.blacklist = user_chat_model.blacklist
+
+    await user_chat_db.update(user_chat)
+    await chat_db.update(chat)
 
 
 @app.delete("/user-chats/{chat_id}", tags=["user chats"])
