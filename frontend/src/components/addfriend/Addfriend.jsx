@@ -4,27 +4,51 @@ import { useUserStore } from "../../lib/userStore";
 import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
 import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
+// TODO import backend-url
 
 const AddFriend = ( ) => {
   
   const navigate = useNavigate(); 
+  const location = useLocation();
+  // const current_chat_list = location.state;
+
   const goback = () =>{ 
-    let path = `/`; 
+    let path = `/ChatList`; 
+    // console.log("done");
     navigate(path);
   }
   const gocustom = () =>{ 
     let path = `/Custom`; 
+    // console.log("done");
     navigate(path);
   }
 
   const goLLMProfile = async (LLM_info) => {
-    navigate("/llmprofile", {state : [LLM_info, location.state]});
+    // navigate("/llmprofile", {state : [LLM_info, location.state]});
+
+    // setAddMode(false);
   };
 
 
   const { currentUser } = useUserStore();
 
   const handleAddLLM = async (LLMId) => {
+    try {
+      // TODO : fetch user-info - name - LLMId
+      // get llm id
+      const llmUser = await res.json();
+      const newUserChat = {
+        userId: currentUser.id,
+        receiverId: null, //TODO get llm id
+        isSeen: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      navigate("/chat")
+    } catch (err) {
+      console.log(err);
+    }
+    // setAddMode(false);
   };
 
 
@@ -49,9 +73,9 @@ const AddFriend = ( ) => {
               <div className="username">{LLM_DICT[llm].username}</div>
               <div className="desc">{LLM_DICT[llm].description}</div>
             </div>
-            <button className="button-add">
-             เพิ่มแล้ว
-            </button>
+            {/* <button className="button-add" disabled={current_chat_list.includes(LLM_DICT[llm].id)} id={llm} onClick={() => handleAddLLM(LLM_DICT[llm].id)}>
+             {current_chat_list.includes(LLM_DICT[llm].id) ? "เพิ่มแล้ว" : "+ เพิ่ม"}
+            </button> */}
           </div>
         ))}
 

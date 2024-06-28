@@ -3,23 +3,7 @@ import "./login.css";
 import { toast } from "react-toastify";
 import { BACKEND_URL } from "../../lib/config";
 import { useNavigate } from "react-router-dom";
-// import {
-//   createUserWithEmailAndPassword,
-//   signInWithEmailAndPassword,
-// } from "firebase/auth";
-// import { auth, db } from "../../lib/firebase";
-// import {
-//   arrayUnion,
-//   collection,
-//   doc,
-//   getDoc,
-//   getDocs,
-//   query,
-//   serverTimestamp,
-//   setDoc,
-//   updateDoc,
-//   where,
-// } from "firebase/firestore";
+
 
 // import upload from "../../lib/upload";
 

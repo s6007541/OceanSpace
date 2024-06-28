@@ -2,7 +2,7 @@ import React from "react";
 import {
     Nav,
     NavLink,
-    Bars,
+    // Bars,
     NavMenu,
     NavBtn,
     NavBtnLink,
