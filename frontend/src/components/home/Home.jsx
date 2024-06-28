@@ -5,11 +5,14 @@ import { useChatStore } from "../../lib/chatStore";
 import { useUserStore } from "../../lib/userStore";
 import upload from "../../lib/upload";
 import { format } from "timeago.js";
-
+import Userinfo from "../list/userInfo/Userinfo";
+import Navbar from "../navbar/Navbar";
 const Home = () => {
 
   return (
     <div className="chat">
+    <Userinfo />
+    <Navbar />
      <a href="/">home</a>
      <a href="/ChatList">ChatList</a>
      <a href="/Chat">Chat</a>

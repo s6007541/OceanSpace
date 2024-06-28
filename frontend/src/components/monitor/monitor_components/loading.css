@@ -1,0 +1,13 @@
+.loading_section {
+    display:block;
+    margin:auto;
+
+    .loading{
+        padding: 50px;
+        font-size: 36px;
+        border-radius: 10px;
+        background-color: transparent;
+        /* background-color: black; */
+
+    }
+}
