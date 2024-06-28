@@ -16,7 +16,6 @@ from .db import (
     get_async_session,
     get_user_db,
     get_user_chat_db,
-    init_user_db,
 )
 from .schemas import UserChatModel, UserCreate, UserModel, UserRead, UserUpdate
 from .users import auth_backends, current_active_user, fastapi_users
@@ -26,7 +25,6 @@ from .users import auth_backends, current_active_user, fastapi_users
 async def lifespan(app: FastAPI):
     # Not needed if you setup a migration system like Alembic
     await create_db_and_tables()
-    await init_user_db()
     yield
 
 
@@ -90,7 +88,6 @@ async def get_current_user_info(user: User = Depends(current_active_user)) -> Us
 @app.get("/user-info/id/{user_id}", tags=["user info"])
 async def get_user_info_by_id(
     user_id: str,
-    user: User = Depends(current_active_user),
     user_db: UserDatabase = Depends(get_user_db),
 ) -> UserModel:
     fetched_user = await user_db.get(UUID(user_id))
@@ -107,7 +104,6 @@ async def get_user_info_by_id(
 @app.get("/user-info/name/{username}", tags=["user info"])
 async def get_user_info_by_name(
     username: str,
-    user: User = Depends(current_active_user),
     user_db: UserDatabase = Depends(get_user_db),
 ) -> UserModel:
     fetched_user = await user_db.get_by_username(username)

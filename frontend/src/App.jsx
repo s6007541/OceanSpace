@@ -22,20 +22,17 @@ import {
 } from "react-router-dom";
 
 const App = () => {
-  // const { currentUser, isLoading, fetchUserInfo } = useUserStore()
-  const currentUser = true;
-  const isLoading = false;
+  const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore()
   const { chatId } = useChatStore();
 
-  // useEffect(() => {
-  //   const unSub = onAuthStateChanged(auth, (user) => {
-  //     fetchUserInfo(user?.uid);
-  //   });
-
-  //   return () => {
-  //     unSub();
-  //   };
-  // }, [fetchUserInfo]);
+  useEffect(() => {
+    async function initialize() {
+      if (currentUser === null || currentUser.id === null) {
+        await fetchCurrentUserInfo();
+      }
+    }
+    initialize();
+  }, [currentUser]);
 
   if (isLoading) return <div className="loading">Loading...</div>;
 

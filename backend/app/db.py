@@ -230,6 +230,8 @@ async def create_db_and_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    await init_user_db()
+
 
 async def init_user_db() -> None:
     async with async_session_maker() as session:

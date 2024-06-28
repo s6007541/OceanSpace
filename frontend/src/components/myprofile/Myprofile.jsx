@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { useChatStore } from "../../lib/chatStore";
 import { useNavigate } from "react-router-dom";
+import { BACKEND_URL } from "../../lib/config";
 
 const Myprofile = ( ) => {
   const { resetChat } = useChatStore();
@@ -19,10 +20,20 @@ const Myprofile = ( ) => {
 
   const { currentUser } = useUserStore();
   
-  const handleLogout = () => {
-    // auth.signOut(); // need to fix this
-    resetChat()
-    navigate('/login', { replace: true });
+  const handleLogout = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Logout failed");
+      }
+      resetChat()
+      navigate('/login', { replace: true });
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
