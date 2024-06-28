@@ -1,0 +1,12 @@
+Nav>button {
+    border: none;
+    background: none;
+    /* margin-left : 30px; */
+    /* margin-top: 10px; */
+    font-size: 20px;
+    color:#808080;
+    &:focus {
+        color: #ffff;
+    }
+    /* text-align: center; */
+}
