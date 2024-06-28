@@ -18,7 +18,7 @@ const Monitor = () => {
 
   return (
     <div className="chat">
-     sfksf
+     Monitor
     </div>
   );
 };

@@ -18,7 +18,7 @@ const Myprofile = () => {
 
   return (
     <div className="chat">
-     sfksf
+     Myprofile
     </div>
   );
 };

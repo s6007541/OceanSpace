@@ -14,13 +14,13 @@ import { useUserStore } from "../../lib/userStore";
 import upload from "../../lib/upload";
 import { format } from "timeago.js";
 
-const Minitor = () => {
+const Addfriend = () => {
 
   return (
     <div className="chat">
-     sfksf
+     Addfriend
     </div>
   );
 };
 
-export default Minitor;
+export default Addfriend;

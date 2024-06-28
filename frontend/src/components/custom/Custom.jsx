@@ -18,7 +18,7 @@ const Custom = () => {
 
   return (
     <div className="chat">
-     sfksf
+     Custom
     </div>
   );
 };

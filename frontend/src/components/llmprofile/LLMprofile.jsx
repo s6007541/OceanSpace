@@ -18,7 +18,7 @@ const LLMprofile = () => {
 
   return (
     <div className="chat">
-     sfksf
+     LLMprofile
     </div>
   );
 };
