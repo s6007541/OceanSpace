@@ -18,7 +18,7 @@ const Navbar = () => {
                 <NavLink to="/">หน้าหลัก</NavLink>
             </NavBtn>
             <NavBtn>
-                <NavLink to="/Chat" >แชท</NavLink>
+                <NavLink to="/ChatList" >แชท</NavLink>
             </NavBtn>
             <NavBtn>
                 <NavLink to="/Monitor">มอนิเตอร์</NavLink>

@@ -1,0 +1,98 @@
+.start {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #F4FCFF;
+    color : black;
+    .main-test {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        .header-body {
+            .header {
+                color: #000;
+                text-align : left;
+                width : 338px;
+                font-family: "Noto Serif Thai";
+                font-size: 32px;
+                font-style: normal;
+                font-weight: 700;
+                line-height: normal;
+            }
+            .body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap : 10px;
+                .body-image {
+                    position: absolute;
+                    top : 230px;
+                    z-index: 100;
+                }
+                .background-img {
+                    position: absolute;
+                    top : 220px;
+                    width: 350px;
+                    height: 313px;
+                    z-index: 1;
+                    /* flex-shrink: 0; */
+                }
+            
+                .body_text {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    position: absolute;
+                    top : 360px;
+                    z-index: 100;
+                    .quote {
+                        color: #FFF;
+
+                        text-align: center;
+                        font-family: "Space Grotesk";
+                        font-size: 40px;
+                        font-style: normal;
+                        font-weight: 500;
+                        line-height: 24px; /* 60% */
+                        margin-top : 17px;
+                    }
+                    .texts {
+                        color: #FFF;
+
+                        text-align: center;
+                        font-family: "Noto Serif Thai";
+                        font-size: 18px;
+                        font-style: normal;
+                        font-weight: 500;
+                        line-height: 24px; /* 133.333% */
+                    }
+                }
+            }
+        }
+        .start-button {
+            display: flex;
+            width: 350px;
+            padding: 12px 20px;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+
+            border-width: 0px;
+            margin-top : 360px;
+            
+            border-radius: 28px;
+            background: var(--OceanSpace-Brand-Primary, #0D7FE8);
+            color: #FFF;
+
+            text-align: center;
+            font-family: "Noto Serif Thai";
+            font-size: 20px;
+            font-style: normal;
+            font-weight: 700;
+            line-height: normal;
+        }
+    }
+
+
+    
+}
