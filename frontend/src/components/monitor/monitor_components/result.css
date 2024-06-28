@@ -1,15 +1,14 @@
 .results {
-  flex : 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* width: 100vw; */
-  /* height: 110vh;   */
-  background: #FFF;
-  gap : 40px;
+  background-color: #FFF;
+  gap : 10px;
   padding : 28px 0px;
   color :black;
+
   .goback {
+   
       position: absolute;
       right:0;
       top : 30px;
@@ -21,7 +20,6 @@
   } 
   .header_text {
       height : 45px;
-      /* background-color: green; */
       color: #000;
       text-align: center;
       font-family: "Noto Looped Thai UI";
@@ -29,22 +27,107 @@
       font-style: normal;
       font-weight: 500;
       line-height: 22px; /* 110% */
-      /* border-bottom : 1px solid rgba(0, 0, 0, 0.20); */
+       /* background-color: green; */
 
       
   }
   .container {
-    .score {
-      color: #000;
-      text-align: center;
-      font-family: "Space Grotesk";
-      font-size: 60px;
-      font-style: normal;
-      font-weight: 500;
-      line-height: 60px; /* 100% */
-    }
-    .stress-desc {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap : 35px;
+    padding : 72px;
+    .outer-main-result {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap : 110px;
+      .score-outer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        svg {
+          position: absolute;
+          top : 90px;
+          z-index: 1;
+        }
+        .score {
+          position: absolute;
+          top : 130px;
+          color: #0b0a0a;
+          text-align: center;
+          font-family: "Space Grotesk";
+          font-size: 60px;
+          font-style: normal;
+          font-weight: 500;
+          line-height: 60px; /* 100% */
+          z-index: 10;
+        }
+      }
+      .stress-outer {
+        display: flex;
+        flex-direction: column;
+        gap : 10px;
+
+        .stress-desc {
+
+          color: #000;
+  
+          text-align: center;
+          font-family: Mitr;
+          font-size: 25px;
+          font-style: normal;
+          font-weight: 500;
+          line-height: normal;
+        }
+        .range-outer {
+          display: flex;
+          justify-content: space-between;
+          /* background-color: green; */
+          text-align: center;
+          /* gap : 30px; */
+          .range {
+            .range-value {
+              display: inline-flex;
+              padding: 4px 12px;
+              justify-content: center;
+              align-items: center;
+              gap: 10px;
+
+              border-radius: 20px;
+              background: #D0EBFF;
+
+              color: #000;
+
+              text-align: center;
+              font-family: "Space Grotesk";
+              font-size: 15px;
+              font-style: normal;
+              font-weight: 500;
+              line-height: normal;
+  
+            }
+            .range-desc {
+              color: rgba(0, 0, 0, 0.70);
+              text-align: center;
+              /* OceanSpace/Caption-M-300 */
+              font-family: Mitr;
+              font-size: 14px;
+              font-style: normal;
+              font-weight: 300;
+              line-height: normal;
+              
+            }
+          }
+        }
+      }
       
+    } 
+    
+    .background-img {
+      width: 350px;
+      height: 313px;
     }
+    
   }
 }

@@ -111,25 +111,45 @@ const App = () => {
 
             <Route path="/AddFriend" element={
               <div className="container">
-                <AddFriend />
+                {currentUser ? (
+                    <AddFriend />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
               </div>
             } />
 
             <Route path="/Custom" element={
               <div className="container">
-                <Custom />
+                {currentUser ? (
+                    <Custom />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
               </div>
             } />
 
             <Route path="/myprofile" element={
               <div className="container">
-                <Myprofile />
+                {currentUser ? (
+                    <Myprofile />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
               </div>
             } />
 
             <Route path="/llmprofile" element={
               <div className="container">
-                <LLMprofile />
+                {currentUser ? (
+                    <LLMprofile />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
               </div>
             } />
 

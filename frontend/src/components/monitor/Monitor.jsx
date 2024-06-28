@@ -5,19 +5,20 @@ import Quiz from './monitor_components/Quiz';
 import Result from './monitor_components/Result';
 import Loading from './monitor_components/Loading';
 
+
 import { DataProvider } from './monitor_context/dataContext';
 
 function Monitor() {
   return (
     <DataProvider>
       {/* Welcome Page */}
-      
       <Start/>
 
       {/* Quiz Page */}
       <Quiz/>
 
       {/* Result Page */}
+
       <Result/>
       
       <Loading/>
