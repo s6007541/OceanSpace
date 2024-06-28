@@ -24,3 +24,15 @@ class UserModel(BaseModel):
     alias: Optional[str] = None
     avatar: Optional[str] = None
     pssList: List[str] = []
+
+
+class UserChatModel(BaseModel):
+    user_id: str
+    chat_id: str
+    receiver_id: str
+    is_seen: bool
+    last_message: Optional[str] = None
+    whitelist: List[str] = []
+    blacklist: List[str] = []
+    topics_of_interest: List[str] = []
+    unread_messages: int = 0

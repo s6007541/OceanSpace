@@ -3,18 +3,20 @@ import "./login.css";
 import { toast } from "react-toastify";
 import { BACKEND_URL } from "../../lib/config";
 import { useNavigate } from "react-router-dom";
+import { useUserStore } from "../../lib/userStore";
 
 
 // import upload from "../../lib/upload";
 
 const Login = () => {
-  const [avatar, setAvatar] = useState({
-    file: null,
-    url: "",
-  });
+  // const [avatar, setAvatar] = useState({
+  //   file: null,
+  //   url: "",
+  // });
 
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { fetchCurrentUserInfo } = useUserStore();
 
   // const handleAvatar = (e) => {
   //   if (e.target.files[0]) {
@@ -96,11 +98,13 @@ const Login = () => {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({ username, password }),
+        credentials: "include",
       });
       if (!res.ok) {
         throw new Error("Cannot log in");
       }
-      navigate("/");
+      await fetchCurrentUserInfo();
+      navigate("/", { replace: true });
     } catch (err) {
       console.log(err);
       toast.error("ไม่สามารถเข้าสู่ระบบได้");
