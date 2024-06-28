@@ -1,6 +1,8 @@
 import { useState } from "react";
 import "./login.css";
 import { toast } from "react-toastify";
+import { BACKEND_URL } from "../../lib/config";
+import { useNavigate } from "react-router-dom";
 // import {
 //   createUserWithEmailAndPassword,
 //   signInWithEmailAndPassword,
@@ -28,80 +30,99 @@ const Login = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleAvatar = (e) => {
-    if (e.target.files[0]) {
-      setAvatar({
-        file: e.target.files[0],
-        // url: URL.createObjectURL(e.target.files[0]),
-      });
-    }
-  };
+  // const handleAvatar = (e) => {
+  //   if (e.target.files[0]) {
+  //     setAvatar({
+  //       file: e.target.files[0],
+  //       // url: URL.createObjectURL(e.target.files[0]),
+  //     });
+  //   }
+  // };
 
-  const handleRegister = async (e) => {
-    console.log("register")
-    e.preventDefault();
-    setLoading(true);
-    const formData = new FormData(e.target);
+  // const handleRegister = async (e) => {
+  //   console.log("register")
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   const formData = new FormData(e.target);
 
-    const { username, email, password } = Object.fromEntries(formData);
+  //   const { username, email, password } = Object.fromEntries(formData);
 
-    // VALIDATE INPUTS
-    if (!username || !email || !password){
-      setLoading(false);
-      return toast.warn("Please enter inputs!");
-    }
+  //   // VALIDATE INPUTS
+  //   if (!username || !email || !password){
+  //     setLoading(false);
+  //     return toast.warn("Please enter inputs!");
+  //   }
       
-    if (!avatar.file) {
-      setLoading(false);
-      return toast.warn("Please upload an avatar!");
-    }
+  //   if (!avatar.file) {
+  //     setLoading(false);
+  //     return toast.warn("Please upload an avatar!");
+  //   }
       
 
-    // VALIDATE UNIQUE USERNAME
-    // const usersRef = collection(db, "users");
-    // const q = query(usersRef, where("username", "==", username));
-    // const querySnapshot = await getDocs(q);
-    // if (!querySnapshot.empty) {
-    //   setLoading(false);
-    //   return toast.warn("Select another username");
-    // }
+  //   // VALIDATE UNIQUE USERNAME
+  //   // const usersRef = collection(db, "users");
+  //   // const q = query(usersRef, where("username", "==", username));
+  //   // const querySnapshot = await getDocs(q);
+  //   // if (!querySnapshot.empty) {
+  //   //   setLoading(false);
+  //   //   return toast.warn("Select another username");
+  //   // }
 
-    // try {
-    //   const res = await createUserWithEmailAndPassword(auth, email, password);
+  //   // try {
+  //   //   const res = await createUserWithEmailAndPassword(auth, email, password);
 
-    //   const imgUrl = await upload(avatar.file);
+  //   //   const imgUrl = await upload(avatar.file);
 
-    //   await setDoc(doc(db, "users", res.user.uid), {
-    //     username,
-    //     email,
-    //     avatar: imgUrl,
-    //     id: res.user.uid,
-    //     blocked: [],
-    //   });
+  //   //   await setDoc(doc(db, "users", res.user.uid), {
+  //   //     username,
+  //   //     email,
+  //   //     avatar: imgUrl,
+  //   //     id: res.user.uid,
+  //   //     blocked: [],
+  //   //   });
 
-    //   await setDoc(doc(db, "userchats", res.user.uid), {
-    //     chats: [],
-    //   });
+  //   //   await setDoc(doc(db, "userchats", res.user.uid), {
+  //   //     chats: [],
+  //   //   });
 
-    //   toast.success("Account created! You can login now!");
-    // } catch (err) {
-    //   console.log(err);
-    //   toast.error(err.message);
-    //   // setLoading(false);
-    // } finally {
-    //   setLoading(false);
-    //   console.log(loading)
-    // }
-    setLoading(false)
-  };
+  //   //   toast.success("Account created! You can login now!");
+  //   // } catch (err) {
+  //   //   console.log(err);
+  //   //   toast.error(err.message);
+  //   //   // setLoading(false);
+  //   // } finally {
+  //   //   setLoading(false);
+  //   //   console.log(loading)
+  //   // }
+  //   setLoading(false)
+  // };
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     console.log("login")
 
     const formData = new FormData(e.target);
-    const { email, password } = Object.fromEntries(formData);
+    const { username, password } = Object.fromEntries(formData);
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ username, password }),
+      });
+      if (!res.ok) {
+        throw new Error("Cannot log in");
+      }
+      navigate("/");
+    } catch (err) {
+      console.log(err);
+      toast.error("ไม่สามารถเข้าสู่ระบบได้");
+    } finally {
+      setLoading(false);
+    }
 
     // try {
     //   await signInWithEmailAndPassword(auth, email, password);
@@ -113,7 +134,7 @@ const Login = () => {
     //   setLoading(false);
     //   console.log(loading)
     // }
-    setLoading(false)
+    // setLoading(false)
   };
 
   return (
