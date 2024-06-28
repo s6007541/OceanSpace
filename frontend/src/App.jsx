@@ -8,6 +8,7 @@ import AddFriend from "./components/addfriend/Addfriend";
 import Custom from "./components/custom/Custom";
 import Myprofile from "./components/myprofile/Myprofile";
 import LLMprofile from "./components/llmprofile/LLMprofile";
+import Navbar from "./components/navbar/Navbar";
 
 import Register from "./components/login/Register";
 import Notification from "./components/notification/Notification";

@@ -1,14 +1,20 @@
 import ChatList from "./chatList/ChatList"
-import "./list.css"
-import Userinfo from "./userInfo/Userinfo"
+import "./list.css";
+import Userinfo from "./userInfo/Userinfo";
+import Navbar from "../../components/navbar/Navbar";
+import { useState } from "react";
 
 const List = () => {
-  return (
-    <div className='list'>
-      <Userinfo/>
-      <ChatList/>
-    </div>
-  )
-}
+  const [addMode, setAddMode] = useState(false);
 
-export default List
+  return (
+    <div className="list">
+      <Userinfo />
+      <Navbar />
+
+      <ChatList setAddMode={setAddMode} />
+    </div>
+  );
+};
+
+export default List;
