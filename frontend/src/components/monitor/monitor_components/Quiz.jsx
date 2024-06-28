@@ -14,7 +14,7 @@ const Quiz = () => {
     // const { showQuiz, question, quizs, checkAnswer, correctAnswer,
     //         selectedAnswer,questionIndex, nextQuestion, showTheResult }  = useContext(DataContext);
     const goback = () =>{ 
-        let path = `/chat`; 
+        let path = `/`; 
         // console.log("done");
         navigate(path);
       }
