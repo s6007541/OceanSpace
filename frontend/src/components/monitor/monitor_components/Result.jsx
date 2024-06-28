@@ -9,7 +9,7 @@ const Result = () => {
     const navigate = useNavigate();
     const { showResult, quizs, marks, startOver }  = useContext(DataContext);
     const goback = () =>{ 
-        let path = `/ChatList`; 
+        let path = `/Monitor`; 
         // console.log("done");
         navigate(path);
       }
