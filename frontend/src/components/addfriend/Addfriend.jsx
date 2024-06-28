@@ -11,8 +11,9 @@ const AddFriend = ( ) => {
   const navigate = useNavigate(); 
   const location = useLocation();
   // const current_chat_list = location.state;
+
   const goback = () =>{ 
-    let path = `/chat`; 
+    let path = `/ChatList`; 
     // console.log("done");
     navigate(path);
   }
@@ -23,7 +24,7 @@ const AddFriend = ( ) => {
   }
 
   const goLLMProfile = async (LLM_info) => {
-    navigate("/llmprofile", {state : [LLM_info, location.state]});
+    // navigate("/llmprofile", {state : [LLM_info, location.state]});
 
     // setAddMode(false);
   };
