@@ -12,6 +12,32 @@
     align-items: center;
     gap: 20px;
 
+    h2 {
+      color: #FFF;
+
+      color: #FFF;
+
+      text-align: center;
+      font-family: "Space Grotesk";
+      font-size: 80px;
+      font-style: normal;
+      font-weight: 700;
+      line-height: 72px; /* 100% */
+
+      opacity: 0.9;
+      mix-blend-mode: screen;
+    }
+    .login_text {
+      color: rgba(255, 255, 255, 0.90);
+
+      text-align: center;
+      font-family: Inter;
+      font-size: 20px;
+      font-style: normal;
+      font-weight: 700;
+      line-height: normal;
+    }
+
     form {
       display: flex;
       flex-direction: column;
@@ -20,21 +46,42 @@
       gap: 20px;
 
       input {
-        padding: 20px;
-        border: none;
-        outline: none;
-        background-color: rgba(17, 25, 40, 0.6);
-        color: white;
-        border-radius: 5px;
+        width: 342px;
+        height: 48px;
+        flex-shrink: 0;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.40);
+        border-width: 0px;
+
+        color: rgba(255, 255, 255, 0.80);
+        font-family: Inter;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        padding : 16px;
+
+      }
+      ::placeholder {
+        color: rgba(255, 255, 255, 0.80);
+        font-family: Inter;
+        /* font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        padding : 16px; */
       }
 
       label {
         width: 100%;
         display: flex;
         align-items: center;
+        padding : 10px; 
         justify-content: space-between;
         cursor: pointer;
+        /* background-color: green; */
         text-decoration: underline;
+
 
         img {
           width: 50px;
@@ -42,18 +89,26 @@
           border-radius: 10px;
           object-fit: cover;
           opacity: 0.6;
+          
         }
       }
 
       button {
-        width: 100%;
-        padding: 20px;
-        border: none;
-        background-color: #1f8ef1;
-        color: white;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: 500;
+        width: 342px;
+        height: 48px;
+        flex-shrink: 0;
+        border-radius: 16px;
+        background: var(--OceanSpace-Brand-Primary, #0D7FE8);
+        border-width: 0px;
+        
+        color: #FFF;
+
+        font-family: Inter;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: normal;
+
 
         &:disabled {
           cursor: not-allowed;
@@ -61,6 +116,31 @@
         }
       }
     }
+    .bottom {
+      display: flex;
+
+      .bottom_text {
+        color: rgba(255, 255, 255, 0.80);
+
+        font-family: "Inter";
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+      }
+      .bottom_link {
+        color: #FFF;
+
+        font-family: "Inter";
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: normal;
+        text-decoration-line: underline;
+        padding : 0px 0px 0px 10px;
+      }
+    }
+    
   }
 
   .separator {

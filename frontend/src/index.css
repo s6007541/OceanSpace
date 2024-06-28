@@ -2,25 +2,28 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
-    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+  /* font-family: "Inter"; */
+  font-family: "Space Grotesk", "Mitr" !important;
 }
 
 body {
-  background-image: url("/bg.jpg");
+  /* background-image: url("/OceanSpaceBg.jpg"); */
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, rgba(0, 0, 0, 0.50) 58%), url("/OceanSpaceBg.jpg") lightgray 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
+  background-size: 100vw 100vh;
+  
   color: white;
 }
 
 .container {
-  width: 80vw;
-  height: 90vh;
-  background-color: rgba(17, 25, 40, 0.75);
-  backdrop-filter: blur(19px) saturate(180%);
-  border-radius: 12px;
+  width: 100vw;
+  height: 100vh;
+  /* background-color: rgba(17, 25, 40, 0.75); */
+  /* backdrop-filter: blur(19px) saturate(180%); */
+  /* border-radius: 12px; */
   border: 1px solid rgba(255, 255, 255, 0.125);
   display: flex;
 }

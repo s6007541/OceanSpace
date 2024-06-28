@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 
 // import upload from "../../lib/upload";
 
-const Login = () => {
+const Register = () => {
   const [avatar, setAvatar] = useState({
     file: null,
     url: "",
@@ -119,20 +119,26 @@ const Login = () => {
   return (
     <div className="login">
       <div className="item">
-      <h2>OCEAN<br/>SPACE</h2>
-      <p className="login_text">เข้าสู่ระบบ</p>
-        <form onSubmit={handleLogin}>
-          <input type="text" placeholder="อีเมล" name="username" />
+        <h2>OCEAN<br/>SPACE</h2>
+        <p className="login_text">สมัครสมาชิก</p>
+        <form onSubmit={handleRegister}>
+          {/* <input
+            type="file"
+            id="file"
+            style={{ display: "none" }}
+            onChange={handleAvatar}
+          /> */}
+          <input type="text" placeholder="อีเมล" name="email" />
           <input type="password" placeholder="รหัสผ่าน" name="password" />
           <button disabled={loading}>{loading ? "กำลังโหลด" : "เข้าสู่ระบบ"}</button>
         </form>
         <div className="bottom">
-          <p className="bottom_text">ยังไม่เคยลงทะเบียน?</p>
-          <a href="/Signup" className="bottom_link">ลงทะเบียน</a>
+          <p className="bottom_text">คุณมีสมาชิกอยู่แล้ว?</p>
+          <a href="/Login" className="bottom_link">เข้าสู่ระบบ</a>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default Register;
