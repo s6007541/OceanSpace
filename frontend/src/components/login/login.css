@@ -10,7 +10,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 40px;
 
     h2 {
       color: #FFF;
@@ -27,23 +27,13 @@
       opacity: 0.9;
       mix-blend-mode: screen;
     }
-    .login_text {
-      color: rgba(255, 255, 255, 0.90);
-
-      text-align: center;
-      font-family: Inter;
-      font-size: 20px;
-      font-style: normal;
-      font-weight: 700;
-      line-height: normal;
-    }
 
     form {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
+      gap: 16px;
 
       input {
         width: 342px;
@@ -61,6 +51,16 @@
         line-height: normal;
         padding : 16px;
 
+      }
+      .login_text {
+        color: rgba(255, 255, 255, 0.90);
+  
+        text-align: center;
+        font-family: Inter;
+        font-size: 20px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: normal;
       }
       ::placeholder {
         color: rgba(255, 255, 255, 0.80);
@@ -116,6 +116,7 @@
         }
       }
     }
+    
     .bottom {
       display: flex;
 
@@ -141,6 +142,59 @@
       }
     }
     
+  }
+  .on-bar-outer {
+    display: flex;
+    background-color: green;
+    svg {
+      height: 0px;
+      flex: 1 0 0;
+      stroke-width: 1px;
+      stroke: rgba(255, 255, 255, 0.50);
+
+    }
+    .line-bar {
+      border-left: 6px solid green;
+      border-color: white;
+      /* height: 500px; */
+    }
+    .or-bar {
+      color: rgba(255, 255, 255, 0.80);
+
+      text-align: center;
+      /* OceanSpace/Body-400 */
+      font-family: Mitr;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+    }
+  }
+  .signin-google-outer {
+    display: flex;
+    width: 342px;
+    height: 50px;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    border-radius: 50px;
+    background: #FFF;
+    
+    img {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      
+    }
+    .google-text {
+      color: #040404;
+      text-align: center;
+      font-family: Inter;
+      font-size: 17px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: normal;
+    }
   }
 
   .separator {

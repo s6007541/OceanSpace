@@ -22,7 +22,10 @@ import {
 } from "react-router-dom";
 
 const App = () => {
-  const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore()
+  // const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore()
+  const { fetchCurrentUserInfo } = useUserStore()
+  const currentUser = true;
+  const isLoading = false;
   const { chatId } = useChatStore();
 
   useEffect(() => {

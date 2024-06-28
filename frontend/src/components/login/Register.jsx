@@ -61,76 +61,12 @@ const Register = () => {
     } finally {
       setLoading(false);
     }
+  }
       
-    // if (!avatar.file) {
-    //   setLoading(false);
-    //   return toast.warn("Please upload an avatar!");
-    // }
-      
-
-    // VALIDATE UNIQUE USERNAME
-    // const usersRef = collection(db, "users");
-    // const q = query(usersRef, where("username", "==", username));
-    // const querySnapshot = await getDocs(q);
-    // if (!querySnapshot.empty) {
-    //   setLoading(false);
-    //   return toast.warn("Select another username");
-    // }
-
-    // try {
-    //   const res = await createUserWithEmailAndPassword(auth, email, password);
-
-    //   const imgUrl = await upload(avatar.file);
-
-    //   await setDoc(doc(db, "users", res.user.uid), {
-    //     username,
-    //     email,
-    //     avatar: imgUrl,
-    //     id: res.user.uid,
-    //     blocked: [],
-    //   });
-
-    //   await setDoc(doc(db, "userchats", res.user.uid), {
-    //     chats: [],
-    //   });
-
-    //   toast.success("Account created! You can login now!");
-    // } catch (err) {
-    //   console.log(err);
-    //   toast.error(err.message);
-    //   // setLoading(false);
-    // } finally {
-    //   setLoading(false);
-    //   console.log(loading)
-    // }
-    // setLoading(false)
-  };
-  // const handleLogin = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-  //   console.log("login")
-
-  //   const formData = new FormData(e.target);
-  //   const { email, password } = Object.fromEntries(formData);
-
-  //   // try {
-  //   //   await signInWithEmailAndPassword(auth, email, password);
-  //   // } catch (err) {
-  //   //   console.log(err);
-  //   //   toast.error(err.message);
-  //   //   // setLoading(false);
-  //   // } finally {
-  //   //   setLoading(false);
-  //   //   console.log(loading)
-  //   // }
-  //   setLoading(false)
-  // };
-
   return (
     <div className="login">
       <div className="item">
         <h2>OCEAN<br/>SPACE</h2>
-        <p className="login_text">สมัครสมาชิก</p>
         <form onSubmit={handleRegister}>
           {/* <input
             type="file"
@@ -138,14 +74,33 @@ const Register = () => {
             style={{ display: "none" }}
             onChange={handleAvatar}
           /> */}
+          <p className="login_text">สมัครสมาชิก</p>
           <input type="text" placeholder="อีเมล" name="email" />
           <input type="password" placeholder="รหัสผ่าน" name="password" />
           <button disabled={loading}>{loading ? "กำลังโหลด" : "เข้าสู่ระบบ"}</button>
         </form>
+        
         <div className="bottom">
           <p className="bottom_text">คุณมีสมาชิกอยู่แล้ว?</p>
           <a href="/Login" className="bottom_link">เข้าสู่ระบบ</a>
         </div>
+        <div on-bar-outer>
+          {/* <svg xmlns="http://www.w3.org/2000/svg" width="139" height="1" viewBox="0 0 139 1" fill="none">
+            <path d="M1 0.5H138" stroke="white" stroke-opacity="0.5" stroke-linecap="round"/>
+          </svg> */}
+          <div className="line-bar"></div>
+          <div className="or-bar">หรือ</div>
+          <div className="line-bar"></div>
+
+          {/* <svg xmlns="http://www.w3.org/2000/svg" width="139" height="1" viewBox="0 0 139 1" fill="none">
+            <path d="M1 0.5H138" stroke="white" stroke-opacity="0.5" stroke-linecap="round"/>
+          </svg> */}
+        </div>
+        <div className="signin-google-outer">
+          <img src="./google.png"/>
+          <div className="google-text">Continue with Google</div>
+        </div>
+        
       </div>
     </div>
   );
