@@ -1,171 +1,215 @@
-.chat {
-  flex: 2;
-  border-left: 1px solid #dddddd35;
-  border-right: 1px solid #dddddd35;
-  height: 100%;
+.myProfile {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  width: 100vw;
+  height: 110vh;  
+  background: #F4FCFF;
+  gap : 32px;
+  /* padding : 28px; */
 
-  .top {
-    padding: 20px;
-    display: flex;
+
+  .goback {
+    position: absolute;
+    right:0;
+    margin-right : 24px;
+    margin-top : 22px;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    
+    /* padding : 1px; */
+
+  } 
+  .header_text {
+    display: flex;  
+    height : 70px;
+    width : 100vw;
+    /* background-color: green; */
+    color: #000;
+    justify-content: center;
     align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #dddddd35;
+    border-bottom : 1px solid rgba(0, 0, 0, 0.20);
 
-    .user {
-      display: flex;
-      align-items: center;
-      gap: 20px;
 
-      img {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-
-      .texts {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-
-        span {
-          font-size: 18px;
-          font-weight: bold;
-        }
-
-        p {
-          font-size: 14px;
-          font-weight: 300;
-          color: #a5a5a5;
-        }
-      }
-    }
-
-    .icons {
-      display: flex;
-      gap: 20px;
-
-      img {
-        width: 20px;
-        height: 20px;
-      }
-    }
+    /* OceanSpace/H3-500 */
+    font-family: Mitr;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
   }
-
-  .center {
-    padding: 20px;
-    flex: 1;
-    overflow: scroll;
+  .profile_pic_wrapper {
+    /* background-color: white; */
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    align-items: center;
+    /* background-color: green; */
+    /* height : 170px; */
+    /* gap: 24px; */
+    
 
-    .message {
-      max-width: 70%;
+    .profile-edit {
+      
       display: flex;
-      gap: 20px;
+      width: 87px;
+      height: 33px;
+      /* padding: 4px 16px; */
+      justify-content: center;
+      align-items: center;
+      /* gap: 10px; */
 
-      &.own {
-        align-self: flex-end;
+      position: relative;
+      bottom: 30px;
 
-        .texts {
-          p {
-            background-color: #5183fe;
-          }
-        }
-      }
 
-      img {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-      .texts {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
+      border-radius: 20px;
+      border: 1px solid #DDD;
 
-        img {
-          width: 100%;
-          height: 300px;
-          border-radius: 10px;
-          object-fit: cover;
-        }
-
-        p {
-          padding: 20px;
-          background-color: rgba(17, 25, 40, 0.3);
-          border-radius: 10px;
-        }
-
-        span {
-          font-size: 13px;
-        }
-      }
+      background: #FFF;
+      color: var(--OceanSpace-Black-Secondary, rgba(50, 49, 56, 0.70));
+      text-align: center;
+      /* OceanSpace/Body-400 */
+      font-family: Mitr;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+    }
+    .profile_name {
+      color: #000;
+      text-align: center;
+      /* OceanSpace/H3-500 */
+      font-family: Mitr;
+      font-size: 20px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: normal;
     }
   }
-
-  .bottom {
-    padding: 20px;
+  .option {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-top: 1px solid #dddddd35;
-    gap: 20px;
-    margin-top: auto;
+    flex-direction: column;
+    gap : 20px;
+    color : black;
 
-    .icons {
+    .setting {
+      background-color: white;
+      border-radius: 20px;
+
       display: flex;
-      gap: 20px;
-    }
+      flex-direction: column;
+      gap : 20px;
+      padding : 16px 20px 16px 20px;
+      width: 350px;
+      justify-content: center;
+      align-items: flex-start;
 
-    img {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-    }
+      .setting-header {
+        color: #000;
 
-    input {
-      flex: 1;
-      background-color: rgba(17, 25, 40, 0.5);
-      border: none;
-      outline: none;
-      color: white;
-      padding: 20px;
-      border-radius: 10px;
-      font-size: 16px;
+        text-align: center;
+        /* OceanSpace/Body-500 */
+        font-family: Mitr;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: normal;
+      }
+      .setting-button {
+        display: flex;
+        justify-content: space-between;
+    
+        align-self: stretch;
 
-      &:disabled {
-        cursor: not-allowed;
+
+        /* background-color: hre; */
+        /* gap */
+        color: #000;
+        
+        /* background-color: green; */
+
+        /* OceanSpace/Button-S-500 */
+        font-family: Mitr;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: normal;
+
+        .setting-button-inner {
+          display: flex;
+          justify-content: space-between;
+          gap : 12px;
+          
+
+        }
+
+        button {
+          display: flex;
+          padding: 2px 8px;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+          border-radius: 20px;
+          
+          color: #FFF;
+          border-width: 0;
+
+          text-align: center;
+          /* OceanSpace/Caption-S-400 */
+          font-family: Mitr;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 400;
+          line-height: normal;
+
+        }
+        input {
+          display: flex;
+          padding: 2px 8px;
+          width : 100px;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+          border-radius: 20px;
+          background: var(--OceanSpace-Brand-Primary, #0D7FE8);
+          
+          color: #FFF;
+          border-width: 0;
+
+          text-align: center;
+          /* OceanSpace/Caption-S-400 */
+          font-family: Mitr;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 400;
+          line-height: normal;
+        }
+        ::placeholder {
+          color : rgb(212, 212, 212);
+        }
       }
     }
+    .signout {
+      background-color: white;
+      border-radius: 20px;
 
-    .emoji {
-      position: relative;
+      display: flex;
+      width: 350px;
+      padding : 16px 20px 16px 20px;
+      align-items: center;
+      gap: 12px;
 
-      .picker {
-        position: absolute;
-        bottom: 50px;
-        left: 0;
-      }
+      color: #000;
+
+      text-align: center;
+      /* OceanSpace/Button-S-500 */
+      font-family: Mitr;
+      font-size: 14px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: normal;
     }
 
-    .sendButton {
-      background-color: #5183fe;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-
-      &:disabled {
-        background-color: #5182feb4;
-        cursor: not-allowed;
-      }
-    }
   }
 }
