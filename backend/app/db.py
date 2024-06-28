@@ -2,15 +2,16 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple
-from uuid import uuid4
+from uuid import UUID, uuid4
 
-from fastapi import Depends
-from fastapi_users.db import (
+from fastapi import Depends, HTTPException, WebSocket, WebSocketException, status
+from fastapi_users_db_sqlalchemy import (
+    GUID,
     SQLAlchemyBaseOAuthAccountTableUUID,
     SQLAlchemyBaseUserTableUUID,
     SQLAlchemyUserDatabase,
+    UUID_ID,
 )
-from fastapi_users_db_sqlalchemy import GUID, UUID_ID
 from fastapi_users_db_sqlalchemy.access_token import (
     SQLAlchemyAccessTokenDatabase,
     SQLAlchemyBaseAccessTokenTableUUID,
@@ -20,7 +21,6 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
-    Row,
     String,
     delete,
     func,
@@ -107,7 +107,6 @@ class Message(Base):
     id: Mapped[UUID_ID] = mapped_column(GUID, primary_key=True, default=uuid4)
     sender_id: Mapped[UUID_ID] = mapped_column(ForeignKey("user.id"), nullable=False)
     chat_id: Mapped[UUID_ID] = mapped_column(ForeignKey("chat.id"), nullable=False)
-    content: Mapped[str] = mapped_column(String(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), nullable=False, default=datetime.now
     )
@@ -308,3 +307,51 @@ async def get_access_token_db(
     session: AsyncSession = Depends(get_async_session),
 ):
     yield AccessTokenDatabase(session, AccessToken)
+
+
+async def get_ws_current_user(
+    websocket: WebSocket, db: AsyncSession = Depends(get_async_session)
+):
+    token = websocket.cookies.get("fastapiusersauth")
+    if token is None:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated"
+        )
+    access_token_result = await db.execute(select(AccessToken).filter(AccessToken.token == token))  # type: ignore
+    access_token = access_token_result.scalars().first()
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Invalid session token")
+    user_result = await db.execute(select(User).filter(User.id == access_token.user_id))  # type: ignore
+    user = user_result.unique().scalar_one()
+    if not user:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated"
+        )
+    return user
+
+
+async def get_chat_info(
+    user_id: UUID, chat_id: UUID, db: AsyncSession
+) -> Optional[Tuple[UserChat, Chat, User]]:
+    """
+    Returns
+    -------
+    UserChat
+        User chat information
+    Chat
+        Chat information
+    User
+        Receiver information
+    """
+    results = await db.execute(
+        select(UserChat, Chat, User)
+        .join(Chat, UserChat.chat_id == Chat.id)
+        .join(User, UserChat.receiver_id == User.id)
+        .where(UserChat.user_id == user_id, UserChat.chat_id == chat_id)
+    )
+    fetched = results.unique().fetchone()
+
+    if fetched is None:
+        return None
+
+    return fetched.tuple()

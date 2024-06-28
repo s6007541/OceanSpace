@@ -46,3 +46,9 @@ class MessageModel(BaseModel):
     senderId: str
     createdAt: int
     text: str
+    buffer: bool
+
+
+class PSSQuestionModel(BaseModel):
+    question: str
+    answer: str

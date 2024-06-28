@@ -3,6 +3,7 @@ import "./chatList.css";
 import OptionMenu from "./optionMenu/optionMenu";
 import { useUserStore } from "../../../lib/userStore";
 import { useChatStore } from "../../../lib/chatStore";
+import { useSocket } from "../../../lib/socket";
 import { BACKEND_URL } from "../../../lib/config";
 // TODO import socket
 import { LLM_DICT, LLM_LIST } from "../../../lib/llm_lists";
@@ -23,7 +24,8 @@ const ChatList = ({ setAddMode }) => {
   const [contextMenu, setContextMenu] = useState(null);
 
   const { currentUser } = useUserStore();
-  const { user, changeChat } = useChatStore();
+  const { changeChat } = useChatStore();
+  const { socket } = useSocket();
 
   async function fetchChatList() {
     // Get chat list.
@@ -52,7 +54,17 @@ const ChatList = ({ setAddMode }) => {
     }
   }
 
-  // TODO useEffect socket
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+    socket.addEventListener("message", async (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "update-chat" || data.type === "message") {
+        await fetchChatList();
+      }
+    });
+  }, [socket]);
 
   useEffect(() => {
     if (currentUser.id === null) {

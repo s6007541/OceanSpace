@@ -1,18 +1,33 @@
+import asyncio
+import json
 import os
 from PIL import Image
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import Body, Depends, FastAPI, HTTPException, status
+from fastapi import (
+    Body,
+    Depends,
+    FastAPI,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    WebSocketException,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .connections import ChatEvent, ConnectionManager
 from .db import (
     Chat,
     ChatDatabase,
+    Message,
     MessageDatabase,
     User,
     UserChat,
@@ -21,10 +36,13 @@ from .db import (
     create_db_and_tables,
     get_async_session,
     get_chat_db,
+    get_chat_info,
     get_message_db,
     get_user_db,
     get_user_chat_db,
+    get_ws_current_user,
 )
+from .llm import LLMClient
 from .schemas import (
     MessageModel,
     UserChatModel,
@@ -45,8 +63,12 @@ async def lifespan(app: FastAPI):
 
 origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+with open(Path(__file__).parent.parent.parent / "llm_config.json") as f:
+    LLM_CONFIG: Dict[str, Any] = json.load(f)
 
 app = FastAPI(lifespan=lifespan)
+connection_manager = ConnectionManager()
+llm_client = LLMClient()
 
 app.add_middleware(
     CORSMiddleware,
@@ -181,6 +203,32 @@ async def get_current_user_chats(
     ]
 
 
+@app.get("/user-chats/{chat_id}", tags=["user chats"])
+async def get_user_chat_by_id(
+    chat_id: str,
+    user: User = Depends(current_active_user),
+    chat_db: ChatDatabase = Depends(get_chat_db),
+    user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
+) -> UserChatModel:
+    user_chat = await user_chat_db.get(user.id, UUID(chat_id))
+    chat = await chat_db.get(UUID(chat_id))
+    if user_chat is None or chat is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return UserChatModel(
+        userId=str(user_chat.user_id),
+        chatId=str(user_chat.chat_id),
+        receiverId=str(user_chat.receiver_id),
+        isSeen=user_chat.is_seen,
+        lastMessage=user_chat.last_message,
+        whitelist=user_chat.whitelist,
+        blacklist=user_chat.blacklist,
+        topicsOfInterest=user_chat.topics_of_interest,
+        unreadMessages=user_chat.unread_messages,
+        createdAt=int(chat.created_at.timestamp() * 1000),
+        updatedAt=int(chat.updated_at.timestamp() * 1000),
+    )
+
+
 @app.post("/user-chats", tags=["user chats"])
 async def create_user_chat(
     body: Dict[str, Any] = Body(),
@@ -248,7 +296,7 @@ async def delete_user_chat(
     await user_chat_db.delete(user.id, UUID(chat_id))
 
 
-@app.get("/messages/{chat_id}")
+@app.get("/messages/{chat_id}", tags=["messages"])
 async def get_messages(
     chat_id: str,
     user: User = Depends(current_active_user),
@@ -262,6 +310,215 @@ async def get_messages(
             senderId=str(message.sender_id),
             createdAt=int(message.created_at.timestamp() * 1000),
             text=message.text,
+            buffer=False,
         )
         for message in messages
     ]
+
+
+# Web socket handlers
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    user: User = Depends(get_ws_current_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    await websocket.accept()
+    print(f"[WebSocket] {user.email} connected")
+    connection_manager.add_connection(user.id, websocket)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            await db.refresh(user)
+            if data["type"] == ChatEvent.MESSAGE:
+                await handle_message(user, data, db)
+            elif data["type"] == ChatEvent.COMMIT_MESSAGES:
+                await send_current_messages_to_llm(user, data, db)
+            elif data["type"] == ChatEvent.CHECKPOINT:
+                await handle_checkpoint(user, data, db)
+    except WebSocketDisconnect:
+        connection_manager.remove_connection(user.id, websocket)
+        print(f"[WebSocket] {user.email} disconnected.")
+
+
+async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
+    # Send message
+    message_model = MessageModel.model_validate(message["data"])
+    chat_info = await get_chat_info(user.id, UUID(message_model.chatId), db)
+
+    if chat_info is None:
+        raise HTTPException(status_code=404, detail="User chat not found.")
+
+    user_chat, chat, receiver = chat_info
+
+    created_at = datetime.fromtimestamp(message_model.createdAt / 1000)
+
+    user_chat.last_message = message_model.text
+    user_chat.is_seen = True
+    chat.updated_at = created_at
+
+    new_message = Message(
+        id=uuid4(),
+        sender_id=user.id,
+        chat_id=chat.id,
+        created_at=created_at,
+        text=message_model.text,
+    )
+
+    db.add(user_chat)
+    db.add(chat)
+    db.add(new_message)
+
+    if receiver.is_bot:
+        if not message_model.buffer:
+            llm_name = receiver.username
+            assert llm_name is not None
+            messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id)
+            sentences = llm_client.generate_reply(
+                llm_name, user, user_chat, list(messages)
+            )
+
+            # Send sentence one by one
+            for sentence in sentences:
+                new_message = Message(
+                    sender_id=receiver.id,
+                    chat_id=chat.id,
+                    text=sentence,
+                )
+
+                user_chat.last_message = sentence
+                user_chat.is_seen = False
+                chat.updated_at = new_message.created_at
+
+                db.add(new_message)
+                db.add(user_chat)
+                db.add(chat)
+
+                await connection_manager.send(
+                    user.id,
+                    ChatEvent.MESSAGE,
+                    {
+                        "messageId": str(new_message.id),
+                        "chatId": str(new_message.chat_id),
+                        "senderId": str(new_message.sender_id),
+                        "createdAt": int(new_message.created_at.timestamp() * 1000),
+                        "text": sentence,
+                    },
+                )
+    else:
+        result = await db.execute(
+            select(UserChat, Chat)
+            .join(Chat, UserChat.chat_id == Chat.id)
+            .where(
+                UserChat.user_id == receiver.id,
+                UserChat.chat_id == message_model.chatId,
+            )
+        )
+
+        receiver_user_chat: UserChat
+        receiver_chat: Chat
+        fetched_chat = result.fetchone()
+        if fetched_chat is None:
+            raise HTTPException(status_code=404, detail="Receiver chat not found.")
+        receiver_user_chat, receiver_chat = fetched_chat
+
+        receiver_user_chat.last_message = message_model.text
+        receiver_user_chat.is_seen = True
+        receiver_chat.updated_at = created_at
+
+        db.add(receiver_user_chat)
+        db.add(receiver_chat)
+
+        if connection_manager.is_online(receiver.id):
+            await connection_manager.send(
+                receiver.id, ChatEvent.MESSAGE, message_model.model_dump()
+            )
+
+    await db.commit()
+
+
+async def send_current_messages_to_llm(
+    user: User, message: Dict[str, Any], db: AsyncSession
+):
+    message_model = MessageModel.model_validate(message["data"])
+    chat_info = await get_chat_info(user.id, UUID(message_model.chatId), db)
+
+    if chat_info is None:
+        raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
+
+    user_chat, chat, llm_user = chat_info
+
+    llm_name = llm_user.username
+    assert llm_name is not None
+    messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
+    sentences = llm_client.generate_reply(llm_name, user, user_chat, messages)
+
+    # Send sentence one by one
+    for sentence_i, sentence in enumerate(sentences):
+        # await time.sleep(2)
+        await asyncio.sleep(2)
+        new_message = Message(
+            id=uuid4(),
+            chat_id=chat.id,
+            sender_id=llm_user.id,
+            created_at=datetime.now(),
+            text=sentence,
+        )
+
+        user_chat.last_message = sentence
+        user_chat.is_seen = False
+        user_chat.unread_messages += 1
+        chat.updated_at = new_message.created_at
+
+        db.add(new_message)
+        db.add(user_chat)
+        db.add(chat)
+
+        if connection_manager.is_online(user.id):
+            await connection_manager.send(
+                user.id,
+                ChatEvent.MESSAGE,
+                {
+                    "messageId": str(new_message.id),
+                    "chatId": str(new_message.chat_id),
+                    "senderId": str(new_message.sender_id),
+                    "createdAt": int(new_message.created_at.timestamp() * 1000),
+                    "text": sentence,
+                    "last_one": (sentence_i + 1) == len(sentences),
+                },
+            )
+        await db.commit()
+
+    # await db.commit()
+
+
+async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSession):
+    topic_list = ["ความรัก", "การเงิน", "การงาน", "ครอบครัว", "การเรียน"]
+    n_messages = message.get("nMessages", 20)
+
+    message_model = MessageModel.model_validate(message["data"])
+    chat_id = UUID(message_model.chatId)
+    messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat_id)
+
+    topics = llm_client.predict_topics(user, list(messages), topic_list, n_messages)
+
+    user_chat = await UserChatDatabase(db).get(user.id, chat_id)
+    if user_chat is None:
+        raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
+    user_chat.topics_of_interest = topics
+    db.add(user_chat)
+
+    await connection_manager.send(user.id, ChatEvent.CHECKPOINT, {"topics": topics})
+    await db.commit()
+
+
+async def handle_unread_messages(user: User, message: Dict[str, Any], db: AsyncSession):
+    user_chat = await UserChatDatabase(db).get(user.id, message["chat_id"])
+    if user_chat is None:
+        raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
+    user_chat.unread_messages = message["unreadMessages"]
+    db.add(user_chat)
+    await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
+    await db.commit()

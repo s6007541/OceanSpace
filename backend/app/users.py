@@ -14,7 +14,7 @@ from fastapi_users.authentication.strategy.db import (
     AccessTokenDatabase,
     DatabaseStrategy,
 )
-from fastapi_users.db import SQLAlchemyUserDatabase
+from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 
 from app.db import AccessToken, User, get_access_token_db, get_user_db
 
