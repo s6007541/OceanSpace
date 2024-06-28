@@ -1,11 +1,23 @@
 from contextlib import asynccontextmanager
-from typing import List
+from typing import Any, Dict, List
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Body, Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from .db import User, UserDatabase, UserChatDatabase, create_db_and_tables, get_user_db
+from .db import (
+    Chat,
+    User,
+    UserChat,
+    UserChatDatabase,
+    UserDatabase,
+    create_db_and_tables,
+    get_async_session,
+    get_user_db,
+    get_user_chat_db,
+    init_user_db,
+)
 from .schemas import UserChatModel, UserCreate, UserModel, UserRead, UserUpdate
 from .users import auth_backends, current_active_user, fastapi_users
 
@@ -14,6 +26,7 @@ from .users import auth_backends, current_active_user, fastapi_users
 async def lifespan(app: FastAPI):
     # Not needed if you setup a migration system like Alembic
     await create_db_and_tables()
+    await init_user_db()
     yield
 
 
@@ -111,7 +124,7 @@ async def get_user_info_by_name(
 @app.get("/user-chats", tags=["user chats"])
 async def get_current_user_chats(
     user: User = Depends(current_active_user),
-    user_chat_db: UserChatDatabase = Depends(get_user_db),
+    user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
 ) -> List[UserChatModel]:
     user_chats = await user_chat_db.get_by_user_id(user.id)
     return [
@@ -128,3 +141,32 @@ async def get_current_user_chats(
         )
         for user_chat in user_chats
     ]
+
+
+@app.post("/user-chats", tags=["user chats"])
+async def create_user_chat(
+    body: Dict[str, Any] = Body(),
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    receiver_id = body.get("receiverId")
+    if receiver_id is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+    new_chat = Chat()
+    new_user_chat = UserChat(
+        user_id=user.id,
+        chat_id=new_chat.id,
+        receiver_id=UUID(receiver_id),
+    )
+    db.add(new_chat)
+    db.add(new_user_chat)
+    await db.commit()
+
+
+@app.delete("/user-chats/{chat_id}", tags=["user chats"])
+async def delete_user_chat(
+    chat_id: str,
+    user: User = Depends(current_active_user),
+    user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
+):
+    await user_chat_db.delete(user.id, UUID(chat_id))
