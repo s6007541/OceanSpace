@@ -12,8 +12,6 @@ import Navbar from "./components/navbar/Navbar";
 
 import Register from "./components/login/Register";
 import Notification from "./components/notification/Notification";
-// import { onAuthStateChanged } from "firebase/auth";
-// import { auth } from "./lib/firebase";
 import { useUserStore } from "./lib/userStore";
 import { useChatStore } from "./lib/chatStore";
 

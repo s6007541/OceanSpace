@@ -1,17 +1,5 @@
 import "./addUser.css";
-import { db } from "../../../../lib/firebase";
-import {
-  arrayUnion,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
-} from "firebase/firestore";
+
 import { useState } from "react";
 import { useUserStore } from "../../../../lib/userStore";
 

@@ -7,11 +7,14 @@ import { useUserStore } from "../../lib/userStore";
 import upload from "../../lib/upload";
 import { format } from "timeago.js";
 import { LLM_LIST } from "../../lib/llm_lists";
+import { useNavigate } from "react-router-dom";
+
 // TODO import socket
 // TODO import backend_url
 
 
 const Chat = () => {
+  const navigate = useNavigate(); 
   const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -63,6 +66,7 @@ const Chat = () => {
 
   const handleBack = async (e) => {
     // TODO
+    navigate("/ChatList")
     resetChat();
   };
 
@@ -84,6 +88,11 @@ const Chat = () => {
    
   };
 
+  const handleEmoji = (e) => {
+    setText((prev) => prev + e.emoji);
+    setOpen(false);
+  };
+
   return (
     <div className="chat">
       <div className="top">
@@ -102,7 +111,6 @@ const Chat = () => {
           />
           <div className="texts">
             <span>{user?.username}</span>
-            {/* <p>Lorem ipsum dolor, sit amet.</p> */}
           </div>
         </div>
 
@@ -121,6 +129,7 @@ const Chat = () => {
               <div className="textRead">
                 <div className="beforeText">
                   {(message.senderId === currentUser?.id) && (latestRead <= -2 || latestRead > index) ? <span>อ่านแล้ว</span> : <></>}
+                  {/* <span>{format(new Date(message.createdAt))}</span> */}
                 </div>
 
                 <p onClick={(e)=>{
