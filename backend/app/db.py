@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, List
+from typing import AsyncGenerator, List, Optional
 
 from fastapi import Depends
 from fastapi_users.db import (
@@ -6,18 +6,26 @@ from fastapi_users.db import (
     SQLAlchemyBaseUserTableUUID,
     SQLAlchemyUserDatabase,
 )
+from fastapi_users_db_sqlalchemy import UUID_ID
 from fastapi_users_db_sqlalchemy.access_token import (
     SQLAlchemyAccessTokenDatabase,
     SQLAlchemyBaseAccessTokenTableUUID,
 )
+from sqlalchemy import Boolean, String, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy_utils import ScalarListType  # type: ignore
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 
 class Base(DeclarativeBase):
     pass
+
+
+class BaseDatabase:
+    def __init__(self, session: AsyncSession):
+        self.session = session
 
 
 class OAuthAccount(SQLAlchemyBaseOAuthAccountTableUUID, Base):
@@ -28,9 +36,36 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     oauth_accounts: Mapped[List[OAuthAccount]] = relationship(
         "OAuthAccount", lazy="joined"
     )
+    username: Mapped[Optional[str]] = mapped_column(
+        String(), unique=True, default=None, nullable=True
+    )
+    alias: Mapped[Optional[str]] = mapped_column(String(), default=None, nullable=True)
+    avatar: Mapped[Optional[str]] = mapped_column(String(), default=None, nullable=True)
+    pss_list: Mapped[List[str]] = mapped_column(
+        ScalarListType(str), default=[], nullable=False
+    )
+    is_bot: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
 
 
 class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
+    pass
+
+
+class UserDatabase(SQLAlchemyUserDatabase):
+    async def get(self, user_id: UUID_ID) -> Optional[User]:
+        stmt = select(User).where(User.id == user_id)
+        result = await self.session.execute(stmt)
+        return result.scalar()
+
+    async def get_by_username(self, username: str) -> Optional[User]:
+        stmt = select(User).where(
+            (User.username == username) | (User.alias == username)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar()
+
+
+class AccessTokenDatabase(SQLAlchemyAccessTokenDatabase):
     pass
 
 
@@ -49,10 +84,10 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
-    yield SQLAlchemyUserDatabase(session, User, OAuthAccount)
+    yield UserDatabase(session, User, OAuthAccount)
 
 
 async def get_access_token_db(
     session: AsyncSession = Depends(get_async_session),
 ):
-    yield SQLAlchemyAccessTokenDatabase(session, AccessToken)
+    yield AccessTokenDatabase(session, AccessToken)

@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
+from uuid import UUID
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 
-from .db import User, create_db_and_tables
-from .schemas import UserCreate, UserRead, UserUpdate
+from .db import User, UserDatabase, create_db_and_tables, get_user_db
+from .schemas import UserCreate, UserModel, UserRead, UserUpdate
 from .users import auth_backends, current_active_user, fastapi_users
 
 
@@ -13,8 +15,18 @@ async def lifespan(app: FastAPI):
     await create_db_and_tables()
     yield
 
+origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backends[0]),
@@ -48,6 +60,47 @@ app.include_router(
 )
 
 
-@app.get("/authenticated-route")
-async def authenticated_route(user: User = Depends(current_active_user)):
-    return {"message": f"Hello {user.email}!"}
+@app.get("/user-info", tags=["user info"])
+async def get_current_user_info(user: User = Depends(current_active_user)) -> UserModel:
+    return UserModel(
+        id=str(user.id),
+        email=user.email,
+        username=user.username,
+        alias=user.alias,
+        avatar=user.avatar,
+        pssList=user.pss_list,
+    )
+
+
+@app.get("/user-info/id/{user_id}", tags=["user info"])
+async def get_user_info_by_id(
+    user_id: str,
+    user: User = Depends(current_active_user),
+    user_db: UserDatabase = Depends(get_user_db),
+) -> UserModel:
+    fetched_user = await user_db.get(UUID(user_id))
+    if fetched_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return UserModel(
+        id=str(fetched_user.id),
+        username=fetched_user.username,
+        alias=fetched_user.alias,
+        avatar=fetched_user.avatar,
+    )
+
+
+@app.get("/user-info/name/{username}", tags=["user info"])
+async def get_user_info_by_name(
+    username: str,
+    user: User = Depends(current_active_user),
+    user_db: UserDatabase = Depends(get_user_db),
+) -> UserModel:
+    fetched_user = await user_db.get_by_username(username)
+    if fetched_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return UserModel(
+        id=str(fetched_user.id),
+        username=fetched_user.username,
+        alias=fetched_user.alias,
+        avatar=fetched_user.avatar,
+    )

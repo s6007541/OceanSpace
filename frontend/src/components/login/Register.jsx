@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./login.css";
 import { toast } from "react-toastify";
+import { BACKEND_URL } from "../../lib/config";
 // import {
 //   createUserWithEmailAndPassword,
 //   signInWithEmailAndPassword,
@@ -22,21 +24,22 @@ import { toast } from "react-toastify";
 // import upload from "../../lib/upload";
 
 const Register = () => {
-  const [avatar, setAvatar] = useState({
-    file: null,
-    url: "",
-  });
+  // const [avatar, setAvatar] = useState({
+  //   file: null,
+  //   url: "",
+  // });
 
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleAvatar = (e) => {
-    if (e.target.files[0]) {
-      setAvatar({
-        file: e.target.files[0],
-        // url: URL.createObjectURL(e.target.files[0]),
-      });
-    }
-  };
+  // const handleAvatar = (e) => {
+  //   if (e.target.files[0]) {
+  //     setAvatar({
+  //       file: e.target.files[0],
+  //       // url: URL.createObjectURL(e.target.files[0]),
+  //     });
+  //   }
+  // };
 
   const handleRegister = async (e) => {
     console.log("register")
@@ -44,18 +47,41 @@ const Register = () => {
     setLoading(true);
     const formData = new FormData(e.target);
 
-    const { username, email, password } = Object.fromEntries(formData);
+    const { email, password } = Object.fromEntries(formData);
 
     // VALIDATE INPUTS
-    if (!username || !email || !password){
+    if (!email || !password){
       setLoading(false);
       return toast.warn("Please enter inputs!");
     }
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
       
-    if (!avatar.file) {
+      if (!res.ok) {
+        throw new Error("ไม่สามารถลงทะเบียนได้!");
+      }
+
+      toast.success("ลงทะเบียนสำเร็จ คุณสามารถเข้าสู่ระบบได้แล้ว");
+      navigate("/login")
+    } catch (err) {
+      console.log(err);
+      toast.error(err.message);
+    } finally {
       setLoading(false);
-      return toast.warn("Please upload an avatar!");
     }
+      
+    // if (!avatar.file) {
+    //   setLoading(false);
+    //   return toast.warn("Please upload an avatar!");
+    // }
       
 
     // VALIDATE UNIQUE USERNAME
@@ -93,28 +119,28 @@ const Register = () => {
     //   setLoading(false);
     //   console.log(loading)
     // }
-    setLoading(false)
+    // setLoading(false)
   };
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    console.log("login")
+  // const handleLogin = async (e) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   console.log("login")
 
-    const formData = new FormData(e.target);
-    const { email, password } = Object.fromEntries(formData);
+  //   const formData = new FormData(e.target);
+  //   const { email, password } = Object.fromEntries(formData);
 
-    // try {
-    //   await signInWithEmailAndPassword(auth, email, password);
-    // } catch (err) {
-    //   console.log(err);
-    //   toast.error(err.message);
-    //   // setLoading(false);
-    // } finally {
-    //   setLoading(false);
-    //   console.log(loading)
-    // }
-    setLoading(false)
-  };
+  //   // try {
+  //   //   await signInWithEmailAndPassword(auth, email, password);
+  //   // } catch (err) {
+  //   //   console.log(err);
+  //   //   toast.error(err.message);
+  //   //   // setLoading(false);
+  //   // } finally {
+  //   //   setLoading(false);
+  //   //   console.log(loading)
+  //   // }
+  //   setLoading(false)
+  // };
 
   return (
     <div className="login">
