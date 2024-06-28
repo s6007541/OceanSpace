@@ -77,8 +77,8 @@ const ChatList = ({ setAddMode }) => {
       if (!res.ok) {
         throw new Error("Failed to update chat");
       }
-
       changeChat(userChat, user);
+      navigate("/Chat");
     } catch (err) {
       console.log(err);
     }
@@ -188,7 +188,7 @@ const ChatList = ({ setAddMode }) => {
                   alt=""
                 />
                 <div className="texts">
-                  <span>chat.user.username</span>
+                  <span>{chat.user.username}</span>
                   <p>{chat.lastMessage}</p>
                   {/* <p>{chat.lastMessage.length > 0 ? chat.lastMessage.slice(0, 28) + (chat.lastMessage.length > 28 ? "..." : "") : ""}</p> */}
                 </div>

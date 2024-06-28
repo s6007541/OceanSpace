@@ -8,6 +8,7 @@ import upload from "../../lib/upload";
 import { format } from "timeago.js";
 import { LLM_LIST } from "../../lib/llm_lists";
 import { useNavigate } from "react-router-dom";
+import { BACKEND_URL } from "../../lib/config";
 
 // TODO import socket
 // TODO import backend_url
@@ -48,25 +49,63 @@ const Chat = () => {
       
   //   }
   // }, [textReady]);
+  console.log("Hereeeeeeeee;")
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // useEffect(() => {
-  //   async function fetchMessages() {
-      
-  //   }
+  useEffect(() => {
+    async function fetchMessages() {
+      if (chatId === null) {
+        navigate("/ChatList", { replace: true });
+        return;
+      }
+      try {
+        const res = await fetch(`${BACKEND_URL}/messages/${chatId}`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error("Failed to fetch messages.");
+        }
+        const messages = await res.json();
+        console.log("Messages:", messages)
+        chatRef.current = messages;
+        setChat([...chatRef.current]);
+      } catch (err) {
+        console.log(err);
+      }
+    }
 
-  //   fetchMessages();
-  // }, [chatData]);
+    fetchMessages();
+  }, [chatData]);
 
   // TODO use effect socket
 
 
   const handleBack = async (e) => {
-    // TODO
-    navigate("/ChatList")
+    try {
+      const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to fetch user chats.");
+      }
+      const userChat = await res.json();
+      userChat.unreadMessages = 0;
+      await fetch(`${BACKEND_URL}/user-chats`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userChat),
+        credentials: "include",
+      });
+    } catch (err) {
+      console.log(err);
+    }
+
+    navigate("/ChatList");
     resetChat();
   };
 
@@ -81,7 +120,32 @@ const Chat = () => {
   };
 
   const handleFeedback = async (e) => {
-
+    try{
+      const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to fetch user chats.");
+      }
+      const userChat = await res.json();
+      if (e.target.id === "angry") {
+        userChat.blacklist.push(chatRef.current[openFeedback].text);
+      } else {
+        userChat.whitelist.push(chatRef.current[openFeedback].text);
+      }
+      await fetch(`${BACKEND_URL}/user-chats`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userChat),
+        credentials: "include",
+      });
+      setOpenFeedback(-1);
+      toast.success(`Feedback has been received! "${user.username}" will enhance the response according to your suggestions.`);
+    } catch (err){
+      console.log(err);
+    }
   };
 
   const handleSend = async () => {

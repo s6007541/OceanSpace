@@ -38,3 +38,11 @@ class UserChatModel(BaseModel):
     unreadMessages: int = 0
     createdAt: int
     updatedAt: int
+
+
+class MessageModel(BaseModel):
+    id: Optional[str] = None
+    chatId: str
+    senderId: str
+    createdAt: int
+    text: str

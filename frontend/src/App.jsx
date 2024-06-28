@@ -23,7 +23,6 @@ import {
 
 const App = () => {
   const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore()
-  const { chatId } = useChatStore();
 
   useEffect(() => {
     async function initialize() {

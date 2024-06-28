@@ -1,15 +1,16 @@
 import { create } from "zustand";
-import { useUserStore } from "./userStore";
+// import { useUserStore } from "./userStore";
 
 export const useChatStore = create((set) => ({
   chatId: null,
+  chatData: null,
   user: null,
   isCurrentUserBlocked: false,
   isReceiverBlocked: false,
-  changeChat: (chatId, user) => {
+  changeChat: (chat, user) => { // user is one that current_user wanna chat
     // const currentUser = useUserStore.getState().currentUser;
 
-    // // CHECK IF CURRENT USER IS BLOCKED
+    // CHECK IF CURRENT USER IS BLOCKED
     // if (user.blocked.includes(currentUser.id)) {
     //   return set({
     //     chatId,
@@ -19,7 +20,7 @@ export const useChatStore = create((set) => ({
     //   });
     // }
 
-    // // CHECK IF RECEIVER IS BLOCKED
+    // CHECK IF RECEIVER IS BLOCKED
     // else if (currentUser.blocked.includes(user.id)) {
     //   return set({
     //     chatId,
@@ -35,10 +36,9 @@ export const useChatStore = create((set) => ({
     //     isReceiverBlocked: false,
     //   });
     // }
-    console.log("changeChat", chatId);
-
     return set({
-      chatId,
+      chatId: chat.chatId,
+      chatData: chat,
       user,
       isCurrentUserBlocked: false,
       isReceiverBlocked: false,
@@ -51,7 +51,20 @@ export const useChatStore = create((set) => ({
   resetChat: () => {
     set({
       chatId: null,
+      chatData: null,
       user: null,
+      isCurrentUserBlocked: false,
+      isReceiverBlocked: false,
+    });
+  },
+  setDetail: () => {
+    set({
+      isCurrentUserBlocked: false,
+      isReceiverBlocked: false,
+    });
+  },
+  setChat: () => {
+    set({
       isCurrentUserBlocked: false,
       isReceiverBlocked: false,
     });

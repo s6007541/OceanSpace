@@ -231,6 +231,18 @@ class MessageDatabase(BaseDatabase):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def get_by_user_chat_id(
+        self, user_id: UUID_ID, chat_id: UUID_ID
+    ) -> Sequence[Message]:
+        statement = (
+            select(Message, UserChat)
+            .join(UserChat, Message.chat_id == UserChat.chat_id)
+            .where(Message.chat_id == chat_id, UserChat.user_id == user_id)
+            .order_by(Message.created_at)
+        )
+        results = await self.session.execute(statement)
+        return results.scalars().all()
+
 
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)

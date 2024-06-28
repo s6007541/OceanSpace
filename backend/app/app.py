@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .db import (
     Chat,
     ChatDatabase,
+    MessageDatabase,
     User,
     UserChat,
     UserChatDatabase,
@@ -20,10 +21,18 @@ from .db import (
     create_db_and_tables,
     get_async_session,
     get_chat_db,
+    get_message_db,
     get_user_db,
     get_user_chat_db,
 )
-from .schemas import UserChatModel, UserCreate, UserModel, UserRead, UserUpdate
+from .schemas import (
+    MessageModel,
+    UserChatModel,
+    UserCreate,
+    UserModel,
+    UserRead,
+    UserUpdate,
+)
 from .users import auth_backends, current_active_user, fastapi_users
 
 
@@ -139,9 +148,7 @@ async def get_profile_image(
         raise HTTPException(status_code=404, detail="Not found")
 
     if avatar.endswith(".svg"):
-        return Response(
-            content=open(avatar, "rb").read(), media_type="image/svg+xml"
-        )
+        return Response(content=open(avatar, "rb").read(), media_type="image/svg+xml")
 
     img = Image.open(avatar)
     img_bytes = img.tobytes()
@@ -226,6 +233,7 @@ async def update_user_chat(
     user_chat.last_message = user_chat_model.lastMessage
     user_chat.whitelist = user_chat_model.whitelist
     user_chat.blacklist = user_chat_model.blacklist
+    user_chat.unread_messages = user_chat_model.unreadMessages
 
     await user_chat_db.update(user_chat)
     await chat_db.update(chat)
@@ -238,3 +246,22 @@ async def delete_user_chat(
     user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
 ):
     await user_chat_db.delete(user.id, UUID(chat_id))
+
+
+@app.get("/messages/{chat_id}")
+async def get_messages(
+    chat_id: str,
+    user: User = Depends(current_active_user),
+    message_db: MessageDatabase = Depends(get_message_db),
+):
+    messages = await message_db.get_by_user_chat_id(user.id, UUID(chat_id))
+    return [
+        MessageModel(
+            id=str(message.id),
+            chatId=str(message.chat_id),
+            senderId=str(message.sender_id),
+            createdAt=int(message.created_at.timestamp() * 1000),
+            text=message.text,
+        )
+        for message in messages
+    ]
