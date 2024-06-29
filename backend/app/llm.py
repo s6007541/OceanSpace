@@ -55,24 +55,29 @@ class LLMCLient:
         return message_list
 
     def _get_system_prompt(self, llm_name: str, user_chat: UserChat, emotionMode: str = "") -> str:
+        
+        
+        
         if emotionMode == "":
-            with open("./prompt_templates/prompt_template.txt") as f:
-                prompt = f.read()
+            prompt_template_file = PROMPT_TEMPLATE_DIR / ("blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt")
+            
         elif emotionMode == "รับฟัง":
             print("emotionMode", emotionMode)
-            with open(f"./prompt_templates/prompt_template_{emotionMode}.txt") as f:
-                prompt = f.read()
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+
         elif emotionMode == "ให้กำลังใจ":
             print("emotionMode", emotionMode)
-            with open(f"./prompt_templates/prompt_template_{emotionMode}.txt") as f:
-                prompt = f.read()
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+
         elif emotionMode == "ให้คำแนะนำ":
             print("emotionMode", emotionMode)
-            with open(f"./prompt_templates/prompt_template_{emotionMode}.txt") as f:
-                prompt = f.read()
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+
         else:
-            with open("./prompt_templates/prompt_template.txt") as f:
-                prompt = f.read()
+            prompt_template_file = PROMPT_TEMPLATE_DIR / ("blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt")
+
+        with open(prompt_template_file) as f:
+            prompt = f.read()
         prompt += (
             "\n"
             + (
