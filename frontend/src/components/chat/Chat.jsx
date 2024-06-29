@@ -36,6 +36,12 @@ const Chat = () => {
   const chatRef = useRef();
   const socketHandledRef = useRef(false);
   const endRef = useRef(null);
+
+  const handleKeyDown = async (event) => {
+    if (event.key === 'Enter') {
+      await handleSend();
+    }
+  };
     
   // useEffect(() => {
   //   if (textReady === false) {
@@ -332,6 +338,7 @@ const Chat = () => {
           }
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyDown}
           disabled={isCurrentUserBlocked || isReceiverBlocked}
         />
         <div className="emoji">
