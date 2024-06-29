@@ -3,6 +3,7 @@ import "./chatList.css";
 import OptionMenu from "./optionMenu/optionMenu";
 import { useUserStore } from "../../../lib/userStore";
 import { useChatStore } from "../../../lib/chatStore";
+import { useSocket } from "../../../lib/socket";
 import { BACKEND_URL } from "../../../lib/config";
 // TODO import socket
 import { LLM_DICT, LLM_LIST } from "../../../lib/llm_lists";
@@ -24,6 +25,7 @@ const ChatList = ({ setAddMode }) => {
 
   const { currentUser } = useUserStore();
   const { changeChat } = useChatStore();
+  const { socket } = useSocket();
 
   async function fetchChatList() {
     // Get chat list.
@@ -32,14 +34,37 @@ const ChatList = ({ setAddMode }) => {
       const res = await fetch(`${BACKEND_URL}/user-chats`, {
         credentials: "include",
       });
-      const chatList = await res.json();
-      setChats(chatList);
+      const userChats = await res.json();
+      const promises = userChats.map(async (userChat) => {
+        const res = await fetch(
+          `${BACKEND_URL}/user-info/id/${userChat.receiverId}`,
+          { credentials: "include" }
+        );
+        if (!res.ok) {
+          throw new Error("Failed to fetch user info.");
+        }
+        const user = await res.json();
+        return { ...userChat, user };
+      });
+
+      const chatData = await Promise.all(promises);
+      setChats(chatData);
     } catch (err) {
       console.log(err);
     }
   }
 
-  // TODO useEffect socket
+  useEffect(() => {
+    if (!socket) {
+      return;
+    }
+    socket.addEventListener("message", async (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "update-chat" || data.type === "message") {
+        await fetchChatList();
+      }
+    });
+  }, [socket]);
 
   useEffect(() => {
     if (currentUser.id === null) {
@@ -51,7 +76,24 @@ const ChatList = ({ setAddMode }) => {
   const handleSelect = async (chat) => {
     const { user, ...userChat } = chat;
     userChat.isSeen = true;
-    // TODO
+    try {
+      const res = await fetch(`${BACKEND_URL}/user-chats`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userChat),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update chat");
+      }
+      changeChat(userChat, user);
+      navigate("/Chat");
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const handleContextMenu = (e, chat) => {
@@ -98,7 +140,7 @@ const ChatList = ({ setAddMode }) => {
       if (!res.ok) {
         throw new Error("Failed to get user info");
       }
-      llmInfo = await res.json();
+      const llmInfo = await res.json();
       res = await fetch(`${BACKEND_URL}/user-chats`, {
         method: "POST",
         headers: {
@@ -152,20 +194,13 @@ const ChatList = ({ setAddMode }) => {
               >
                 <img
                   src={
-                    chat.user.blocked.includes(currentUser.id)
-                      ? "./avatar.png"
-                      : // : LLM_DICT[chat.receiverId].avatar
-                        `${BACKEND_URL}/profile-image/${chat.receiverId}` ||
-                        "./avatar.png"
+                    `${BACKEND_URL}/profile-image/${chat.receiverId}` ||
+                    "./avatar.png"
                   }
                   alt=""
                 />
                 <div className="texts">
-                  <span>
-                    {chat.user.blocked.includes(currentUser.id)
-                      ? "User"
-                      : chat.user.username}
-                  </span>
+                  <span>{chat.user.username}</span>
                   <p>{chat.lastMessage}</p>
                   {/* <p>{chat.lastMessage.length > 0 ? chat.lastMessage.slice(0, 28) + (chat.lastMessage.length > 28 ? "..." : "") : ""}</p> */}
                 </div>

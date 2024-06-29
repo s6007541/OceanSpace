@@ -13,7 +13,8 @@ import Navbar from "./components/navbar/Navbar";
 import Register from "./components/login/Register";
 import Notification from "./components/notification/Notification";
 import { useUserStore } from "./lib/userStore";
-import { useChatStore } from "./lib/chatStore";
+import { useSocket } from "./lib/socket";
+import { WEBSOCKET_URL } from "./lib/config";
 
 import {
   BrowserRouter as Router,
@@ -22,16 +23,17 @@ import {
 } from "react-router-dom";
 
 const App = () => {
-  // const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore()
-  const { fetchCurrentUserInfo } = useUserStore()
-  const currentUser = true;
-  const isLoading = false;
-  const { chatId } = useChatStore();
+  const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore();
+  const { socketConnected, socketConnect } = useSocket();
 
   useEffect(() => {
     async function initialize() {
       if (currentUser === null || currentUser.id === null) {
         await fetchCurrentUserInfo();
+      }
+
+      if (!socketConnected) {
+        socketConnect(WEBSOCKET_URL + "/ws");
       }
     }
     initialize();

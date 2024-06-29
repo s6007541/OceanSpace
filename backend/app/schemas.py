@@ -24,15 +24,32 @@ class UserModel(BaseModel):
     alias: Optional[str] = None
     avatar: Optional[str] = None
     pssList: List[str] = []
+    notification: bool = True
 
 
 class UserChatModel(BaseModel):
-    user_id: str
-    chat_id: str
-    receiver_id: str
-    is_seen: bool
-    last_message: Optional[str] = None
+    userId: str
+    chatId: str
+    receiverId: str
+    isSeen: bool
+    lastMessage: Optional[str] = None
     whitelist: List[str] = []
     blacklist: List[str] = []
-    topics_of_interest: List[str] = []
-    unread_messages: int = 0
+    topicsOfInterest: List[str] = []
+    unreadMessages: int = 0
+    createdAt: int
+    updatedAt: int
+
+
+class MessageModel(BaseModel):
+    id: Optional[str] = None
+    chatId: str
+    senderId: str
+    createdAt: int
+    text: str
+    buffer: bool
+
+
+class PSSQuestionModel(BaseModel):
+    question: str
+    answer: str

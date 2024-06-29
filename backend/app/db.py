@@ -1,16 +1,17 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence
-from uuid import uuid4
+from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple
+from uuid import UUID, uuid4
 
-from fastapi import Depends
-from fastapi_users.db import (
+from fastapi import Depends, HTTPException, WebSocket, WebSocketException, status
+from fastapi_users_db_sqlalchemy import (
+    GUID,
     SQLAlchemyBaseOAuthAccountTableUUID,
     SQLAlchemyBaseUserTableUUID,
     SQLAlchemyUserDatabase,
+    UUID_ID,
 )
-from fastapi_users_db_sqlalchemy import GUID, UUID_ID
 from fastapi_users_db_sqlalchemy.access_token import (
     SQLAlchemyAccessTokenDatabase,
     SQLAlchemyBaseAccessTokenTableUUID,
@@ -60,6 +61,7 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         ScalarListType(str), default=[], nullable=False
     )
     is_bot: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
+    notification: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
 
 
 class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
@@ -106,7 +108,6 @@ class Message(Base):
     id: Mapped[UUID_ID] = mapped_column(GUID, primary_key=True, default=uuid4)
     sender_id: Mapped[UUID_ID] = mapped_column(ForeignKey("user.id"), nullable=False)
     chat_id: Mapped[UUID_ID] = mapped_column(ForeignKey("chat.id"), nullable=False)
-    content: Mapped[str] = mapped_column(String(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(), nullable=False, default=datetime.now
     )
@@ -142,6 +143,11 @@ class ChatDatabase(BaseDatabase):
         result = await self.session.execute(stmt)
         return result.scalar()
 
+    async def update(self, chat: Chat):
+        self.session.add(chat)
+        await self.session.commit()
+        await self.session.refresh(chat)
+
 
 class UserChatDatabase(BaseDatabase):
     async def create(self, user_chat: UserChat) -> UserChat:
@@ -156,7 +162,7 @@ class UserChatDatabase(BaseDatabase):
         result = await self.session.execute(stmt)
         return result.scalar()
 
-    async def get_by_user_id(self, user_id: UUID_ID) -> Sequence[UserChat]:
+    async def get_by_user_id(self, user_id: UUID_ID) -> Sequence[Tuple[UserChat, Chat]]:
         stmt = (
             select(UserChat, Chat)
             .join(Chat, UserChat.chat_id == Chat.id)
@@ -164,26 +170,30 @@ class UserChatDatabase(BaseDatabase):
             .order_by(Chat.updated_at.desc())
         )
         result = await self.session.execute(stmt)
-        return result.scalars().all()
+        return [row.tuple() for row in result.fetchall()]
 
     async def get_by_chat_id(self, chat_id: UUID_ID) -> Sequence[UserChat]:
         stmt = select(UserChat).where(UserChat.chat_id == chat_id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def update(self, user_chat: UserChat):
+        self.session.add(user_chat)
+        await self.session.commit()
+        await self.session.refresh(user_chat)
+
     async def delete(self, user_id: UUID_ID, chat_id: UUID_ID):
         stmt = delete(UserChat).where(
             UserChat.user_id == user_id, UserChat.chat_id == chat_id
         )
         await self.session.execute(stmt)
-        await self.session.commit()
 
         if not self.get_by_chat_id(chat_id):
             stmt = delete(Chat).where(Chat.id == chat_id)
             await self.session.execute(stmt)
             stmt = delete(Message).where(Message.chat_id == chat_id)
             await self.session.execute(stmt)
-            await self.session.commit()
+        await self.session.commit()
 
     async def delete_and_return(
         self, user_id: UUID_ID, chat_id: UUID_ID
@@ -200,7 +210,7 @@ class UserChatDatabase(BaseDatabase):
             await self.session.execute(del_stmt)
             del_stmt = delete(Message).where(Message.chat_id == chat_id)
             await self.session.execute(del_stmt)
-            await self.session.commit()
+        await self.session.commit()
 
         return result.scalar()
 
@@ -220,6 +230,18 @@ class MessageDatabase(BaseDatabase):
         stmt = select(Message).where(Message.chat_id == chat_id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def get_by_user_chat_id(
+        self, user_id: UUID_ID, chat_id: UUID_ID
+    ) -> Sequence[Message]:
+        statement = (
+            select(Message, UserChat)
+            .join(UserChat, Message.chat_id == UserChat.chat_id)
+            .where(Message.chat_id == chat_id, UserChat.user_id == user_id)
+            .order_by(Message.created_at)
+        )
+        results = await self.session.execute(statement)
+        return results.scalars().all()
 
 
 engine = create_async_engine(DATABASE_URL)
@@ -286,3 +308,51 @@ async def get_access_token_db(
     session: AsyncSession = Depends(get_async_session),
 ):
     yield AccessTokenDatabase(session, AccessToken)
+
+
+async def get_ws_current_user(
+    websocket: WebSocket, db: AsyncSession = Depends(get_async_session)
+):
+    token = websocket.cookies.get("fastapiusersauth")
+    if token is None:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated"
+        )
+    access_token_result = await db.execute(select(AccessToken).filter(AccessToken.token == token))  # type: ignore
+    access_token = access_token_result.scalars().first()
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Invalid session token")
+    user_result = await db.execute(select(User).filter(User.id == access_token.user_id))  # type: ignore
+    user = user_result.unique().scalar_one()
+    if not user:
+        raise WebSocketException(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated"
+        )
+    return user
+
+
+async def get_chat_info(
+    user_id: UUID, chat_id: UUID, db: AsyncSession
+) -> Optional[Tuple[UserChat, Chat, User]]:
+    """
+    Returns
+    -------
+    UserChat
+        User chat information
+    Chat
+        Chat information
+    User
+        Receiver information
+    """
+    results = await db.execute(
+        select(UserChat, Chat, User)
+        .join(Chat, UserChat.chat_id == Chat.id)
+        .join(User, UserChat.receiver_id == User.id)
+        .where(UserChat.user_id == user_id, UserChat.chat_id == chat_id)
+    )
+    fetched = results.unique().fetchone()
+
+    if fetched is None:
+        return None
+
+    return fetched.tuple()

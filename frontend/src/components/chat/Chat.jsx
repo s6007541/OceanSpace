@@ -4,13 +4,10 @@ import { toast } from "react-toastify";
 import EmojiPicker from "emoji-picker-react";
 import { useChatStore } from "../../lib/chatStore";
 import { useUserStore } from "../../lib/userStore";
-import upload from "../../lib/upload";
-import { format } from "timeago.js";
 import { LLM_LIST } from "../../lib/llm_lists";
+import { useSocket } from "../../lib/socket";
 import { useNavigate } from "react-router-dom";
-
-// TODO import socket
-// TODO import backend_url
+import { BACKEND_URL } from "../../lib/config";
 
 
 const Chat = () => {
@@ -18,10 +15,6 @@ const Chat = () => {
   const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const [img, setImg] = useState({
-    file: null,
-    url: "",
-  });
   const [openFeedback, setOpenFeedback] = useState(-1);
   const [startWait, setStartWait] = useState(true);
   const [latestRead, setLatestRead] = useState(-3);
@@ -38,6 +31,7 @@ const Chat = () => {
     resetChat,
     setDetail,
   } = useChatStore();
+  const { socket } = useSocket();
 
   const chatRef = useRef();
   const socketHandledRef = useRef(false);
@@ -53,39 +47,199 @@ const Chat = () => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // useEffect(() => {
-  //   async function fetchMessages() {
-      
-  //   }
+  useEffect(() => {
+    async function fetchMessages() {
+      if (chatId === null) {
+        navigate("/ChatList", { replace: true });
+        return;
+      }
+      try {
+        const res = await fetch(`${BACKEND_URL}/messages/${chatId}`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error("Failed to fetch messages.");
+        }
+        const messages = await res.json();
+        chatRef.current = messages;
+        setChat([...chatRef.current]);
+      } catch (err) {
+        console.log(err);
+      }
+    }
 
-  //   fetchMessages();
-  // }, [chatData]);
+    fetchMessages();
+  }, [chatData]);
 
-  // TODO use effect socket
+  useEffect(() => {
+    if (!socket || socketHandledRef.current) {
+      return;
+    }
+    socketHandledRef.current = true;
+    socket.addEventListener("message", async (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "message") {
+        chatRef.current.push(data.data);
+        setChat([...chatRef.current]);
+        if (data.data.last_one === true){
+          setTextReady(true); // bubble stop
+          setLatestRead(chatRef.current.length);
+
+        }
+      } else if (data.type === "checkpoint") {
+        console.log("Topic of interest: ", data.data)
+      }
+    });
+  }, [socket]);
 
 
   const handleBack = async (e) => {
-    // TODO
-    navigate("/ChatList")
+    try {
+      const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to fetch user chats.");
+      }
+      const userChat = await res.json();
+      userChat.unreadMessages = 0;
+      await fetch(`${BACKEND_URL}/user-chats`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userChat),
+        credentials: "include",
+      });
+    } catch (err) {
+      console.log(err);
+    }
+
+    navigate("/ChatList");
     resetChat();
   };
 
   
   const handleOpenFeedback = (e, isOwn) => {
-    console.log(isOwn)
     if (!isOwn) {
       setOpenFeedback((old_id) => (old_id === e.target.id ? -1 : e.target.id));
-      console.log(openFeedback);
     }
-    
   };
 
   const handleFeedback = async (e) => {
-
+    try{
+      const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to fetch user chats.");
+      }
+      const userChat = await res.json();
+      if (e.target.id === "angry") {
+        userChat.blacklist.push(chatRef.current[openFeedback].text);
+      } else {
+        userChat.whitelist.push(chatRef.current[openFeedback].text);
+      }
+      await fetch(`${BACKEND_URL}/user-chats`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userChat),
+        credentials: "include",
+      });
+      setOpenFeedback(-1);
+      toast.success(`Feedback has been received! "${user.username}" will enhance the response according to your suggestions.`);
+    } catch (err){
+      console.log(err);
+    }
   };
 
   const handleSend = async () => {
-   
+    if (latestRead === -3) {
+      setLatestRead(chatRef.current.length);
+    }
+    
+    if (text === "") return;
+
+
+    try {
+      const message = {
+        chatId: chatId,
+        senderId: currentUser.id,
+        createdAt: Date.now(),
+        text: text,
+        buffer: true,
+      };
+      const message_packet = {
+        type: "message",
+        senderId: currentUser.id,
+        data: message,
+      };
+      socket.send(JSON.stringify(message_packet));
+      chatRef.current.push(message);
+      setChat([...chatRef.current]);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setText("");
+    }
+
+    if (LLM_LIST.includes(user.alias)) {
+      if (startWait === false){
+        return;
+      }
+
+      setStartWait(false);
+      console.log(latestRead)
+
+      setTimeout(()=>{
+        setTextReady(false); //bubble start
+        setLatestRead(-2);
+      }, 3000);
+
+      setTimeout(async () => {
+        setStartWait(true);
+
+        const message = {
+          chatId: chatId,
+          senderId: user.id,
+          createdAt: Date.now(),
+          text: "",
+          buffer: false,
+        }
+        const message_packet = {
+          type: "commit-messages",
+          senderId: user.id,
+          data: message,
+        };
+
+        try {
+          socket.send(JSON.stringify(message_packet));
+          // setTextReady(true); // bubble stop
+          // setLatestRead(chatRef.current.length);
+        } catch (err) {
+          console.log(err);
+        }
+
+        if (chatRef.current.length > checkpoint) {
+          setCheckpoint(chatRef.current.length + 20);
+          const message = {
+            chatId: chatId,
+            senderId: user.id,
+            createdAt: Date.now(),
+            text: "",
+            buffer: false,
+          }
+          const message_packet = {
+            type: "checkpoint",
+            senderId: user.id,
+            data: message,
+          }
+          socket.send(JSON.stringify(message_packet));
+        }
+      }, 6000);
+    }
   };
 
   const handleEmoji = (e) => {
