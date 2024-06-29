@@ -18,13 +18,13 @@
       display: flex;
       align-items: center;
       gap: 20px;
-      
+
       .goback {
-        width: 50px;
-        height: 50px;
-        margin-left : 5;
-        /* margin-top : 10px; */
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
       }
+      
 
       .userimg {
         width: 50px;
@@ -34,13 +34,18 @@
       }
 
       .texts {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
+        
 
         span {
-          font-size: 18px;
-          font-weight: bold;
+          color: #000;
+
+          text-align: center;
+          /* OceanSpace/H3-500 */
+          font-family: Mitr;
+          font-size: 20px;
+          font-style: normal;
+          font-weight: 500;
+          line-height: normal;
         }
 
         p {
@@ -48,6 +53,30 @@
           font-weight: 300;
           color: #a5a5a5;
         }
+      }
+    }
+    .button-select-emotion {
+      display: inline-flex;
+      padding: 4px 12px;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      border-radius: 4px;
+      background: #E2F0FF;
+      .button-text {
+        color: var(--OceanSpace-Brand-Primary, #0D7FE8);
+        text-align: center;
+        /* OceanSpace/Button-M-500 */
+        font-family: Mitr;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: normal;
+      }
+      .button-img {
+        width: 16px;
+        height: 16px;
+        transform: rotate(-90deg);
       }
     }
 
@@ -69,9 +98,99 @@
     overflow: auto;
     display: flex;
     flex-direction: column;
-    gap: 20px; 
+    gap: 20px;
+    
     /* background-color: aliceblue; */
+    .chat-greeting {
+      /* background-color: green; */
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-grow: 1;
+      /* gap : 150px; */
+      .img-topic {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap : 20px;
 
+        img {
+          width: 100px;
+          height: 100px;
+        }
+        .greeting-text-box {
+          display : flex;
+          flex-direction: column;
+          align-items: center;
+          .greeting-topic {
+            color: #FFF;
+  
+            /* OceanSpace/Body-400 */
+            font-family: Mitr;
+            font-size: 16px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: normal;
+          }
+          .greeting-text {
+            color: rgba(255, 255, 255, 0.80);
+  
+            /* OceanSpace/Caption-M-300 */
+            font-family: Mitr;
+            font-size: 14px;
+            font-style: normal;
+            font-weight: 300;
+            line-height: normal;
+          }
+        }
+      }
+      .select-emotion-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+
+        .select-emotion-instr {
+          color: #FFF;
+          width: 330px;
+          /* OceanSpace/Body-400 */
+          font-family: Mitr;
+          font-size: 16px;
+          font-style: normal;
+          font-weight: 400;
+          line-height: normal;
+        }
+        .select-emotion {
+          display: flex;
+          width: 330px;
+          padding: 12px;
+          justify-content: space-between;
+          align-items: flex-start;
+          border-radius: 12px;
+          border: 1px solid #FFF;
+          background: rgba(255, 255, 255, 0.20);
+
+          color: #FFF;
+
+          /* OceanSpace/Body-400 */
+          font-family: Mitr;
+          font-size: 16px;
+          font-style: normal;
+          font-weight: 400;
+          line-height: normal;
+        }
+      }
+      
+      
+    }
+    .select-emotion-box {
+      .select-emotion-instr {
+
+      }
+      .select-emotion {
+
+      }
+    }
     .message {
       align-self: flex-start;
       max-width: 70%;

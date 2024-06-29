@@ -9,9 +9,9 @@ import { useSocket } from "../../lib/socket";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_URL } from "../../lib/config";
 
-
 const Chat = () => {
   const navigate = useNavigate(); 
+  
   const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -20,6 +20,8 @@ const Chat = () => {
   const [latestRead, setLatestRead] = useState(-3);
   const [textReady, setTextReady] = useState(true);
   const [checkpoint, setCheckpoint] = useState(20);
+  const [emotionMode, setEmotionMode] = useState("");
+  const [choosing, setChoosing] = useState(false);
 
   const { currentUser } = useUserStore();
   const {
@@ -36,12 +38,6 @@ const Chat = () => {
   const chatRef = useRef();
   const socketHandledRef = useRef(false);
   const endRef = useRef(null);
-
-  const handleKeyDown = async (event) => {
-    if (event.key === 'Enter') {
-      await handleSend();
-    }
-  };
     
   // useEffect(() => {
   //   if (textReady === false) {
@@ -56,7 +52,8 @@ const Chat = () => {
   useEffect(() => {
     async function fetchMessages() {
       if (chatId === null) {
-        navigate("/ChatList", { replace: true });
+        
+        navigate("/ChatList", { replace: true , state : {socket_disconnect : true}});
         return;
       }
       try {
@@ -257,25 +254,42 @@ const Chat = () => {
     <div className="chat">
       <div className="top">
         <div className="user">
-          <img
-            className="goback"
-            src="./arrowLeft.png"
-            alt=""
-            onClick={handleBack}
-          />
-          <img
-            className="userimg"
-            src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : "./avatar.png"}
-            alt=""
-            onClick={setDetail}
-          />
+          <svg className="goback" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" onClick={handleBack}>
+            <path d="M12.7071 19.7071C12.3166 20.0976 11.6834 20.0976 11.2929 19.7071L4.29289 12.7071C3.90237 12.3166 3.90237 11.6834 4.29289 11.2929L11.2929 4.29289C11.6834 3.90237 12.3166 3.90237 12.7071 4.29289C13.0976 4.68342 13.0976 5.31658 12.7071 5.70711L7.41421 11L19 11C19.5523 11 20 11.4477 20 12C20 12.5523 19.5523 13 19 13L7.41421 13L12.7071 18.2929C13.0976 18.6834 13.0976 19.3166 12.7071 19.7071Z" fill="black"/>
+          </svg>
           <div className="texts">
             <span>{user?.username}</span>
           </div>
         </div>
-
+        <div className="button-select-emotion">
+          <div className="button-text">{emotionMode === "" ? "เลือก" : emotionMode}</div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="17" viewBox="0 0 16 17" fill="none">
+            <path d="M1.99305 5.41996C1.66638 5.74663 1.66638 6.27329 1.99305 6.59996L7.53305 12.14C7.79305 12.4 8.21305 12.4 8.47305 12.14L14.013 6.59996C14.3397 6.27329 14.3397 5.74663 14.013 5.41996C13.6864 5.09329 13.1597 5.09329 12.833 5.41996L7.99971 10.2466L3.16638 5.41329C2.84638 5.0933 2.31305 5.09329 1.99305 5.41996Z" fill="#0D7FE8"/>
+          </svg>
+        </div>
       </div>
+
+      
       <div className="center">
+        {chat?.length === 0 ? 
+        <div className="chat-greeting">
+          <div className="img-topic">
+            <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : "./avatar.png"}></img>
+            <div className="greeting-text-box">
+              <div className="greeting-topic">เพื่อนที่เข้าใจคุณ</div>
+              <div className="greeting-text">สนับสนุนและเข้าใจคุณไม่ว่าเมื่อไหร่</div>
+            </div>
+          </div>
+          <div className="select-emotion-box">
+            <div className="select-emotion-instr">เลือกวิธีการตอบที่คุณอยากฟัง:</div>
+            <div className="select-emotion" id="supporter" onClick={()=>{setEmotionMode("ให้กำลังใจ")}}>❤️ ให้กำลังใจคุณ</div>
+            <div className="select-emotion" id="listener" onClick={()=>{setEmotionMode("รับฟัง")}}>👂🏻รับฟังคุณ</div>
+            <div className="select-emotion" id="advicer" onClick={()=>{setEmotionMode("ให้คำแนะนำ")}}>👍🏻 ให้ทางออกและคำแนะนำ</div>
+          </div>
+        </div>
+        :
+        <></>
+        }
         {chat?.map((message, index) => (
           <div
             className={
@@ -315,6 +329,7 @@ const Chat = () => {
           </div>
         ))}
 
+
         {textReady ? <></> : 
         <div class="half light">
           <div class="typing">
@@ -328,6 +343,10 @@ const Chat = () => {
         <div ref={endRef}></div>
         {/* <div ref={this.messagesEndRef} /> */}
       </div>
+
+      {choosing ? 
+      <div class="half"></div>
+      :
       <div className="bottom">
         <input
           type="text"
@@ -338,7 +357,6 @@ const Chat = () => {
           }
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
           disabled={isCurrentUserBlocked || isReceiverBlocked}
         />
         <div className="emoji">
@@ -359,6 +377,7 @@ const Chat = () => {
         />
 
       </div>
+      }
     </div>
   );
 };

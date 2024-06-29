@@ -17,7 +17,7 @@ const ChatList = ({ setAddMode }) => {
     console.log(chat_alias_list);
     navigate("/AddFriend", { state: chat_alias_list });
   };
-
+  
   const [chats, setChats] = useState([]);
   const [input, setInput] = useState("");
   const [ready, setReady] = useState(false);
