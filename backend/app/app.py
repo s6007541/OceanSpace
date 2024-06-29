@@ -67,7 +67,6 @@ origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     f"http://{get_local_ip_address()}:5173",
-    "https://ocean-space.onrender.com",
 ]
 
 app = FastAPI(lifespan=lifespan)

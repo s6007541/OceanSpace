@@ -27,4 +27,4 @@ RUN npm install --force
 RUN npm run build
 
 # Serve the 'build' directory on port 5173 using 'serve'
-CMD ["serve", "-s", "-l", "5173", "./dist"]
+CMD ["serve", "-s", "-l", "5173", "./build"]
