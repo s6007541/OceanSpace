@@ -29,7 +29,10 @@ const App = () => {
   useEffect(() => {
     async function initialize() {
       if (currentUser === null || currentUser.id === null) {
-        await fetchCurrentUserInfo();
+        try {
+          await fetchCurrentUserInfo();
+        } catch {}
+        return;
       }
 
       if (!socketConnected) {
@@ -56,6 +59,16 @@ const App = () => {
         <Routes>
 
             <Route path="/" element={
+              <div className="container">
+                {currentUser ? (
+                  <Home />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
+            <Route path="/Home" element={
               <div className="container">
                 {currentUser ? (
                   <Home />
