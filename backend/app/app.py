@@ -363,7 +363,7 @@ async def predict_pss(
 # Web socket handlers
 
 
-@app.websocket("/wss")
+@app.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
     user: User = Depends(get_ws_current_user),
