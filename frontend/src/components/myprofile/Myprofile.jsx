@@ -60,7 +60,7 @@ const Myprofile = ( ) => {
       <img className="goback" src="./cross.svg" onClick={goback}/>
       <div className="header_text">หน้าของฉัน</div>
       <div className="profile_pic_wrapper">
-        <img className="profile_pic" src={`./userprofile_default.svg`}/> 
+        <img className="profile_pic" src={`${BACKEND_URL}/profile-image/${currentUser.id}`}/> 
         <div className="profile-edit">แก้ไข</div>
         {/* <div className="profile_name">{currentUser.username}</div> */}
       </div>

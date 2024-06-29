@@ -56,7 +56,9 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         String(), unique=True, default=None, nullable=True
     )
     alias: Mapped[Optional[str]] = mapped_column(String(), default=None, nullable=True)
-    avatar: Mapped[Optional[str]] = mapped_column(String(), default=None, nullable=True)
+    avatar: Mapped[Optional[str]] = mapped_column(
+        String(), default="./user_images/userprofile_default.svg", nullable=True
+    )
     pss_list: Mapped[List[str]] = mapped_column(
         ScalarListType(str), default=[], nullable=False
     )

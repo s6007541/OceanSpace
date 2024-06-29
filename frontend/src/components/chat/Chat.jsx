@@ -259,7 +259,7 @@ const Chat = () => {
           />
           <img
             className="userimg"
-            src="./avatar.png"
+            src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : "./avatar.png"}
             alt=""
             onClick={setDetail}
           />
