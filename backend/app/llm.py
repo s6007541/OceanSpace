@@ -47,7 +47,7 @@ class LLMCLient:
         return message_list
 
     def _get_system_prompt(self, llm_name: str, user_chat: UserChat) -> str:
-        with open("prompt_template.txt") as f:
+        with open("./prompt_templates/prompt_template.txt") as f:
             prompt = f.read()
         prompt += (
             "\n"

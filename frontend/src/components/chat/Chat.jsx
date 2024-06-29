@@ -38,6 +38,12 @@ const Chat = () => {
   const chatRef = useRef();
   const socketHandledRef = useRef(false);
   const endRef = useRef(null);
+
+  const handleKeyDown = async (event) => {
+    if (event.key === 'Enter') {
+      await handleSend();
+    }
+  };
     
   // useEffect(() => {
   //   if (textReady === false) {
@@ -356,6 +362,7 @@ const Chat = () => {
               : "Type a message..."
           }
           value={text}
+          onKeyDown={handleKeyDown}
           onChange={(e) => setText(e.target.value)}
           disabled={isCurrentUserBlocked || isReceiverBlocked}
         />
