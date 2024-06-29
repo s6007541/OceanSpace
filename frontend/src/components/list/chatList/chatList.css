@@ -3,6 +3,7 @@
   display : flex;
   justify-content : center;
   background: #F4FCFF;
+  /* background : green; */
   /* width : 50vw; */
   /* height :100vh; */
   .outer_chatlist {
