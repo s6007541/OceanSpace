@@ -36,7 +36,7 @@ const App = () => {
       }
 
       if (!socketConnected) {
-        socketConnect(WEBSOCKET_URL + "/ws");
+        socketConnect(WEBSOCKET_URL + "/wss");
       }
     }
     initialize();
