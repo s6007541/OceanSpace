@@ -154,7 +154,7 @@ class LLMCLient:
         old_messages, new_messages = self._split_message_list(message_list)
         augmented_message = {
             "role": "system",
-            "content": self._get_augmented_prompt(emotionMode),
+            "content": self._get_augmented_prompt(),
         }
         input_messages = (
             [system_message]
