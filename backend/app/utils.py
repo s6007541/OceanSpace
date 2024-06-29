@@ -1,4 +1,8 @@
+import json
 import socket
+from pathlib import Path
+from typing import Any, Dict
+
 from starlette.config import Config
 
 
@@ -14,3 +18,6 @@ frontend_url = f"http://localhost:5173"
 backend_url = f"http://localhost:8000"
 
 ENV = Config(".env")
+
+with open(Path(__file__).parent.parent.parent / "llm_config.json") as f:
+    LLM_CONFIG: Dict[str, Any] = json.load(f)

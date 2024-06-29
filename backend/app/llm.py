@@ -2,6 +2,7 @@ import asyncio
 import json
 from abc import abstractmethod
 from typing import Any, Dict, List, Tuple
+from pathlib import Path
 
 import requests  # type: ignore
 from openai import OpenAI
@@ -9,6 +10,9 @@ from openai import OpenAI
 from .db import Message, User, UserChat
 from .schemas import PSSQuestionModel
 from .utils import ENV
+
+
+PROMPT_TEMPLATE_DIR = Path("./prompt_templates")
 
 
 class LLMCLient:
@@ -24,15 +28,19 @@ class LLMCLient:
         raise NotImplementedError
 
     def _post_process(self, text: str) -> List[str]:
-        return (
-            text.rstrip(".")
-            .replace(", ", " ")
-            .replace(". ", " ")
-            .replace(":", "")
-            .replace("ครับ", "")
-            .replace(" ๆ", "ๆ")
-            .split(" ")
-        )
+        return [
+            sent.replace("ๆ", " ๆ ")
+            for sent in (
+                text.rstrip(".")
+                .replace(", ", " ")
+                .replace(". ", " ")
+                .replace(":", "")
+                .replace("ครับ", "")
+                .replace(" ๆ", "ๆ")
+                .replace("ๆ ", "ๆ")
+                .split(" ")
+            )
+        ]
 
     def _prepare_messages(
         self, user: User, messages: List[Message]
@@ -47,7 +55,10 @@ class LLMCLient:
         return message_list
 
     def _get_system_prompt(self, llm_name: str, user_chat: UserChat) -> str:
-        with open("./prompt_templates/prompt_template.txt") as f:
+        prompt_template_file = PROMPT_TEMPLATE_DIR / (
+            "blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt"
+        )
+        with open(prompt_template_file) as f:
             prompt = f.read()
         prompt += (
             "\n"
@@ -102,7 +113,7 @@ class LLMCLient:
         )
 
     def _get_augmented_prompt(self) -> str:
-        return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ"
+        return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ และที่สำคัญ พยายามอย่าพูดซ้ำ"
 
     def _split_message_list(
         self, message_list: List[Dict[str, Any]]
@@ -138,6 +149,7 @@ class LLMCLient:
             input_messages, temperature=1, max_tokens=1000
         )
         sentences = self._post_process(generated_text)
+        print(sentences)
         return sentences
 
     async def predict_topics(

@@ -69,9 +69,6 @@ origins = [
     f"http://{get_local_ip_address()}:5173",
 ]
 
-with open(Path(__file__).parent.parent.parent / "llm_config.json") as f:
-    LLM_CONFIG: Dict[str, Any] = json.load(f)
-
 app = FastAPI(lifespan=lifespan)
 connection_manager = ConnectionManager()
 llm_client = SambaLLMClient()
