@@ -126,6 +126,7 @@ async def get_current_user_info(user: User = Depends(current_active_user)) -> Us
         avatar=user.avatar,
         pssList=user.pss_list,
         notification=user.notification,
+        emergencyContact=user.emergency_contact,
     )
 
 
@@ -142,7 +143,6 @@ async def get_user_info_by_id(
         username=fetched_user.username,
         alias=fetched_user.alias,
         avatar=fetched_user.avatar,
-        notification=fetched_user.notification,
     )
 
 
@@ -159,7 +159,6 @@ async def get_user_info_by_name(
         username=fetched_user.username,
         alias=fetched_user.alias,
         avatar=fetched_user.avatar,
-        notification=fetched_user.notification,
     )
 
 
@@ -173,6 +172,8 @@ async def update_user_info(
         user.pss_list = user.pss_list + [body["pss"]]
     if "notification" in body:
         user.notification = body["notification"]
+    if "emergencyContact" in body:
+        user.emergency_contact = body["emergencyContact"]
     user_db.session.add(user)
     await user_db.session.commit()
     await user_db.session.refresh(user)
@@ -184,6 +185,7 @@ async def update_user_info(
         avatar=user.avatar,
         pssList=user.pss_list,
         notification=user.notification,
+        emergencyContact=user.emergency_contact,
     )
 
 

@@ -15,10 +15,10 @@ const Myprofile = ( ) => {
   }
 
   const [user, setUser] = useState(null);
-  const [text, setText] = useState(null);
 
   const { currentUser, updateCurrentUserInfo } = useUserStore();
   const [notiOpen, setNotiOpen] = useState(currentUser.notification);
+  const [text, setText] = useState(currentUser.emergencyContact ?? "");
   
   const handleLogout = async () => {
     try {
@@ -38,6 +38,7 @@ const Myprofile = ( ) => {
 
   useEffect(() => {
     setNotiOpen(currentUser.notification);
+    setText(currentUser.emergencyContact ?? "");
   }, [currentUser]);
 
   const toggleNoti = async () => {
@@ -46,6 +47,13 @@ const Myprofile = ( ) => {
       await updateCurrentUserInfo({ notification: newNotiOpen });
     }
   };
+
+  const changeEmergencyContact = async (e) => {
+    const newContact = e.target.value;
+    if (currentUser.emergencyContact !== newContact) {
+      await updateCurrentUserInfo({ emergencyContact: newContact });
+    }
+  }
 
   return (
     <div className="myProfile">
@@ -88,7 +96,7 @@ const Myprofile = ( ) => {
               type="text"
               placeholder="เบอร์โทรศัพท์"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={changeEmergencyContact}
             />
           </div>
           <div className="setting-button">

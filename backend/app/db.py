@@ -62,6 +62,9 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     )
     is_bot: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
     notification: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
+    emergency_contact: Mapped[Optional[str]] = mapped_column(
+        String(), default=None, nullable=True
+    )
 
 
 class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
