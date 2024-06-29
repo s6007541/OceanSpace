@@ -21,6 +21,7 @@ const Chat = () => {
   const [textReady, setTextReady] = useState(true);
   const [checkpoint, setCheckpoint] = useState(20);
   const [emotionMode, setEmotionMode] = useState("");
+  const [numUnreadMessage, setNumUnreadMessage] = useState(0);
   const [choosing, setChoosing] = useState(false);
 
   const { currentUser } = useUserStore();
@@ -53,7 +54,7 @@ const Chat = () => {
     async function fetchMessages() {
       if (chatId === null) {
         
-        navigate("/ChatList", { replace: true , state : {socket_disconnect : true}});
+        navigate("/ChatList", { replace: true });
         return;
       }
       try {
@@ -210,6 +211,7 @@ const Chat = () => {
           createdAt: Date.now(),
           text: "",
           buffer: false,
+          topic : emotionMode,
         }
         const message_packet = {
           type: "commit-messages",
@@ -250,6 +252,11 @@ const Chat = () => {
     setOpen(false);
   };
 
+  const handleSelectEmotion = (e) => {
+    setChoosing(!choosing)
+    console.log(choosing)
+  };
+
   return (
     <div className="chat">
       <div className="top">
@@ -261,8 +268,8 @@ const Chat = () => {
             <span>{user?.username}</span>
           </div>
         </div>
-        <div className="button-select-emotion">
-          <div className="button-text">{emotionMode === "" ? "เลือก" : emotionMode}</div>
+        <div className="button-select-emotion" onClick={handleSelectEmotion}>
+          <div className="button-text" >{emotionMode === "" ? "เลือก" : emotionMode}</div>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="17" viewBox="0 0 16 17" fill="none">
             <path d="M1.99305 5.41996C1.66638 5.74663 1.66638 6.27329 1.99305 6.59996L7.53305 12.14C7.79305 12.4 8.21305 12.4 8.47305 12.14L14.013 6.59996C14.3397 6.27329 14.3397 5.74663 14.013 5.41996C13.6864 5.09329 13.1597 5.09329 12.833 5.41996L7.99971 10.2466L3.16638 5.41329C2.84638 5.0933 2.31305 5.09329 1.99305 5.41996Z" fill="#0D7FE8"/>
           </svg>
@@ -345,7 +352,64 @@ const Chat = () => {
       </div>
 
       {choosing ? 
-      <div class="half"></div>
+      <div className="bottom-emotion-bar">
+        <div className="bottom-emotion-top-bar">เลือกวิธีการตอบที่คุณอยากฟัง:</div>
+        <div className="bottom-emotion-select-list">
+          <div className="bottom-emotion-select" onClick={()=>{
+            setEmotionMode("ให้กำลังใจ")
+            setChoosing(false)}}>
+            <div className="first-bottom-emotion">❤️ ให้กำลังใจคุณ</div>
+            {emotionMode === "ให้กำลังใจ" ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <g clip-path="url(#clip0_672_4921)">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#0D7FE8"/>
+              </g>
+              <defs>
+              <clipPath id="clip0_672_4921">
+              <rect width="24" height="24" fill="white"/>
+              </clipPath>
+              </defs>
+            </svg>
+            :
+            <></>}
+            
+          </div>
+          <div className="bottom-emotion-select" onClick={()=>{
+            setEmotionMode("รับฟัง")
+            setChoosing(false)}}>
+            <div className="first-bottom-emotion">👂🏻 รับฟังคุณ</div>
+            {emotionMode === "รับฟัง" ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <g clip-path="url(#clip0_672_4921)">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#0D7FE8"/>
+              </g>
+              <defs>
+              <clipPath id="clip0_672_4921">
+              <rect width="24" height="24" fill="white"/>
+              </clipPath>
+              </defs>
+            </svg>
+            :
+            <></>}
+            
+          </div>
+          <div className="bottom-emotion-select" onClick={()=>{
+            setEmotionMode("ให้คำแนะนำ")
+            setChoosing(false)}}>
+            <div className="first-bottom-emotion">👍🏻 ให้ทางออกและคำแนะนำ</div>
+            {emotionMode === "ให้คำแนะนำ" ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <g clip-path="url(#clip0_672_4921)">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#0D7FE8"/>
+              </g>
+              <defs>
+              <clipPath id="clip0_672_4921">
+              <rect width="24" height="24" fill="white"/>
+              </clipPath>
+              </defs>
+            </svg>
+            :
+            <></>}
+          </div>
+        </div>
+      </div>
       :
       <div className="bottom">
         <input
