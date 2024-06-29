@@ -42,7 +42,7 @@ from .db import (
     get_user_chat_db,
     get_ws_current_user,
 )
-from .llm import LLMClient
+from .llm import SambaLLMClient
 from .schemas import (
     MessageModel,
     PSSQuestionModel,
@@ -74,7 +74,7 @@ with open(Path(__file__).parent.parent.parent / "llm_config.json") as f:
 
 app = FastAPI(lifespan=lifespan)
 connection_manager = ConnectionManager()
-llm_client = LLMClient()
+llm_client = SambaLLMClient()
 
 app.add_middleware(
     CORSMiddleware,
@@ -419,7 +419,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
             llm_name = receiver.username
             assert llm_name is not None
             messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id)
-            sentences = llm_client.generate_reply(
+            sentences = await llm_client.generate_reply(
                 llm_name, user, user_chat, list(messages)
             )
 
@@ -496,7 +496,7 @@ async def send_current_messages_to_llm(
     llm_name = llm_user.username
     assert llm_name is not None
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
-    sentences = llm_client.generate_reply(llm_name, user, user_chat, messages)
+    sentences = await llm_client.generate_reply(llm_name, user, user_chat, messages)
 
     # Send sentence one by one
     for sentence_i, sentence in enumerate(sentences):
@@ -545,7 +545,7 @@ async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSessio
     chat_id = UUID(message_model.chatId)
     messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat_id)
 
-    topics = llm_client.predict_topics(user, list(messages), topic_list, n_messages)
+    topics = await llm_client.predict_topics(user, list(messages), topic_list, n_messages)
 
     user_chat = await UserChatDatabase(db).get(user.id, chat_id)
     if user_chat is None:

@@ -1,12 +1,17 @@
+import asyncio
+import json
+from abc import abstractmethod
 from typing import Any, Dict, List
 
+import requests # type: ignore
 from openai import OpenAI
 
 from .db import Message, User, UserChat
 from .schemas import PSSQuestionModel
+from .utils import ENV
 
 
-class LLMClient:
+class LLMCLient:
     DEFAULT_GENERATION_KWARGS = {
         "model": "typhoon-instruct",
         "max_tokens": 1000,
@@ -14,11 +19,9 @@ class LLMClient:
         "top_p": 1,
     }
 
-    def __init__(self):
-        self.client = OpenAI(
-            api_key="sk-GB3lSeMqAzC67gV1crxzcztxMeYatyvWa93VCnpAa7ETkOsG",
-            base_url="https://api.opentyphoon.ai/v1",
-        )
+    @abstractmethod
+    async def generate_text(self, messages: Any, **kwargs) -> str:
+        raise NotImplementedError
 
     def _post_process(self, text: str) -> List[str]:
         return (
@@ -43,10 +46,10 @@ class LLMClient:
         ]
         return message_list
 
-    def generate_reply(
+    async def generate_reply(
         self, llm_name: str, user: User, user_chat: UserChat, messages: List[Message]
     ) -> List[str]:
-        generated_text = self.generate_text(
+        generated_text = await self.generate_text(
             [
                 {
                     "role": "system",
@@ -76,14 +79,14 @@ class LLMClient:
         sentences = self._post_process(generated_text)
         return sentences
 
-    def predict_topics(
+    async def predict_topics(
         self,
         user: User,
         messages: List[Message],
         topic_list: List[str],
         n_messages: int,
     ) -> List[str]:
-        generated_text = self.generate_text(
+        generated_text = await self.generate_text(
             messages=[
                 {
                     "role": "system",
@@ -108,8 +111,8 @@ class LLMClient:
         topics = [topic for topic in topic_list if topic in generated_text]
         return topics
 
-    def predict_pss(self, pss_question: PSSQuestionModel) -> float:
-        generated_text = self.generate_text(
+    async def predict_pss(self, pss_question: PSSQuestionModel) -> float:
+        generated_text = await self.generate_text(
             messages=[
                 # {
                 #     "role": "system",
@@ -136,9 +139,54 @@ class LLMClient:
 
         return score
 
-    def generate_text(self, messages: Any, **kwargs) -> str:
+
+class TyphoonLLMClient(LLMCLient):
+    def __init__(self):
+        self.client = OpenAI(
+            api_key=ENV.get("TYPHOON_API_KEY"), base_url="https://api.opentyphoon.ai/v1"
+        )
+
+    async def generate_text(self, messages: Any, **kwargs) -> str:
         stream = self.client.chat.completions.create(
             messages=messages, **(self.DEFAULT_GENERATION_KWARGS | kwargs)
         )
         generated_text = stream.choices[0].message.content
         return generated_text
+
+
+class SambaLLMClient(LLMCLient):
+    ENDPOINT = "https://kjddazcq2e2wzvzv.snova.ai/api/v1/chat/completion"
+    DEFAULT_GENERATION_KWARGS = {
+        "model": "llama3-70b-typhoon",
+        "max_tokens": 1000,
+        "temperature": 0.6,
+        "stop": ["<|eot_id|>", "<|end_of_text|>"],
+    }
+
+    def __init__(self):
+        self.api_key = ENV.get("SAMBA_API_KEY")
+
+    def _get_payload(self, message_list: List[Dict[str, Any]], kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        return self.DEFAULT_GENERATION_KWARGS | kwargs | {"inputs": message_list}
+
+    async def _request(self, messages: List[Dict[str, Any]], kwargs: Dict[str, Any]) -> str:
+        headers = {
+            "Authorization": f"Basic {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload = self._get_payload(messages, kwargs)
+        response = await asyncio.to_thread(
+            requests.post, self.ENDPOINT, headers=headers, data=json.dumps(payload)
+        )
+
+        if response.status_code == 200:
+            response_content = (
+                response.content.decode().split("\n\n")[-2].split("data: ")[-1]
+            )
+            return json.loads(response_content)["completion"]
+        
+        raise Exception("Request failed with status code {response.status_code}")
+
+    async def generate_text(self, messages: Any, **kwargs) -> str:
+        return await self._request(messages, kwargs)
