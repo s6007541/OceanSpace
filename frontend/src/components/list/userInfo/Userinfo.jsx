@@ -11,8 +11,8 @@ const Userinfo = () => {
       {/* <div className="user"> */}
       {/* <img src={`${BACKEND_URL}/profile-image` || "./avatar.png"} alt="" /> */}
       {/* <h2>{currentUser.username}</h2> */}
-      <img src={"./avatar.png"} alt="" />
-      <img src={`${BACKEND_URL}/profile-image/${currentUser.id}`} alt="" onClick={()=>{navigate('/myprofile', { replace: true })}}/>
+      <img className="logo" src={"./OceanSpaceLogo.svg"} alt="" />
+      <img className="user_profile "src={`${BACKEND_URL}/profile-image/${currentUser.id}`} alt="" onClick={()=>{navigate('/myprofile', { replace: true })}}/>
         
       {/* </div> */}
       {/* <div className="icons">
