@@ -49,6 +49,7 @@ class MessageModel(BaseModel):
     createdAt: int
     text: str
     buffer: bool
+    emotionMode: str
 
 
 class PSSQuestionModel(BaseModel):

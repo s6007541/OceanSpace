@@ -54,10 +54,28 @@ class LLMCLient:
         ]
         return message_list
 
-    def _get_system_prompt(self, llm_name: str, user_chat: UserChat) -> str:
-        prompt_template_file = PROMPT_TEMPLATE_DIR / (
-            "blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt"
-        )
+    def _get_system_prompt(self, llm_name: str, user_chat: UserChat, emotionMode: str = "") -> str:
+        
+        
+        
+        if emotionMode == "":
+            prompt_template_file = PROMPT_TEMPLATE_DIR / ("blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt")
+            
+        elif emotionMode == "รับฟัง":
+            print("emotionMode", emotionMode)
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+
+        elif emotionMode == "ให้กำลังใจ":
+            print("emotionMode", emotionMode)
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+
+        elif emotionMode == "ให้คำแนะนำ":
+            print("emotionMode", emotionMode)
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+
+        else:
+            prompt_template_file = PROMPT_TEMPLATE_DIR / ("blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt")
+
         with open(prompt_template_file) as f:
             prompt = f.read()
         prompt += (
@@ -126,17 +144,17 @@ class LLMCLient:
         return message_list, []
 
     async def generate_reply(
-        self, llm_name: str, user: User, user_chat: UserChat, messages: List[Message]
+        self, llm_name: str, user: User, user_chat: UserChat, messages: List[Message], emotionMode: str="",
     ) -> List[str]:
         system_message = {
             "role": "system",
-            "content": self._get_system_prompt(llm_name, user_chat),
+            "content": self._get_system_prompt(llm_name, user_chat, emotionMode),
         }
         message_list = self._prepare_messages(user, messages)
         old_messages, new_messages = self._split_message_list(message_list)
         augmented_message = {
             "role": "system",
-            "content": self._get_augmented_prompt(),
+            "content": self._get_augmented_prompt(emotionMode),
         }
         input_messages = (
             [system_message]
