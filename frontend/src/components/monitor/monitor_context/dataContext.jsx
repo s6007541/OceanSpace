@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import { useUserStore } from "../../../lib/userStore";
+import { BACKEND_URL } from "../../../lib/config";
 
 const DataContext = createContext({});
 
@@ -22,7 +23,7 @@ export const DataProvider = ({children}) => {
 
   const [topicOfInterest, setTopicOfInterest] = useState(["original"]);
 
-  const { currentUser } = useUserStore();
+  const { updateCurrentUserInfo } = useUserStore();
 
   function choose(choices) {
     var index = Math.floor(Math.random() * choices.length);
@@ -102,7 +103,6 @@ export const DataProvider = ({children}) => {
 
   // Next Quesion
   const nextQuestion = async (text) => {
-    // to do, save text + selectedAnswer
     console.log(text)
     console.log(selectedAnswer)
 
@@ -114,6 +114,26 @@ export const DataProvider = ({children}) => {
     var score
     if (selectedAnswer === "") {
       // get pss score from llm
+      try {
+        const res = await fetch(`${BACKEND_URL}/pss`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: questionText,
+            answer: text
+          }),
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error("Failed to get pss score");
+        }
+        const data = await res.json();
+        score = data.pss;
+      } catch (err) {
+        console.log(err)
+      }
     } else {
       score = selectedAnswer;
     }
@@ -149,7 +169,27 @@ export const DataProvider = ({children}) => {
 
     var score;
     if (selectedAnswer === ""){
-      // get pss score from llm 
+      // get pss score from llm
+      try {
+        const res = await fetch(`${BACKEND_URL}/pss`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            question: questionText,
+            answer: text
+          }),
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error("Failed to get pss score");
+        }
+        const data = await res.json();
+        score = data.pss;
+      } catch (err) {
+        console.log(err)
+      }
     }
     else{
       score = selectedAnswer
@@ -167,7 +207,7 @@ export const DataProvider = ({children}) => {
     const final_score = marks + score;
 
     // save final score
-   
+    await updateCurrentUserInfo({ pss: final_score });
   }
 
   // Start Over

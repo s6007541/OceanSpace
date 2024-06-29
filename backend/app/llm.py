@@ -108,7 +108,7 @@ class LLMClient:
         topics = [topic for topic in topic_list if topic in generated_text]
         return topics
 
-    def predict_pss_score(self, pss_question: PSSQuestionModel) -> float:
+    def predict_pss(self, pss_question: PSSQuestionModel) -> float:
         generated_text = self.generate_text(
             messages=[
                 # {

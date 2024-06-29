@@ -45,6 +45,7 @@ from .db import (
 from .llm import LLMClient
 from .schemas import (
     MessageModel,
+    PSSQuestionModel,
     UserChatModel,
     UserCreate,
     UserModel,
@@ -169,7 +170,7 @@ async def update_user_info(
     user_db: UserDatabase = Depends(get_user_db),
 ):
     if "pss" in body:
-        user.pss_list.append(body["pss"])
+        user.pss_list = user.pss_list + [body["pss"]]
     if "notification" in body:
         user.notification = body["notification"]
     user_db.session.add(user)
@@ -346,6 +347,16 @@ async def get_messages(
         )
         for message in messages
     ]
+
+
+@app.post("/pss")
+async def predict_pss(
+    pss_question: PSSQuestionModel, user: User = Depends(current_active_user)
+):
+    print(pss_question.question)
+    print(pss_question.answer)
+    score = llm_client.predict_pss(pss_question)
+    return {"pss": score}
 
 
 # Web socket handlers
