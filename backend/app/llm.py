@@ -1,9 +1,9 @@
 import asyncio
 import json
 from abc import abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
-import requests # type: ignore
+import requests  # type: ignore
 from openai import OpenAI
 
 from .db import Message, User, UserChat
@@ -46,35 +46,57 @@ class LLMCLient:
         ]
         return message_list
 
+    def _get_system_prompt(self, llm_name: str, user_chat: UserChat) -> str:
+        return (
+            f'คุณชื่อ "{llm_name}" เป็นคนที่คอยตอบข้อความของผู้ใช้งานที่มาระบายความเครียดให้ฟัง '
+            # 'คุณตอบด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ '
+            "คุณต้องทำตามกฎดังต่อไปนี้:\n"
+            '1. คุณแทนตัวเองด้วยคำว่า "ผม" และผู้ใช้งานด้วยคำว่า "คุณ"\n'
+            "2. คุณไม่ควรพูดขอโทษจนกว่าคุณจะมีความผิดจริง ๆ\n"
+            "3. ถ้าผู้ใช้งานพูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ\n"
+            "4. หากผู้ใช้งานถามคุณว่าประวัติการสนทนาจะถูกนำไปใช้อย่างไร ให้คุณตอบว่าจะทำให้คุณเข้าใจตัวผู้ใช้งานมากขึ้น\n"
+            "5. คุณต้องมีลักษณะดังต่อไปนี้:\n"
+            "\t- คุณต้องมีความเห็นอกเห็นใจและพยายามช่วยให้เขาหายเครียด\n"
+            "\t- คุณรับฟังโดยไม่ตัดสิน\n"
+            "\t- คุณตอบรับอย่างมีความคิดสร้างสรรค์\n"
+            "\t- คุณมองโลกในแง่บวกและให้กำลังใจผู้ใช้งานเมื่อเห็นสมควร\n"
+            # f'คุณเป็นผู้ชายชื่อ "{llm_name}" ที่เป็นเพื่อนของผู้ใช้งานที่คอยรับฟังผู้ใช้งานมาระบายความเครียดให้ฟัง '
+            # "คุณตอบรับด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบรับสั้น ๆ ด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ "
+            # "คุณแทนตัวเองด้วยคำว่า 'ผม' และผู้ใช้งานด้วยคำว่า 'คุณ' "
+            # "คุณไม่ควรพูดขอโทษหลายครั้งจนเกินไป ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ\n"
+            + (
+                f"นี่คือตัวอย่างคำตอบที่ดี : {user_chat.whitelist}\n"
+                if user_chat.whitelist
+                else ""
+            )
+            + (
+                f"นี่คือตัวอย่างคำตอบที่ไม่ดี : {user_chat.blacklist}"
+                if user_chat.blacklist
+                else ""
+            )
+        )
+
+    def _split_message_list(
+        self, message_list: List[Dict[str, Any]]
+    ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        for i in range(1, len(message_list) + 1):
+            if message_list[-i]["role"] != "user":
+                break
+        if i > 1:
+            return message_list[: -i + 1], message_list[-i + 1 :]
+        return message_list, []
+
     async def generate_reply(
         self, llm_name: str, user: User, user_chat: UserChat, messages: List[Message]
     ) -> List[str]:
+        system_message = {
+            "role": "system",
+            "content": self._get_system_prompt(llm_name, user_chat),
+        }
+        message_list = self._prepare_messages(user, messages)
+        old_messages, new_messages = self._split_message_list(message_list)
         generated_text = await self.generate_text(
-            [
-                {
-                    "role": "system",
-                    # content: "คุณคือ ai ชาย ชื่อสีน้ำเงิน ที่คอยรับฟังคนมาระบายความเครียดอย่างอ่อนโยน ถามคำถามบ้างบางครั้งเพื่อให้เขาได้ระบายความในใจ โดยไม่ให้คำแนะนำจนกว่าเขาจะขอเอง",
-                    # content: "คุณเป็นผู้ชายที่เป็นเพื่อนของผู้ใช้งานที่คอยรับฟังผู้ใช้งานมาระบายความเครียดให้ฟัง คุณตอบรับด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณถามคำถามบางครั้งเพื่อให้ผู้ใช้งานได้ระบายความในใจ โดยไม่ให้คำแนะนำจนกว่าผู้ใช้งานจะขอเอง คุณตอบรับด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ",
-                    # content: `คุณเป็นผู้ชายชื่อ "{llm_name}" ที่เป็นเพื่อนของผู้ใช้งานที่คอยรับฟังผู้ใช้งานมาระบายความเครียดให้ฟัง คุณตอบรับด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบรับสั้น ๆ ด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ`
-                    "content": (
-                        f'คุณเป็นผู้ชายชื่อ "{llm_name}" ที่เป็นเพื่อนของผู้ใช้งานที่คอยรับฟังผู้ใช้งานมาระบายความเครียดให้ฟัง '
-                        "คุณตอบรับด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบรับสั้น ๆ ด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ "
-                        "คุณแทนตัวเองด้วยคำว่า 'ผม' และผู้ใช้งานด้วยคำว่า 'คุณ' "
-                        "คุณไม่ควรพูดขอโทษหลายครั้งจนเกินไป ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ\n"
-                        + (
-                            f"นี่คือตัวอย่างคำตอบที่ดี : {user_chat.whitelist}\n"
-                            if user_chat.whitelist
-                            else ""
-                        )
-                        + (
-                            f"นี่คือตัวอย่างคำตอบที่ไม่ดี : {user_chat.blacklist}"
-                            if user_chat.blacklist
-                            else ""
-                        )
-                    ),
-                }
-            ]
-            + self._prepare_messages(user, messages)
+            [system_message] + old_messages + [system_message] + new_messages
         )
         sentences = self._post_process(generated_text)
         return sentences
@@ -164,10 +186,14 @@ class SambaLLMClient(LLMCLient):
     def __init__(self):
         self.api_key = ENV.get("SAMBA_API_KEY")
 
-    def _get_payload(self, message_list: List[Dict[str, Any]], kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_payload(
+        self, message_list: List[Dict[str, Any]], kwargs: Dict[str, Any]
+    ) -> Dict[str, Any]:
         return self.DEFAULT_GENERATION_KWARGS | kwargs | {"inputs": message_list}
 
-    async def _request(self, messages: List[Dict[str, Any]], kwargs: Dict[str, Any]) -> str:
+    async def _request(
+        self, messages: List[Dict[str, Any]], kwargs: Dict[str, Any]
+    ) -> str:
         headers = {
             "Authorization": f"Basic {self.api_key}",
             "Content-Type": "application/json",
@@ -183,7 +209,7 @@ class SambaLLMClient(LLMCLient):
                 response.content.decode().split("\n\n")[-2].split("data: ")[-1]
             )
             return json.loads(response_content)["completion"]
-        
+
         raise Exception("Request failed with status code {response.status_code}")
 
     async def generate_text(self, messages: Any, **kwargs) -> str:
