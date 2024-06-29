@@ -76,6 +76,7 @@ const ChatList = ({ setAddMode }) => {
   const handleSelect = async (chat) => {
     const { user, ...userChat } = chat;
     userChat.isSeen = true;
+    userChat.unreadMessages = 0;
     try {
       const res = await fetch(`${BACKEND_URL}/user-chats`, {
         method: "PUT",
@@ -94,6 +95,7 @@ const ChatList = ({ setAddMode }) => {
     } catch (err) {
       console.log(err);
     }
+
   };
 
   const handleContextMenu = (e, chat) => {
