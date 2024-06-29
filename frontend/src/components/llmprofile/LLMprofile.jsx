@@ -3,19 +3,24 @@ import { useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { useChatStore } from "../../lib/chatStore";
 import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
-import { useNavigate,useLocation } from "react-router-dom";
+import { BACKEND_URL } from "../../lib/config";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from 'react-router-dom';
 
 const LLMprofile = ( ) => {
   const { resetChat } = useChatStore();
 
   const navigate = useNavigate(); 
-  // const location = useLocation();
-  // const [LLM_info, current_chat_list] = location.state;
-  const LLM_info = LLM_DICT["IamBlueWhale"];
-
+  const location = useLocation();
+  // console.log(location)
+  const [LLM_info, current_chat_list] = location.state;
+  console.log(LLM_info)
+  console.log(current_chat_list)
+  // console.log(current_chat_list.includes(LLM_info.id))
   const { currentUser } = useUserStore();
   const goback = () =>{
     let path = `/chat`; 
+    // console.log("done");
     navigate(path);
   }
 
@@ -30,7 +35,34 @@ const LLMprofile = ( ) => {
     });
 
   const handleAddLLM = async (LLMId) => {
-    
+    try {
+      const res = await fetch(`${BACKEND_URL}/user-info/name/${LLMId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to fetch user info");
+      }
+      const llmUser = await res.json();
+      const newUserChat = {
+        userId: currentUser.id,
+        receiverId: llmUser.id,
+        isSeen: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      await fetch(`${BACKEND_URL}/user-chats`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newUserChat),
+        credentials: "include",
+      });
+      navigate("/chat")
+    } catch (err) {
+      console.log(err);
+    }
+    // setAddMode(false);
   };
 
 
@@ -62,7 +94,7 @@ const LLMprofile = ( ) => {
         <div className="greet_text">{addLineBreak(LLM_info.greeting_message)}</div>
         <div className="quote">”</div>
       </div>
-      {/* <button className="add-button" disabled={current_chat_list.includes(LLM_info.id)} style={{
+      <button className="add-button" disabled={current_chat_list.includes(LLM_info.id)} style={{
         color: `var(--OceanSpace-Brand-Secondary, ${LLM_info.color})`,
         background: current_chat_list.includes(LLM_info.id) ? "rgba(255, 255, 255, 0.50)" : "#FFF"
         }}
@@ -72,7 +104,7 @@ const LLMprofile = ( ) => {
         `เพิ่ม${LLM_info.role} “${LLM_info.username}” แล้ว` : 
         `+ เพิ่ม${LLM_info.role} “${LLM_info.username}”`
         }
-      </button> */}
+      </button>
 
     </div>
   );

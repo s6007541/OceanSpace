@@ -180,6 +180,7 @@ const Chat = () => {
         createdAt: Date.now(),
         text: text,
         buffer: true,
+        emotionMode: "",
       };
       const message_packet = {
         type: "message",
@@ -217,7 +218,7 @@ const Chat = () => {
           createdAt: Date.now(),
           text: "",
           buffer: false,
-          topic : emotionMode,
+          emotionMode : emotionMode,
         }
         const message_packet = {
           type: "commit-messages",
@@ -241,6 +242,7 @@ const Chat = () => {
             createdAt: Date.now(),
             text: "",
             buffer: false,
+            emotionMode: ""
           }
           const message_packet = {
             type: "checkpoint",

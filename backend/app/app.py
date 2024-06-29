@@ -346,6 +346,7 @@ async def get_messages(
             createdAt=int(message.created_at.timestamp() * 1000),
             text=message.text,
             buffer=False,
+            emotionMode=""
         )
         for message in messages
     ]
@@ -488,8 +489,9 @@ async def send_current_messages_to_llm(
     user: User, message: Dict[str, Any], db: AsyncSession
 ):
     message_model = MessageModel.model_validate(message["data"])
+    print(message_model.emotionMode)
     chat_info = await get_chat_info(user.id, UUID(message_model.chatId), db)
-
+    
     if chat_info is None:
         raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
 
@@ -498,7 +500,7 @@ async def send_current_messages_to_llm(
     llm_name = llm_user.username
     assert llm_name is not None
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
-    sentences = await llm_client.generate_reply(llm_name, user, user_chat, messages)
+    sentences = await llm_client.generate_reply(llm_name, user, user_chat, messages, message_model.emotionMode)
 
     # Send sentence one by one
     for sentence_i, sentence in enumerate(sentences):

@@ -46,9 +46,25 @@ class LLMCLient:
         ]
         return message_list
 
-    def _get_system_prompt(self, llm_name: str, user_chat: UserChat) -> str:
-        with open("./prompt_templates/prompt_template.txt") as f:
-            prompt = f.read()
+    def _get_system_prompt(self, llm_name: str, user_chat: UserChat, emotionMode: str = "") -> str:
+        if emotionMode == "":
+            with open("./prompt_templates/prompt_template.txt") as f:
+                prompt = f.read()
+        elif emotionMode == "รับฟัง":
+            print("emotionMode", emotionMode)
+            with open(f"./prompt_templates/prompt_template_{emotionMode}.txt") as f:
+                prompt = f.read()
+        elif emotionMode == "ให้กำลังใจ":
+            print("emotionMode", emotionMode)
+            with open(f"./prompt_templates/prompt_template_{emotionMode}.txt") as f:
+                prompt = f.read()
+        elif emotionMode == "ให้คำแนะนำ":
+            print("emotionMode", emotionMode)
+            with open(f"./prompt_templates/prompt_template_{emotionMode}.txt") as f:
+                prompt = f.read()
+        else:
+            with open("./prompt_templates/prompt_template.txt") as f:
+                prompt = f.read()
         prompt += (
             "\n"
             + (
@@ -101,8 +117,12 @@ class LLMCLient:
             )
         )
 
-    def _get_augmented_prompt(self) -> str:
-        return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ"
+    def _get_augmented_prompt(self, emotionMode="") -> str:
+        augmented_prompt = "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ"
+        if len(emotionMode) > 0:
+            augmented_prompt +=  f" คุณจะพยามเป็นผู้{emotionMode}เป็นหลัก"
+        print(augmented_prompt)
+        return augmented_prompt
 
     def _split_message_list(
         self, message_list: List[Dict[str, Any]]
@@ -115,17 +135,17 @@ class LLMCLient:
         return message_list, []
 
     async def generate_reply(
-        self, llm_name: str, user: User, user_chat: UserChat, messages: List[Message]
+        self, llm_name: str, user: User, user_chat: UserChat, messages: List[Message], emotionMode: str="",
     ) -> List[str]:
         system_message = {
             "role": "system",
-            "content": self._get_system_prompt(llm_name, user_chat),
+            "content": self._get_system_prompt(llm_name, user_chat, emotionMode),
         }
         message_list = self._prepare_messages(user, messages)
         old_messages, new_messages = self._split_message_list(message_list)
         augmented_message = {
             "role": "system",
-            "content": self._get_augmented_prompt(),
+            "content": self._get_augmented_prompt(emotionMode),
         }
         input_messages = (
             [system_message]

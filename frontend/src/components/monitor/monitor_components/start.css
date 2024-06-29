@@ -11,6 +11,7 @@
         align-items: center;
         .header-body {
             .header {
+                margin-top : 20px;
                 color: #000;
                 text-align : left;
                 width : 338px;

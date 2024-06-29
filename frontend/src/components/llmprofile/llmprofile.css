@@ -1,171 +1,156 @@
-.chat {
-  flex: 2;
-  border-left: 1px solid #dddddd35;
-  border-right: 1px solid #dddddd35;
-  height: 100%;
+.llmProfile {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  width: 100vw;
+  height: 110vh;  
+  background: #F4FCFF;
+  gap : 24px;
+  /* padding : 28px; */
 
-  .top {
-    padding: 20px;
-    display: flex;
+
+  .goback {
+      position: absolute;
+      left:0;
+      top : 22px;
+      margin-left : 17px;
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+  
+  } 
+  .header_text {
+    display: flex;  
+    height : 70px;
+    width : 100vw;
+    /* background-color: green; */
+    color: #000;
+    justify-content: center;
     align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #dddddd35;
+    border-bottom : 1px solid rgba(0, 0, 0, 0.20);
 
-    .user {
-      display: flex;
-      align-items: center;
-      gap: 20px;
 
-      img {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-
-      .texts {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-
-        span {
-          font-size: 18px;
-          font-weight: bold;
-        }
-
-        p {
-          font-size: 14px;
-          font-weight: 300;
-          color: #a5a5a5;
-        }
-      }
-    }
-
-    .icons {
-      display: flex;
-      gap: 20px;
-
-      img {
-        width: 20px;
-        height: 20px;
-      }
-    }
+    /* OceanSpace/H3-500 */
+    font-family: Mitr;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
   }
-
-  .center {
-    padding: 20px;
-    flex: 1;
-    overflow: scroll;
+  .profile_pic_wrapper {
+    /* background-color: white; */
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    align-items: center;
+    /* background-color: green; */
+    /* height : 170px; */
+    /* gap: 24px; */
+    
 
-    .message {
-      max-width: 70%;
+    .profile_name {
+      color: #FFF;
+
+      text-align: center;
+      /* OceanSpace/H3-500 */
+      font-family: Mitr;
+      font-size: 20px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: normal;
+    }
+    .profile_desc {
+      color: #FFF;
+
+      text-align: center;
+      /* OceanSpace/Caption-L-300 */
+      font-family: Mitr;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 300;
+      line-height: normal;
+    }
+  }
+  .tag_outer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    .tag_inner {
       display: flex;
-      gap: 20px;
-
-      &.own {
-        align-self: flex-end;
-
-        .texts {
-          p {
-            background-color: #5183fe;
-          }
-        }
-      }
-
-      img {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        object-fit: cover;
-      }
-      .texts {
-        flex: 1;
+      justify-content: center;
+      align-items: flex-start;
+      align-content: flex-start;
+      gap: 8px;
+      align-self: stretch;
+      flex-wrap: wrap;
+      .tag {
         display: flex;
-        flex-direction: column;
-        gap: 5px;
+        padding: 4px 16px;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
 
-        img {
-          width: 100%;
-          height: 300px;
-          border-radius: 10px;
-          object-fit: cover;
-        }
+        color: #FFF;
 
-        p {
-          padding: 20px;
-          background-color: rgba(17, 25, 40, 0.3);
-          border-radius: 10px;
-        }
+        text-align: center;
+        /* OceanSpace/Body-400 */
+        font-family: Mitr;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+        
+        border-radius: 20px;
+        background: rgba(0, 0, 0, 0.30);
 
-        span {
-          font-size: 13px;
-        }
+
       }
     }
   }
-
-  .bottom {
-    padding: 20px;
+  .greet {
     display: flex;
+    padding: 16px 18px 0px 18px;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    border-top: 1px solid #dddddd35;
-    gap: 20px;
-    margin-top: auto;
+    gap: 16px;
+    .quote {
+      color: #FFF;
 
-    .icons {
-      display: flex;
-      gap: 20px;
+      text-align: center;
+      font-family: "Space Grotesk";
+      font-size: 40px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 24px; /* 60% */
     }
-
-    img {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-    }
-
-    input {
-      flex: 1;
-      background-color: rgba(17, 25, 40, 0.5);
-      border: none;
-      outline: none;
-      color: white;
-      padding: 20px;
-      border-radius: 10px;
+    .greet_text {
+      color: #FFF;
+      text-align: center;
+      /* OceanSpace/Body-400 */
+      font-family: Mitr;
       font-size: 16px;
-
-      &:disabled {
-        cursor: not-allowed;
-      }
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
     }
+  }
+  .add-button {
+    display: flex;
+    width: 300px;
+    height: 48px;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    border-radius: 24px;
+    background: #fff;
 
-    .emoji {
-      position: relative;
-
-      .picker {
-        position: absolute;
-        bottom: 50px;
-        left: 0;
-      }
-    }
-
-    .sendButton {
-      background-color: #5183fe;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-
-      &:disabled {
-        background-color: #5182feb4;
-        cursor: not-allowed;
-      }
-    }
+    
+    text-align: center;
+    /* OceanSpace/Button-L-500 */
+    font-family: Mitr;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    border-width : 0px;
   }
 }
