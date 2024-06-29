@@ -20,6 +20,7 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from httpx_oauth.clients.google import GoogleOAuth2  # type: ignore
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,7 +54,7 @@ from .schemas import (
     UserUpdate,
 )
 from .users import auth_backends, current_active_user, fastapi_users
-from .utils import get_local_ip_address
+from .utils import ENV, get_local_ip_address
 
 
 @asynccontextmanager
@@ -73,6 +74,9 @@ origins = [
 app = FastAPI(lifespan=lifespan)
 connection_manager = ConnectionManager()
 llm_client = SambaLLMClient()
+google_oauth_client = GoogleOAuth2(
+    ENV.get("GOOGLE_CLIENT_ID"), ENV.get("GOOGLE_CLIENT_SECRET")
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -111,6 +115,17 @@ app.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
     tags=["users"],
+)
+
+app.include_router(
+    fastapi_users.get_oauth_router(
+        google_oauth_client,
+        auth_backends[0],
+        ENV.get("GOOGLE_CLIENT_SECRET"),
+        associate_by_email=True,
+    ),
+    prefix="/auth/google",
+    tags=["google auth"],
 )
 
 

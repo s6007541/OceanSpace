@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional
 
-from fastapi import Depends, Request
+from fastapi import Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin, exceptions
 from fastapi_users.authentication import (
@@ -15,8 +15,10 @@ from fastapi_users.authentication.strategy.db import (
     DatabaseStrategy,
 )
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
+from urllib.parse import quote
 
-from app.db import AccessToken, User, get_access_token_db, get_user_db
+from .db import AccessToken, User, get_access_token_db, get_user_db
+from .utils import ENV
 
 SECRET = "SECRET"
 
@@ -37,6 +39,21 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         self, user: User, token: str, request: Optional[Request] = None
     ):
         print(f"Verification requested for user {user.id}. Verification token: {token}")
+
+    async def on_after_login(
+        self,
+        user: User,
+        request: Optional[Request] = None,
+        response: Optional[Response] = None,
+    ) -> None:
+        if request is not None:
+            if request.url.path == "/auth/google/callback":
+                assert response is not None
+                if response.status_code == 204:
+                    response.status_code = 307
+                    response.headers["location"] = quote(
+                        ENV.get("FRONTEND_URL") + "/Chat", safe=":/%#?=@[]!$&'()*+,;"
+                    )
     
     async def authenticate(
         self, credentials: OAuth2PasswordRequestForm
