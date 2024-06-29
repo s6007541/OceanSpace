@@ -1,6 +1,7 @@
 import "./userInfo.css"
 import { useUserStore } from "../../../lib/userStore";
 import { useNavigate } from 'react-router-dom';
+import { BACKEND_URL } from "../../../lib/config";
 
 const Userinfo = () => {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ const Userinfo = () => {
       {/* <img src={`${BACKEND_URL}/profile-image` || "./avatar.png"} alt="" /> */}
       {/* <h2>{currentUser.username}</h2> */}
       <img className="logo" src={"./OceanSpaceLogo.svg"} alt="" />
-      <img className="user_profile "src={"./UserProfileSmall.svg"} alt="" onClick={()=>{navigate('/myprofile', { replace: true })}}/>
+      <img className="user_profile "src={`${BACKEND_URL}/profile-image/${currentUser.id}`} alt="" onClick={()=>{navigate('/myprofile', { replace: true })}}/>
         
       {/* </div> */}
       {/* <div className="icons">

@@ -56,12 +56,17 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         String(), unique=True, default=None, nullable=True
     )
     alias: Mapped[Optional[str]] = mapped_column(String(), default=None, nullable=True)
-    avatar: Mapped[Optional[str]] = mapped_column(String(), default=None, nullable=True)
+    avatar: Mapped[Optional[str]] = mapped_column(
+        String(), default="./user_images/userprofile_default.svg", nullable=True
+    )
     pss_list: Mapped[List[str]] = mapped_column(
         ScalarListType(str), default=[], nullable=False
     )
     is_bot: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
     notification: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
+    emergency_contact: Mapped[Optional[str]] = mapped_column(
+        String(), default=None, nullable=True
+    )
 
 
 class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
@@ -188,7 +193,7 @@ class UserChatDatabase(BaseDatabase):
         )
         await self.session.execute(stmt)
 
-        if not self.get_by_chat_id(chat_id):
+        if not await self.get_by_chat_id(chat_id):
             stmt = delete(Chat).where(Chat.id == chat_id)
             await self.session.execute(stmt)
             stmt = delete(Message).where(Message.chat_id == chat_id)

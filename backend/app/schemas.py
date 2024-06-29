@@ -25,6 +25,7 @@ class UserModel(BaseModel):
     avatar: Optional[str] = None
     pssList: List[str] = []
     notification: bool = True
+    emergencyContact: Optional[str] = None
 
 
 class UserChatModel(BaseModel):

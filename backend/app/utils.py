@@ -1,4 +1,5 @@
 import socket
+from starlette.config import Config
 
 
 def get_local_ip_address() -> str:
@@ -11,3 +12,5 @@ def get_local_ip_address() -> str:
 # TODO: fix this to the deployed URL
 frontend_url = f"http://localhost:5173"
 backend_url = f"http://localhost:8000"
+
+ENV = Config(".env")

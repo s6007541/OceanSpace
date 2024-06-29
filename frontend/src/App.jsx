@@ -160,7 +160,7 @@ const App = () => {
               </div>
             } />
 
-            <Route path="/llmprofile" element={
+            <Route path="/LLMProfile" element={
               <div className="container">
                 {currentUser ? (
                     <LLMprofile />

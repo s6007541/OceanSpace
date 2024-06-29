@@ -17,7 +17,7 @@ const ChatList = ({ setAddMode }) => {
     console.log(chat_alias_list);
     navigate("/AddFriend", { state: chat_alias_list });
   };
-
+  
   const [chats, setChats] = useState([]);
   const [input, setInput] = useState("");
   const [ready, setReady] = useState(false);
@@ -167,11 +167,24 @@ const ChatList = ({ setAddMode }) => {
   const filteredChats = chats.filter((c) =>
     c.user.username.toLowerCase().includes(input.toLowerCase())
   );
-  if (!ready) return <></>;
+  if (!ready) return 
+  <div className="outer">
+    (
+      <div className="outer_chatlist">
+        <div className="addbar">
+          <p className="addbar_text">ข้อความ</p>
+          <a className="add_text">
+            +{" "}
+          </a>
+        </div>
+      </div>
+    )
+  </div>
+      
 
   return (
     <div className="outer">
-      {filteredChats.length > 0 ? (
+      {(filteredChats.length > 0) && ready ? (
         <div className="outer_chatlist">
           <div className="addbar">
             <p className="addbar_text">ข้อความ</p>
@@ -243,7 +256,9 @@ const ChatList = ({ setAddMode }) => {
             )}
           </div>
         </div>
-      ) : (
+      ) : <></>}
+      
+      {(filteredChats.length === 0) && ready ? (
         <div className="first_time">
           <div className="desc-top">
             สวัสดี เราคือ Ocean Space! <br />
@@ -286,7 +301,7 @@ const ChatList = ({ setAddMode }) => {
             </a>
           </div>
         </div>
-      )}
+      ) : <></> }
     </div>
   );
 };

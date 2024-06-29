@@ -15,10 +15,10 @@ const Myprofile = ( ) => {
   }
 
   const [user, setUser] = useState(null);
-  const [text, setText] = useState(null);
 
   const { currentUser, updateCurrentUserInfo } = useUserStore();
   const [notiOpen, setNotiOpen] = useState(currentUser.notification);
+  const [text, setText] = useState(currentUser.emergencyContact ?? "");
   
   const handleLogout = async () => {
     try {
@@ -38,6 +38,7 @@ const Myprofile = ( ) => {
 
   useEffect(() => {
     setNotiOpen(currentUser.notification);
+    setText(currentUser.emergencyContact ?? "");
   }, [currentUser]);
 
   const toggleNoti = async () => {
@@ -47,12 +48,19 @@ const Myprofile = ( ) => {
     }
   };
 
+  const changeEmergencyContact = async (e) => {
+    const newContact = e.target.value;
+    if (currentUser.emergencyContact !== newContact) {
+      await updateCurrentUserInfo({ emergencyContact: newContact });
+    }
+  }
+
   return (
     <div className="myProfile">
       <img className="goback" src="./cross.svg" onClick={goback}/>
       <div className="header_text">หน้าของฉัน</div>
       <div className="profile_pic_wrapper">
-        <img className="profile_pic" src={`./userprofile_default.svg`}/> 
+        <img className="profile_pic" src={`${BACKEND_URL}/profile-image/${currentUser.id}`}/> 
         <div className="profile-edit">แก้ไข</div>
         {/* <div className="profile_name">{currentUser.username}</div> */}
       </div>
@@ -88,7 +96,7 @@ const Myprofile = ( ) => {
               type="text"
               placeholder="เบอร์โทรศัพท์"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={changeEmergencyContact}
             />
           </div>
           <div className="setting-button">

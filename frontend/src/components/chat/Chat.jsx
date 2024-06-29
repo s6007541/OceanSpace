@@ -1,359 +1,191 @@
-import { useEffect, useRef, useState } from "react";
-import "./chat.css";
-import { toast } from "react-toastify";
-import EmojiPicker from "emoji-picker-react";
-import { useChatStore } from "../../lib/chatStore";
-import { useUserStore } from "../../lib/userStore";
-import { LLM_LIST } from "../../lib/llm_lists";
-import { useSocket } from "../../lib/socket";
-import { useNavigate } from "react-router-dom";
-import { BACKEND_URL } from "../../lib/config";
+import { useEffect } from "react";
+import Home from "./components/home/Home";
+import Chat from "./components/chat/Chat";
+import List from "./components/list/List";
+import Login from "./components/login/Login";
+import Monitor from "./components/monitor/Monitor";
+import AddFriend from "./components/addfriend/Addfriend";
+import Custom from "./components/custom/Custom";
+import Myprofile from "./components/myprofile/Myprofile";
+import LLMprofile from "./components/llmprofile/LLMprofile";
+import Navbar from "./components/navbar/Navbar";
 
+import Register from "./components/login/Register";
+import Notification from "./components/notification/Notification";
+import { useUserStore } from "./lib/userStore";
+import { useSocket } from "./lib/socket";
+import { WEBSOCKET_URL } from "./lib/config";
 
-const Chat = () => {
-  const navigate = useNavigate(); 
-  const [chat, setChat] = useState();
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
-  const [openFeedback, setOpenFeedback] = useState(-1);
-  const [startWait, setStartWait] = useState(true);
-  const [latestRead, setLatestRead] = useState(-3);
-  const [textReady, setTextReady] = useState(true);
-  const [checkpoint, setCheckpoint] = useState(20);
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+} from "react-router-dom";
 
-  const { currentUser } = useUserStore();
-  const {
-    chatId,
-    chatData,
-    user,
-    isCurrentUserBlocked,
-    isReceiverBlocked,
-    resetChat,
-    setDetail,
-  } = useChatStore();
-  const { socket } = useSocket();
-
-  const chatRef = useRef();
-  const socketHandledRef = useRef(false);
-  const endRef = useRef(null);
-    
-  // useEffect(() => {
-  //   if (textReady === false) {
-      
-  //   }
-  // }, [textReady]);
+const App = () => {
+  const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore();
+  const { socketConnected, socketConnect } = useSocket();
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-  useEffect(() => {
-    async function fetchMessages() {
-      if (chatId === null) {
-        navigate("/ChatList", { replace: true });
-        return;
-      }
-      try {
-        const res = await fetch(`${BACKEND_URL}/messages/${chatId}`, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          throw new Error("Failed to fetch messages.");
-        }
-        const messages = await res.json();
-        chatRef.current = messages;
-        setChat([...chatRef.current]);
-      } catch (err) {
-        console.log(err);
-      }
-    }
-
-    fetchMessages();
-  }, [chatData]);
-
-  useEffect(() => {
-    if (!socket || socketHandledRef.current) {
-      return;
-    }
-    socketHandledRef.current = true;
-    socket.addEventListener("message", async (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "message") {
-        chatRef.current.push(data.data);
-        setChat([...chatRef.current]);
-        if (data.data.last_one === true){
-          setTextReady(true); // bubble stop
-          setLatestRead(chatRef.current.length);
-
-        }
-      } else if (data.type === "checkpoint") {
-        console.log("Topic of interest: ", data.data)
-      }
-    });
-  }, [socket]);
-
-
-  const handleBack = async (e) => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to fetch user chats.");
-      }
-      const userChat = await res.json();
-      userChat.unreadMessages = 0;
-      await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userChat),
-        credentials: "include",
-      });
-    } catch (err) {
-      console.log(err);
-    }
-
-    navigate("/ChatList");
-    resetChat();
-  };
-
-  
-  const handleOpenFeedback = (e, isOwn) => {
-    if (!isOwn) {
-      setOpenFeedback((old_id) => (old_id === e.target.id ? -1 : e.target.id));
-    }
-  };
-
-  const handleFeedback = async (e) => {
-    try{
-      const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to fetch user chats.");
-      }
-      const userChat = await res.json();
-      if (e.target.id === "angry") {
-        userChat.blacklist.push(chatRef.current[openFeedback].text);
-      } else {
-        userChat.whitelist.push(chatRef.current[openFeedback].text);
-      }
-      await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userChat),
-        credentials: "include",
-      });
-      setOpenFeedback(-1);
-      toast.success(`Feedback has been received! "${user.username}" will enhance the response according to your suggestions.`);
-    } catch (err){
-      console.log(err);
-    }
-  };
-
-  const handleSend = async () => {
-    if (latestRead === -3) {
-      setLatestRead(chatRef.current.length);
-    }
-    
-    if (text === "") return;
-
-
-    try {
-      const message = {
-        chatId: chatId,
-        senderId: currentUser.id,
-        createdAt: Date.now(),
-        text: text,
-        buffer: true,
-      };
-      const message_packet = {
-        type: "message",
-        senderId: currentUser.id,
-        data: message,
-      };
-      socket.send(JSON.stringify(message_packet));
-      chatRef.current.push(message);
-      setChat([...chatRef.current]);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setText("");
-    }
-
-    if (LLM_LIST.includes(user.alias)) {
-      if (startWait === false){
-        return;
-      }
-
-      setStartWait(false);
-      console.log(latestRead)
-
-      setTimeout(()=>{
-        setTextReady(false); //bubble start
-        setLatestRead(-2);
-      }, 3000);
-
-      setTimeout(async () => {
-        setStartWait(true);
-
-        const message = {
-          chatId: chatId,
-          senderId: user.id,
-          createdAt: Date.now(),
-          text: "",
-          buffer: false,
-        }
-        const message_packet = {
-          type: "commit-messages",
-          senderId: user.id,
-          data: message,
-        };
-
+    async function initialize() {
+      if (currentUser === null || currentUser.id === null) {
         try {
-          socket.send(JSON.stringify(message_packet));
-          // setTextReady(true); // bubble stop
-          // setLatestRead(chatRef.current.length);
-        } catch (err) {
-          console.log(err);
-        }
+          await fetchCurrentUserInfo();
+        } catch {}
+        return;
+      }
 
-        if (chatRef.current.length > checkpoint) {
-          setCheckpoint(chatRef.current.length + 20);
-          const message = {
-            chatId: chatId,
-            senderId: user.id,
-            createdAt: Date.now(),
-            text: "",
-            buffer: false,
-          }
-          const message_packet = {
-            type: "checkpoint",
-            senderId: user.id,
-            data: message,
-          }
-          socket.send(JSON.stringify(message_packet));
-        }
-      }, 6000);
+      if (!socketConnected) {
+        socketConnect(WEBSOCKET_URL + "/ws");
+      }
     }
-  };
+    initialize();
+  }, [currentUser]);
 
-  const handleEmoji = (e) => {
-    setText((prev) => prev + e.emoji);
-    setOpen(false);
-  };
+  if (isLoading) return <div className="loading">Loading...</div>;
 
   return (
-    <div className="chat">
-      <div className="top">
-        <div className="user">
-          <img
-            className="goback"
-            src="./arrowLeft.png"
-            alt=""
-            onClick={handleBack}
-          />
-          <img
-            className="userimg"
-            src="./avatar.png"
-            alt=""
-            onClick={setDetail}
-          />
-          <div className="texts">
-            <span>{user?.username}</span>
-          </div>
-        </div>
+    <Router>
+        <link rel="preconnect" href="https://fonts.googleapis.com"></link>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin></link>
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet"></link>
+        <link rel="preconnect" href="https://fonts.googleapis.com"></link>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin></link>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@100..900&display=swap" rel="stylesheet"></link>
+        <link rel="preconnect" href="https://fonts.googleapis.com"></link>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin></link>
+        <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@200;300;400;500;600;700&display=swap" rel="stylesheet"></link>
+        {/* <Navbar /> */}
+        <Routes>
 
-      </div>
-      <div className="center">
-        {chat?.map((message, index) => (
-          <div
-            className={
-              message.senderId === currentUser?.id ? "message own" : "message"
-            }
-            key={message?.createAt}
-          >
-            <div className="texts">
-
-
-              <div className="textRead">
-                <div className="beforeText">
-                  {(message.senderId === currentUser?.id) && (latestRead <= -2 || latestRead > index) ? <span>อ่านแล้ว</span> : <></>}
-                  {/* <span>{format(new Date(message.createdAt))}</span> */}
-                </div>
-
-                <p onClick={(e)=>{
-                  handleOpenFeedback(e, message.senderId === currentUser?.id)
-                }
-                  } id={index}>{message.text}</p>
+            <Route path="/" element={
+              <div className="container">
+                {currentUser ? (
+                  <Home />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
               </div>
+            } />
+            <Route path="/Home" element={
+              <div className="container">
+                {currentUser ? (
+                  <Home />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
 
-              { index == openFeedback ?
-                <div className="reactions" >
-                  <img id="like" className="feedbacks" src={"./likes.png"} onClick={handleFeedback} />
-                  <img id="love" className="feedbacks" src={"./love.png"} onClick={handleFeedback} />
-                  <img id="wow" className="feedbacks" src={"./wow.png"} onClick={handleFeedback} />
-                  <img id="laugh" className="feedbacks" src={"./laugh.png"} onClick={handleFeedback} />
-                  <img id="cry" className="feedbacks" src={"./cry.png"} onClick={handleFeedback} />
-                  <img id="angry" className="feedbacks" src={"./angry.png"} onClick={handleFeedback} />
+            <Route path="/ChatList" element={
+              <div className="container">
+                {currentUser ? (
+                  <List />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
 
-                </div>
-                :
-                <></>
-              }
-            </div>
-          </div>
-        ))}
+            <Route path="/Chat" element={
+              <div className="container">
+                {currentUser ? (
+                  <Chat />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
 
-        {textReady ? <></> : 
-        <div class="half light">
-          <div class="typing">
-            <span class="circle scaling"></span>
-            <span class="circle bouncing"></span>
-            <span class="circle scaling"></span>
-          </div>
-        </div>
-        }
+            <Route path="/Monitor" element={
+              <div className="container">
+                {currentUser ? (
+                    <Monitor />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
 
-        <div ref={endRef}></div>
-        {/* <div ref={this.messagesEndRef} /> */}
-      </div>
-      <div className="bottom">
-        <input
-          type="text"
-          placeholder={
-            isCurrentUserBlocked || isReceiverBlocked
-              ? "You cannot send a message"
-              : "Type a message..."
-          }
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={isCurrentUserBlocked || isReceiverBlocked}
-        />
-        <div className="emoji">
-          <img
-            src="./emoji.png"
-            alt=""
-            onClick={() => setOpen((prev) => !prev)}
-          />
-          <div className="picker">
-            <EmojiPicker open={open} onEmojiClick={handleEmoji} />
-          </div>
-        </div>
-        <img
-          className="sendButtonImg"
-          src="./send.png"
-          alt=""
-          onClick={handleSend}
-        />
 
-      </div>
-    </div>
+            <Route path="/Login" element={
+              <div className="container">
+                <Login />
+                <Notification />
+              </div>
+            } />
+
+            <Route path="/Signup" element={
+              <div className="container">
+                <Register />
+                <Notification />
+              </div>
+            } />
+
+            <Route path="/AddFriend" element={
+              <div className="container">
+                {currentUser ? (
+                    <AddFriend />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
+
+            <Route path="/Custom" element={
+              <div className="container">
+                {currentUser ? (
+                    <Custom />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
+
+            <Route path="/myprofile" element={
+              <div className="container">
+                {currentUser ? (
+                    <Myprofile />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
+
+            <Route path="/LLMProfile" element={
+              <div className="container">
+                {currentUser ? (
+                    <LLMprofile />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
+
+
+            <Route path="*" element={
+              <div className="container">
+                {currentUser ? (
+                  <Home />
+                ) : (
+                  <Login />
+                )}
+                <Notification />
+              </div>
+            } />
+
+        </Routes>
+    </Router>
   );
 };
 
-export default Chat;
+export default App;
