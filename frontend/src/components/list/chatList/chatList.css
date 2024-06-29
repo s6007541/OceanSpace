@@ -6,6 +6,7 @@
   /* width : 50vw; */
   /* height :100vh; */
   .outer_chatlist {
+    height :100vh;
     .addbar {
       border-top: none;
       display: flex;
