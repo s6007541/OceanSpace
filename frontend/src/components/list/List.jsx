@@ -11,8 +11,8 @@ const List = () => {
     <div className="list">
       <Userinfo />
       <Navbar />
-
       <ChatList setAddMode={setAddMode} />
+
     </div>
   );
 };
