@@ -1,5 +1,5 @@
 import "./myprofile.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { useChatStore } from "../../lib/chatStore";
 import { useNavigate } from "react-router-dom";
@@ -16,9 +16,9 @@ const Myprofile = ( ) => {
 
   const [user, setUser] = useState(null);
   const [text, setText] = useState(null);
-  const [notiOpen, setNotiOpen] = useState(true);
 
-  const { currentUser } = useUserStore();
+  const { currentUser, updateCurrentUserInfo } = useUserStore();
+  const [notiOpen, setNotiOpen] = useState(currentUser.notification);
   
   const handleLogout = async () => {
     try {
@@ -33,6 +33,17 @@ const Myprofile = ( ) => {
       navigate('/login', { replace: true });
     } catch (err) {
       console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    setNotiOpen(currentUser.notification);
+  }, [currentUser]);
+
+  const toggleNoti = async () => {
+    const newNotiOpen = !notiOpen;
+    if (currentUser.notification !== newNotiOpen) {
+      await updateCurrentUserInfo({ notification: newNotiOpen });
     }
   };
 
@@ -64,7 +75,7 @@ const Myprofile = ( ) => {
               </svg>
               การแจ้งเตือน
             </div>
-            <button onClick={()=>setNotiOpen((e)=>!e)} style={{background: notiOpen ? "var(--OceanSpace-Brand-Primary, #0D7FE8)" : "var(--OceanSpace-Brand-Primary, #e80d0d)"}}>{notiOpen ? "เปิด" : "ปิด"}</button>
+            <button onClick={toggleNoti} style={{background: notiOpen ? "var(--OceanSpace-Brand-Primary, #0D7FE8)" : "var(--OceanSpace-Brand-Primary, #e80d0d)"}}>{notiOpen ? "เปิด" : "ปิด"}</button>
           </div>
           <div className="setting-button">
             <div className="setting-button-inner">

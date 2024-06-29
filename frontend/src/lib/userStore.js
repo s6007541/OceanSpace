@@ -40,4 +40,24 @@ export const useUserStore = create((set) => ({
       set({ isLoading: false });
     }
   },
+  updateCurrentUserInfo: async (data) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/user-info`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (res.ok) {
+        const user = await res.json();
+        set({ currentUser: user, isLoading: false });
+      } else {
+        throw new Error("Failed to update user info");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  },
 }));

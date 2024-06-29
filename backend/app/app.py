@@ -52,6 +52,7 @@ from .schemas import (
     UserUpdate,
 )
 from .users import auth_backends, current_active_user, fastapi_users
+from .utils import get_local_ip_address
 
 
 @asynccontextmanager
@@ -61,7 +62,11 @@ async def lifespan(app: FastAPI):
     yield
 
 
-origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    f"http://{get_local_ip_address()}:5173",
+]
 
 with open(Path(__file__).parent.parent.parent / "llm_config.json") as f:
     LLM_CONFIG: Dict[str, Any] = json.load(f)
@@ -119,6 +124,7 @@ async def get_current_user_info(user: User = Depends(current_active_user)) -> Us
         alias=user.alias,
         avatar=user.avatar,
         pssList=user.pss_list,
+        notification=user.notification,
     )
 
 
@@ -135,6 +141,7 @@ async def get_user_info_by_id(
         username=fetched_user.username,
         alias=fetched_user.alias,
         avatar=fetched_user.avatar,
+        notification=fetched_user.notification,
     )
 
 
@@ -151,6 +158,31 @@ async def get_user_info_by_name(
         username=fetched_user.username,
         alias=fetched_user.alias,
         avatar=fetched_user.avatar,
+        notification=fetched_user.notification,
+    )
+
+
+@app.put("/user-info", tags=["user info"])
+async def update_user_info(
+    body: Dict[str, Any] = Body(),
+    user: User = Depends(current_active_user),
+    user_db: UserDatabase = Depends(get_user_db),
+):
+    if "pss" in body:
+        user.pss_list.append(body["pss"])
+    if "notification" in body:
+        user.notification = body["notification"]
+    user_db.session.add(user)
+    await user_db.session.commit()
+    await user_db.session.refresh(user)
+    return UserModel(
+        id=str(user.id),
+        email=user.email,
+        username=user.username,
+        alias=user.alias,
+        avatar=user.avatar,
+        pssList=user.pss_list,
+        notification=user.notification,
     )
 
 

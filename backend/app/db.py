@@ -61,6 +61,7 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
         ScalarListType(str), default=[], nullable=False
     )
     is_bot: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
+    notification: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
 
 
 class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):

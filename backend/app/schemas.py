@@ -24,6 +24,7 @@ class UserModel(BaseModel):
     alias: Optional[str] = None
     avatar: Optional[str] = None
     pssList: List[str] = []
+    notification: bool = True
 
 
 class UserChatModel(BaseModel):
