@@ -47,6 +47,22 @@ class LLMCLient:
         return message_list
 
     def _get_system_prompt(self, llm_name: str, user_chat: UserChat) -> str:
+        with open("prompt_template.txt") as f:
+            prompt = f.read()
+        prompt += (
+            "\n"
+            + (
+                f"These are good examples of responses : {user_chat.whitelist}\n"
+                if user_chat.whitelist
+                else ""
+            )
+            + (
+                f"These are bad examples of responses : {user_chat.blacklist}"
+                if user_chat.blacklist
+                else ""
+            )
+        )
+        return prompt
         return (
             f'คุณเป็นผู้ชายชื่อ "{llm_name}" ที่เป็นเพื่อนของผู้ใช้งานที่คอยรับฟังผู้ใช้งานมาระบายความเครียดให้ฟัง '
             "คุณตอบรับด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบรับสั้น ๆ ด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ "
@@ -86,7 +102,7 @@ class LLMCLient:
         )
 
     def _get_augmented_prompt(self) -> str:
-        return "พยายามตอบให้หลากหลาย 2-3 ประโยค"
+        return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ"
 
     def _split_message_list(
         self, message_list: List[Dict[str, Any]]
@@ -118,7 +134,9 @@ class LLMCLient:
             + new_messages
             + [augmented_message]
         )
-        generated_text = await self.generate_text(input_messages, temperature=1)
+        generated_text = await self.generate_text(
+            input_messages, temperature=1, max_tokens=1000
+        )
         sentences = self._post_process(generated_text)
         return sentences
 
