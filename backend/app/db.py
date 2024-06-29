@@ -267,7 +267,7 @@ async def init_user_db() -> None:
         user_count = result.scalar_one()
         if user_count == 0:
             # Add LLM users
-            with open(Path(__file__).parent.parent.parent / "llm_config.json") as f:
+            with open(Path(__file__).parent.parent / "llm_config.json") as f:
                 llm_config_json: Dict[str, Any] = json.load(f)
             for llm_name, llm_dict in llm_config_json.items():
                 user = User(

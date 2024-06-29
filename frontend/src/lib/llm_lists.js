@@ -1,4 +1,4 @@
-import llm_dict from '../../../llm_config.json';
+import llm_dict from '../../llm_config.json';
 
 export const LLM_DICT = llm_dict
 

@@ -19,5 +19,5 @@ backend_url = f"http://localhost:8000"
 
 ENV = Config(".env")
 
-with open(Path(__file__).parent.parent.parent / "llm_config.json") as f:
+with open(Path(__file__).parent.parent / "llm_config.json") as f:
     LLM_CONFIG: Dict[str, Any] = json.load(f)
