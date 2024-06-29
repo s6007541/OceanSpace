@@ -406,7 +406,66 @@
     }
   }
   
+  .bottom-emotion-bar {
+    display: flex;
+    width: 100vw;
+    height : 40vh;
+    padding: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    background-color: white;
+    .bottom-emotion-top-bar{
+      color: #000;
 
+      /* OceanSpace/Body-400 */
+      font-family: Mitr;
+      font-size: 16px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+    }
+    .bottom-emotion-select-list {
+        display: flex;
+        flex-direction: column;
+        gap : 10px;
+        .bottom-emotion-select{
+
+          display: flex;
+          width: 350px;
+          padding: 12px;
+          justify-content: space-between;
+          gap: 12px;
+          border-radius: 12px;
+
+          /* border: 1px solid #FFF;
+          background: rgba(255, 255, 255, 0.20); */
+          /* border-radius: 12px; */
+          border: 1px solid var(--OceanSpace-Brand-Primary, #0D7FE8);
+          background: rgba(255, 255, 255, 0.20);
+          
+
+          .first-bottom-emotion{
+            
+            color: #000;
+
+            /* OceanSpace/Body-400 */
+            font-family: Mitr;
+            font-size: 16px;
+            font-style: normal;
+            font-weight: 400;
+            line-height: normal;
+          }
+          svg{
+            
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+          }
+
+        }
+    }
+  }
   .bottom {
     padding: 20px;
     display: flex;
