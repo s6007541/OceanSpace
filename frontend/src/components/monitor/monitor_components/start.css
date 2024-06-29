@@ -4,6 +4,7 @@
     flex-direction: column;
     background-color: #F4FCFF;
     color : black;
+    height : 100vh;
     .main-test {
         display: flex;
         flex-direction: column;

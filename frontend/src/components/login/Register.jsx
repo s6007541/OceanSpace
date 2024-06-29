@@ -77,7 +77,7 @@ const Register = () => {
           <p className="login_text">สมัครสมาชิก</p>
           <input type="text" placeholder="อีเมล" name="email" />
           <input type="password" placeholder="รหัสผ่าน" name="password" />
-          <button disabled={loading}>{loading ? "กำลังโหลด" : "เข้าสู่ระบบ"}</button>
+          <button disabled={loading}>{loading ? "กำลังโหลด" : "ลงทะเบียน"}</button>
         </form>
         
         <div className="bottom">
