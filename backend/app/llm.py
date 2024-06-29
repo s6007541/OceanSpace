@@ -60,7 +60,7 @@ class LLMCLient:
                         f'คุณเป็นผู้ชายชื่อ "{llm_name}" ที่เป็นเพื่อนของผู้ใช้งานที่คอยรับฟังผู้ใช้งานมาระบายความเครียดให้ฟัง '
                         "คุณตอบรับด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบรับสั้น ๆ ด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ "
                         "คุณแทนตัวเองด้วยคำว่า 'ผม' และผู้ใช้งานด้วยคำว่า 'คุณ' "
-                        "คุณไม่ควรพูดขอโทษหลายครั้งจนเกินไป\n"
+                        "คุณไม่ควรพูดขอโทษหลายครั้งจนเกินไป ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ\n"
                         + (
                             f"นี่คือตัวอย่างคำตอบที่ดี : {user_chat.whitelist}\n"
                             if user_chat.whitelist
@@ -114,18 +114,16 @@ class LLMCLient:
     async def predict_pss(self, pss_question: PSSQuestionModel) -> float:
         generated_text = await self.generate_text(
             messages=[
-                # {
-                #     "role": "system",
-                #     "content": "Based on the question : " + question + ", the user will give you the answer. Convert the answer into floating number in scale 1 to 4. Return only float number.",
-                # },
+                {
+                    "role": "system",
+                    "content": f'คุณคือระบบประเมินคะแนนตามคำถาม คุณจะได้รับคำถามและคำตอบจากผู้ใช้ คุณต้องให้คะแนนระหว่าง 0 ถึง 4\n0 หมายถึง "ไม่เคย"\n1 หมายถึง "แทบจะไม่มี"\n2 หมายถึง "มีบางครั้ง"\n3 หมายถึง "ค่อนข้างบ่อย"\n4 หมายถึง "บ่อยมาก"\nถ้าผู้ใช้ให้คำตอบที่ไม่เกี่ยวกับคำถาม คุณจะให้คะแนน -1\nคุณตอบแค่ตัวเลขโดยไม่มีคำอธิบาย\n',
+                },
                 {
                     "role": "user",
                     "content": (
-                        f'Based on the question : "{pss_question.question}"\n'
-                        f'My answer is : "{pss_question.answer}"\n'
-                        'Please give me the score in scale 0 to 4. 0 means "never" and 4 means "very often". '
-                        "You can also output -1 if you think the answer is not related to the question. "
-                        "Please output only one number, do not explain your answer."
+                        f'จากคำถาม : "{pss_question.question}"\n'
+                        f'คำตอบของผมคือ : "{pss_question.answer}"\n'
+                        'คุณต้องให้คะแนนระหว่าง 0 ถึง 4\n0 หมายถึง "ไม่เคย"\n1 หมายถึง "แทบจะไม่มี"\n2 หมายถึง "มีบางครั้ง"\n3 หมายถึง "ค่อนข้างบ่อย"\n4 หมายถึง "บ่อยมาก"\nพยายามตอบคำถามให้ได้ก่อน แต่ถ้าผู้ใช้ให้คำตอบที่ไม่เกี่ยวกับคำถามจริง ๆ คุณจะให้คะแนน -1\nคุณตอบแค่ตัวเลขโดยไม่มีคำอธิบาย\n'
                     ),
                 },
             ],
