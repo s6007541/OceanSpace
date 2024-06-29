@@ -38,11 +38,12 @@ const Login = () => {
         throw new Error("Cannot log in");
       }
       await fetchCurrentUserInfo();
-      navigate("/", { replace: true });
+      setLoading(false);
+      navigate("/");
+      navigate(0);
     } catch (err) {
       console.log(err);
       toast.error("ไม่สามารถเข้าสู่ระบบได้");
-    } finally {
       setLoading(false);
     }
 
