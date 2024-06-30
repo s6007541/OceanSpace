@@ -132,6 +132,16 @@ class LLMCLient:
 
     def _get_augmented_prompt(self) -> str:
         return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ และที่สำคัญ พยายามอย่าพูดซ้ำกับข้อความล่าสุด"
+    
+    
+    def _get_security_prompt(self) -> str:
+        
+        prompt_template_file = PROMPT_TEMPLATE_DIR / ("security_prompt.txt")
+
+        with open(prompt_template_file) as f:
+            prompt = f.read()
+        return prompt
+    
 
     def _split_message_list(
         self, message_list: List[Dict[str, Any]]
@@ -143,15 +153,52 @@ class LLMCLient:
             return message_list[: -i + 1], message_list[-i + 1 :]
         return message_list, []
 
+    async def security_detection(
+        self, message: Message,
+    ) -> List[str]:
+        
+        security_system_message = {
+            "role": "system",
+            "content": self._get_security_prompt(),
+        }
+        # print(message)
+        target_message = {
+            "role": "user",
+            "content": message.text,
+        }
+        input_messages = (
+            [security_system_message]
+            + [target_message]
+        )
+        
+        generated_text = await self.generate_text(
+            input_messages, temperature=0, max_tokens=1000
+        )
+        
+        generated_text = generated_text.lower()
+        print('gen',generated_text)
+        if ("self-harm" in generated_text):
+            return "self-harm"
+        if ("harm others" in generated_text):
+            return "harm others"
+        return "normal"
+        
+        
+        # topics = [topic for topic in topic_list if topic in generated_text]
+        return generated_text
+    
     async def generate_reply(
         self, llm_name: str, user: User, user_chat: UserChat, messages: List[Message], emotionMode: str="",
     ) -> List[str]:
+        
         system_message = {
             "role": "system",
             "content": self._get_system_prompt(llm_name, user_chat, emotionMode),
         }
+        
         message_list = self._prepare_messages(user, messages)
         old_messages, new_messages = self._split_message_list(message_list)
+        
         augmented_message = {
             "role": "system",
             "content": self._get_augmented_prompt(),
@@ -181,7 +228,7 @@ class LLMCLient:
             messages=[
                 {
                     "role": "system",
-                    "content": f"คุณจะบอกว่าบทสนทนาเกี่ยวข้องกับเรื่องใดมากที่สุดใน {len(topic_list)} เรื่องดังนี้ : {topic_list}",
+                    "content": f"คุณจะบอกว่าบทสนทนาเกี่ยวข้องกับเรื่องใดมากที่สุดใน {len(topic_list)} เรื่อง ดังนี้ : {topic_list}",
                 }
             ]
             + [
@@ -194,7 +241,7 @@ class LLMCLient:
             + [
                 {
                     "role": "user",
-                    "content": f"บทสนทนาที่ผ่านมาเกี่ยวข้องกับเรื่องใดมากที่สุดใน {len(topic_list)} เรื่องดังนี้ : {topic_list}. ตอบสั้นๆแค่คำตอบ",
+                    "content": f"บทสนทนาที่ผ่านมาเกี่ยวข้องกับเรื่องใดมากที่สุดใน {len(topic_list)} เรื่อง ดังนี้ : {topic_list}. ตอบสั้นๆแค่คำตอบ",
                 }
             ],
             temperature=0,
