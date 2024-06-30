@@ -49,6 +49,28 @@ const Login = () => {
 
   };
 
+  const handleContinueWithGoogle = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      let res = await fetch(`${BACKEND_URL}/auth/google/authorize`, {
+        credentials: "include"
+      });
+      if (!res.ok) {
+        throw new Error("Failed to log in with Google");
+      }
+      const resJson = await res.json();
+      console.log(resJson);
+      window.location.href = resJson.authorization_url;
+    } catch (err) {
+      console.log(err);
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="login">
       <div className="item">
@@ -78,7 +100,7 @@ const Login = () => {
         </div>
         <div className="signin-google-outer">
           <img src="./google.png"/>
-          <div className="google-text">Continue with Google</div>
+          <div className="google-text" onClick={handleContinueWithGoogle}>Continue with Google</div>
         </div>
       </div>
 

@@ -5,3 +5,4 @@ SQLAlchemy-Utils
 pillow
 openai
 requests
+httpx-oauth
