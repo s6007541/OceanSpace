@@ -267,6 +267,7 @@ class LLMCLient:
             ],
             temperature=0,
         )
+        print(generated_text)
 
         try:
             score = float(generated_text)

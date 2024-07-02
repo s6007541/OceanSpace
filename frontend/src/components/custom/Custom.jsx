@@ -2,7 +2,7 @@ import "./custom.css";
 import { useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { useNavigate } from "react-router-dom";
-
+import { toast } from "react-toastify";
 const Custom = ( ) => {
 
   const navigate = useNavigate(); 
@@ -123,7 +123,11 @@ const Custom = ( ) => {
       </div>
       : <></>}
 
-      <button className="next_button" onClick={()=>{setPage((e)=>e+1)}}>ต่อไป</button>
+      <button className="next_button" onClick={()=>{
+        navigate("/")
+        toast.error("โปรดจ่ายเงินเพื่อ unlock feature")
+
+      }}>ต่อไป</button>
       
 
     </div>

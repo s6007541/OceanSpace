@@ -39,7 +39,7 @@ const Login = () => {
       }
       await fetchCurrentUserInfo();
       setLoading(false);
-      navigate("/");
+      navigate("/ChatList");
       navigate(0);
     } catch (err) {
       console.log(err);

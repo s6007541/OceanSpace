@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from "react";
 import { useUserStore } from "../../../lib/userStore";
 import { BACKEND_URL } from "../../../lib/config";
+import { toast } from "react-toastify";
 
 const DataContext = createContext({});
 
@@ -131,6 +132,15 @@ export const DataProvider = ({children}) => {
         }
         const data = await res.json();
         score = data.pss;
+        if (score === -1) {
+          setShowResult(false);
+          setShowStart(false);
+          setShowQuiz(true);
+          setShowLoading(false);
+          setSelectedAnswer('');
+          toast.error("โอ๊ะ! คำตอบนี้ดูไม่ค่อยตรงกับคำถามเท่าไหร่เลยนะ 😅 ลองตอบใหม่แล้วเพิ่มรายละเอียดอีกนิดนะครับ 🌟")
+          return
+        }
       } catch (err) {
         console.log(err)
       }
@@ -187,6 +197,15 @@ export const DataProvider = ({children}) => {
         }
         const data = await res.json();
         score = data.pss;
+        if (score === -1) {
+          setShowResult(false);
+          setShowStart(false);
+          setShowQuiz(true);
+          setShowLoading(false);
+          setSelectedAnswer('');
+          toast.error("โอ๊ะ! คำตอบนี้ดูไม่ค่อยตรงกับคำถามเท่าไหร่เลยนะ 😅 ลองตอบใหม่แล้วเพิ่มรายละเอียดอีกนิดนะครับ 🌟")
+          return
+        }
       } catch (err) {
         console.log(err)
       }
