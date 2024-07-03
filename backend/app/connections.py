@@ -12,6 +12,8 @@ class ChatEvent:
     COMMIT_MESSAGES: str = "commit-messages"
     CHECKPOINT: str = "checkpoint"
     UNREAD_MESSAGES: str = "unread-messages"
+    SEC_DETECTION: str = "sec-detection"
+
 
 
 class ConnectionManager:

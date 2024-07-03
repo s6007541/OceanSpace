@@ -69,6 +69,7 @@ origins = [
     "http://127.0.0.1:5173",
     f"http://{get_local_ip_address()}:5173",
     "https://ocean-space.onrender.com",
+    "https://oceanspace.onrender.com"
 ]
 
 app = FastAPI(lifespan=lifespan)
@@ -359,7 +360,8 @@ async def get_messages(
             createdAt=int(message.created_at.timestamp() * 1000),
             text=message.text,
             buffer=False,
-            emotionMode=""
+            emotionMode="",
+            persuasive=False,
         )
         for message in messages
     ]
@@ -431,6 +433,20 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
     db.add(new_message)
 
     if receiver.is_bot:
+        ## sucidal detection
+        llm_name = receiver.username
+        assert llm_name is not None
+        prediction = await llm_client.security_detection(new_message)
+            
+        if connection_manager.is_online(user.id):
+            await connection_manager.send(
+                user.id,
+                ChatEvent.SEC_DETECTION,
+                {
+                    "pred": prediction,
+                },
+            )
+            
         if not message_model.buffer:
             llm_name = receiver.username
             assert llm_name is not None
@@ -513,6 +529,8 @@ async def send_current_messages_to_llm(
     llm_name = llm_user.username
     assert llm_name is not None
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
+    print([(m.text, m.sender_id) for m in messages])
+    
     sentences = await llm_client.generate_reply(llm_name, user, user_chat, messages, message_model.emotionMode)
 
     # Send sentence one by one
@@ -573,12 +591,3 @@ async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSessio
     await connection_manager.send(user.id, ChatEvent.CHECKPOINT, {"topics": topics})
     await db.commit()
 
-
-async def handle_unread_messages(user: User, message: Dict[str, Any], db: AsyncSession):
-    user_chat = await UserChatDatabase(db).get(user.id, message["chat_id"])
-    if user_chat is None:
-        raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
-    user_chat.unread_messages = message["unreadMessages"]
-    db.add(user_chat)
-    await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
-    await db.commit()

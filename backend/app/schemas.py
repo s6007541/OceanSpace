@@ -50,6 +50,7 @@ class MessageModel(BaseModel):
     text: str
     buffer: bool
     emotionMode: str
+    persuasive: bool
 
 
 class PSSQuestionModel(BaseModel):

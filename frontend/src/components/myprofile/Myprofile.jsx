@@ -94,7 +94,7 @@ const Myprofile = ( ) => {
             </div>
             <input
               type="text"
-              placeholder="เบอร์โทรศัพท์"
+              placeholder="เบอร์"
               value={text}
               onChange={changeEmergencyContact}
             />

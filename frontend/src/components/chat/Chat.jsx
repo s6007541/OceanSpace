@@ -15,10 +15,17 @@ const Chat = () => {
   const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+
+  const [showSelfHarm, setShowSelfHarm] = useState(false);
+  const [harmOthers, setHarmOthers] = useState(false);
+
   const [openFeedback, setOpenFeedback] = useState(-1);
   const [startWait, setStartWait] = useState(true);
   const [latestRead, setLatestRead] = useState(-3);
+
   const [textReady, setTextReady] = useState(true);
+  const [newTextArrive, setnewTextArrive] = useState(false);
+
   const [checkpoint, setCheckpoint] = useState(20);
   const [emotionMode, setEmotionMode] = useState("");
   const [numUnreadMessage, setNumUnreadMessage] = useState(0);
@@ -45,12 +52,6 @@ const Chat = () => {
       await handleSend();
     }
   };
-    
-  // useEffect(() => {
-  //   if (textReady === false) {
-      
-  //   }
-  // }, [textReady]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,6 +83,29 @@ const Chat = () => {
   }, [chatData]);
 
   useEffect(() => {
+    async function update_unreadMessages() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          throw new Error("Failed to fetch user chats.");
+        }
+        const userChat = await res.json();
+        userChat.unreadMessages = 0;
+        await fetch(`${BACKEND_URL}/user-chats`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(userChat),
+          credentials: "include",
+        });
+      } catch (err) {
+        console.log(err);
+      }
+    }
+
     if (!socket || socketHandledRef.current) {
       return;
     }
@@ -89,15 +113,32 @@ const Chat = () => {
     socket.addEventListener("message", async (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "message") {
+        update_unreadMessages()
         chatRef.current.push(data.data);
         setChat([...chatRef.current]);
+
         if (data.data.last_one === true){
-          setTextReady(true); // bubble stop
+          console.log("socket")
+          console.log(textReady)
+          if (!newTextArrive) {
+            setTextReady(true); // bubble stop
+          }
           setLatestRead(chatRef.current.length);
 
         }
+        
       } else if (data.type === "checkpoint") {
         console.log("Topic of interest: ", data.data)
+      } else if (data.type === "sec-detection") {
+        console.log(data.data)
+        if (data?.data?.pred === "self-harm") {
+          // toast.error("self-harm")
+          setShowSelfHarm(true)
+        }
+        else if (data?.data?.pred === "harm others") {
+          // toast.error("harm-others")
+          setHarmOthers(true)
+        }
       }
     });
   }, [socket]);
@@ -172,7 +213,6 @@ const Chat = () => {
     
     if (text === "") return;
 
-
     try {
       const message = {
         chatId: chatId,
@@ -181,6 +221,7 @@ const Chat = () => {
         text: text,
         buffer: true,
         emotionMode: "",
+        persuasive: false,
       };
       const message_packet = {
         type: "message",
@@ -195,22 +236,29 @@ const Chat = () => {
     } finally {
       setText("");
     }
-
     if (LLM_LIST.includes(user.alias)) {
       if (startWait === false){
         return;
       }
 
       setStartWait(false);
-      console.log(latestRead)
 
       setTimeout(()=>{
+        console.log("time3")
+        console.log(textReady)
+        if (!textReady) { // if not first time
+          setnewTextArrive(true);
+        }
+        else {
+          setnewTextArrive(false);
+        }
         setTextReady(false); //bubble start
-        setLatestRead(-2);
-      }, 3000);
+        setLatestRead(-2); //read all
+      }, 2000);
 
       setTimeout(async () => {
-        setStartWait(true);
+        console.log("time6")
+        setStartWait(true); // next message will be save to next chunk
 
         const message = {
           chatId: chatId,
@@ -219,6 +267,8 @@ const Chat = () => {
           text: "",
           buffer: false,
           emotionMode : emotionMode,
+          persuasive: false,
+          // persuasive : harmOthers || setEmotionMode
         }
         const message_packet = {
           type: "commit-messages",
@@ -242,7 +292,8 @@ const Chat = () => {
             createdAt: Date.now(),
             text: "",
             buffer: false,
-            emotionMode: ""
+            emotionMode: "",
+            persuasive: false,
           }
           const message_packet = {
             type: "checkpoint",
@@ -267,6 +318,36 @@ const Chat = () => {
 
   return (
     <div className="chat">
+      {showSelfHarm ? 
+      <div className="self-harm">
+        <div className="img-wrap">
+          <img className="goback" src="./cross.svg" onClick={()=>{setShowSelfHarm(false)}}/>
+        </div>
+        <div className="divout">
+          <img className="harm_logo" src="./harm_logo.svg"/>
+          <div className="upper-text">
+            <div className="topic">ข้อความเตือนเกี่ยวกับการทำร้ายตนเอง</div>
+            <div className="detail1">{"สวัสดี :)"}<br/>คุณดูเหมือนจะกำลังเผชิญกับความเครียดที่หนักมาก <br/>และเราเข้าใจว่าบางครั้งการระบายความรู้สึก<br/>อาจทำให้คุณรู้สึกดีขึ้น</div>
+            <div className="detail2">
+              อย่างไรก็ตามเราได้ตรวจพบข้อความ<br/>
+              ที่อาจสื่อถึงการทำร้ายตนเอง<br/>
+              หากคุณรู้สึกว่าต้องการความช่วยเหลือด่วน<br/>
+              เราขอแนะนำให้คุณติดต่อคนที่คุณไว้ใจ<br/>
+              หรือผู้เชี่ยวชาญด้านสุขภาพจิตทันทีนะคะ</div>
+            
+          </div>
+          <div className="call">
+            สายด่วนสุขภาพจิต 1323<br/>
+            สายด่วนสมาคมจิตแพทย์ 1667
+          </div>
+          <div className="ending">คุณไม่จำเป็นต้องเผชิญเรื่องนี้เพียงลำพัง เราอยู่ที่นี่เพื่อรับฟังและให้กำลังใจคุณค่ะ</div>
+
+        </div>
+        
+
+      </div>
+      :
+      <></>}
       <div className="top">
         <div className="user">
           <svg className="goback" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" onClick={handleBack}>
@@ -345,7 +426,7 @@ const Chat = () => {
         ))}
 
 
-        {textReady ? <></> : 
+        {textReady || showSelfHarm ? <></> : 
         <div class="half light">
           <div class="typing">
             <span class="circle scaling"></span>
