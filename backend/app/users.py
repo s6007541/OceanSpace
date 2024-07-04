@@ -1,3 +1,4 @@
+import json
 import uuid
 from typing import Optional
 
@@ -47,12 +48,14 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         if request is not None:
             if request.url.path == "/auth/google/callback":
                 assert response is not None
-                if response.status_code == 204:
+                if response.status_code == 204 or response.status_code == 200:
                     response.status_code = 307
+                    access_token = json.loads(response.body)["access_token"]
                     response.headers["location"] = quote(
-                        ENV.get("FRONTEND_URL") + "/Chat", safe=":/%#?=@[]!$&'()*+,;"
+                        ENV.get("FRONTEND_URL") + f"/AuthCallback?token={access_token}",
+                        safe=":/%#?=@[]!$&'()*+,;",
                     )
-    
+
     async def authenticate(
         self, credentials: OAuth2PasswordRequestForm
     ) -> Optional[User]:

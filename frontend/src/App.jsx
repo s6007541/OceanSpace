@@ -184,6 +184,11 @@ const App = () => {
             </div>
           } />
 
+          <Route path="/AuthCallback" element={
+            <div className="container">
+              <AuthCallback />
+            </div>
+          } />
 
           <Route path="*" element={
             <div className="container">
