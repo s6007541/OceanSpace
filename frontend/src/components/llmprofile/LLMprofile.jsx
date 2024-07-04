@@ -3,6 +3,7 @@ import { useUserStore } from "../../lib/userStore";
 import { useChatStore } from "../../lib/chatStore";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
+import axios from "axios";
 
 const LLMprofile = ( ) => {
   const { resetChat } = useChatStore();
