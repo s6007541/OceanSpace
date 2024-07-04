@@ -55,15 +55,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      let res = await fetch(`${BACKEND_URL}/auth/google/authorize`, {
-        credentials: "include"
-      });
-      if (!res.ok) {
-        throw new Error("Failed to log in with Google");
-      }
-      const resJson = await res.json();
-      console.log(resJson);
-      window.location.href = resJson.authorization_url;
+      const res = await axios.get("/auth/google/authorize");
+      window.location.href = res.data.authorization_url;
     } catch (err) {
       console.log(err);
       toast.error(err.message);
