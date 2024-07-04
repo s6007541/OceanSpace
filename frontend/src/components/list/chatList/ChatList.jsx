@@ -5,9 +5,9 @@ import { useUserStore } from "../../../lib/userStore";
 import { useChatStore } from "../../../lib/chatStore";
 import { useSocket } from "../../../lib/socket";
 import { BACKEND_URL } from "../../../lib/config";
-// TODO import socket
 import { LLM_DICT, LLM_LIST } from "../../../lib/llm_lists";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const ChatList = ({ setAddMode }) => {
   const navigate = useNavigate();
@@ -31,19 +31,11 @@ const ChatList = ({ setAddMode }) => {
     // Get chat list.
     try {
       // get chat data
-      const res = await fetch(`${BACKEND_URL}/user-chats`, {
-        credentials: "include",
-      });
-      const userChats = await res.json();
+      const res = await axios.get("/user-chats")
+      const userChats = res.data;
       const promises = userChats.map(async (userChat) => {
-        const res = await fetch(
-          `${BACKEND_URL}/user-info/id/${userChat.receiverId}`,
-          { credentials: "include" }
-        );
-        if (!res.ok) {
-          throw new Error("Failed to fetch user info.");
-        }
-        const user = await res.json();
+        const res = await axios.get(`/user-info/id/${userChat.receiverId}`)
+        const user = res.data;
         return { ...userChat, user };
       });
 
@@ -78,18 +70,7 @@ const ChatList = ({ setAddMode }) => {
     userChat.isSeen = true;
     userChat.unreadMessages = 0;
     try {
-      const res = await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userChat),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to update chat");
-      }
+      await axios.put("/user-chats", userChat);
       changeChat(userChat, user);
       navigate("/Chat");
     } catch (err) {
@@ -118,16 +99,7 @@ const ChatList = ({ setAddMode }) => {
 
   const handleDeleteChat = async () => {
     try {
-      const res = await fetch(
-        `${BACKEND_URL}/user-chats/${contextMenu.chat.chatId}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-      if (!res.ok) {
-        throw new Error("Failed to delete chat");
-      }
+      await axios.delete(`/user-chats/${contextMenu.chat.chatId}`);
       await fetchChatList();
     } catch (err) {
       console.log(err);
@@ -136,26 +108,9 @@ const ChatList = ({ setAddMode }) => {
 
   const handleAddLLM = async (LLMId) => {
     try {
-      let res = await fetch(`${BACKEND_URL}/user-info/name/${LLMId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to get user info");
-      }
-      const llmInfo = await res.json();
-      res = await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          receiverId: llmInfo.id,
-        }),
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to create new chat");
-      }
+      let res = await axios.get(`/user-info/name/${LLMId}`);
+      const llmInfo = res.data;
+      res = await axios.post("/user-chats", { receiverId: llmInfo.id });
       await fetchChatList();
       setAddMode(false);
     } catch (err) {

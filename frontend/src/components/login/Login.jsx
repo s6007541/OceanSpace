@@ -1,9 +1,10 @@
 import { useState } from "react";
 import "./login.css";
 import { toast } from "react-toastify";
-import { BACKEND_URL } from "../../lib/config";
 import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../../lib/userStore";
+import axios from "axios";
+import { useAuth } from "../provider/AuthProvider";
 
 
 // import upload from "../../lib/upload";
@@ -17,6 +18,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { fetchCurrentUserInfo } = useUserStore();
+  const { setToken } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -26,17 +28,16 @@ const Login = () => {
     const formData = new FormData(e.target);
     const { username, password } = Object.fromEntries(formData);
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({ username, password }),
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Cannot log in");
-      }
+      const res = await axios.post(
+        "/auth/jwt/login",
+        new URLSearchParams({ username, password }),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+      setToken(res.data.access_token);
       await fetchCurrentUserInfo();
       setLoading(false);
       navigate("/ChatList");

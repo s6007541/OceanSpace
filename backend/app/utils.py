@@ -21,3 +21,7 @@ ENV = Config(".env")
 
 with open(Path(__file__).parent.parent / "llm_config.json") as f:
     LLM_CONFIG: Dict[str, Any] = json.load(f)
+
+AUTH_SECRET = "SECRET"
+JWT_ALGORITHM = "HS256"
+JWT_AUDIENCE = "fastapi-users:auth"
