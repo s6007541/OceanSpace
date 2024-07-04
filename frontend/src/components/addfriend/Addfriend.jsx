@@ -1,10 +1,8 @@
 import "./addfriend.css";
-import { useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
 import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
-import { BACKEND_URL } from "../../lib/config";
 import axios from "axios";
 
 const AddFriend = ( ) => {
