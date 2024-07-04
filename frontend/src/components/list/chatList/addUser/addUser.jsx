@@ -2,7 +2,7 @@ import "./addUser.css";
 
 import { useState } from "react";
 import { useUserStore } from "../../../../lib/userStore";
-import { BACKEND_URL } from "../../../../lib/config";
+import axios from "axios";
 
 const AddUser = () => {
   const [user, setUser] = useState(null);
@@ -14,17 +14,20 @@ const AddUser = () => {
     const formData = new FormData(e.target);
     const username = formData.get("username");
 
+    let res;
     try {
-      const res = await fetch(`${BACKEND_URL}/user-info/name/${username}`, {
-        credentials: "include",
-      });
-      if (res.status === 404) {
+      res = await axios.get(`/user-info/name/${username}`)
+    } catch (err) {
+      if (err.response.status === 404) {
         setUser(null);
       }
-      if (!res.ok) {
+    }
+
+    try {
+      if (res.status !== 200) {
         throw new Error("Unexpected error");
       }
-      const user = await res.json();
+      const user = res.data;
       setUser(user);
     } catch (err) {
       console.log(err);
@@ -33,19 +36,7 @@ const AddUser = () => {
 
   const handleAdd = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          receiverId: user.id,
-        }),
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to create new chat");
-      }
+      const _ = await axios.post("/user-chats", { receiverId: user.id });
     } catch (err) {
       console.log(err);
     }

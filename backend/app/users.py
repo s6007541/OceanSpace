@@ -18,14 +18,12 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from urllib.parse import quote
 
 from .db import AccessToken, User, get_access_token_db, get_user_db
-from .utils import ENV
-
-SECRET = "SECRET"
+from .utils import AUTH_SECRET, ENV, JWT_ALGORITHM, JWT_AUDIENCE
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
-    reset_password_token_secret = SECRET
-    verification_token_secret = SECRET
+    reset_password_token_secret = AUTH_SECRET
+    verification_token_secret = AUTH_SECRET
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
@@ -94,7 +92,12 @@ bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
+    return JWTStrategy(
+        secret=AUTH_SECRET,
+        lifetime_seconds=3600,
+        algorithm=JWT_ALGORITHM,
+        token_audience=[JWT_AUDIENCE],
+    )
 
 
 def get_database_strategy(

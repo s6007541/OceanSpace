@@ -5,10 +5,21 @@ export const useSocket = create((set) => ({
   socketConnected: false,
   socketConnect: (url) => {
     // Connect the socket.
-    const ws = new WebSocket(url);
-    set({ socketConnected: true });
-    ws.addEventListener("open", (_) => {
-      set({ socket: ws });
-    });
+    const token = localStorage.getItem("token");
+    if (token) {
+      const ws = new WebSocket(url);
+      set({ socketConnected: true });
+      ws.addEventListener("open", (_) => {
+        set({ socket: ws });
+        ws.send(
+          JSON.stringify({
+            type: "authenticate",
+            data: { access_token: token },
+          })
+        );
+      });
+    } else {
+      console.log("No token found.");
+    }
   },
 }));

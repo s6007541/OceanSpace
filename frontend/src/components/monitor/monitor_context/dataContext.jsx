@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from "react";
 import { useUserStore } from "../../../lib/userStore";
 import { BACKEND_URL } from "../../../lib/config";
+import { toast } from "react-toastify";
 
 const DataContext = createContext({});
 
@@ -61,8 +62,8 @@ export const DataProvider = ({children}) => {
 
     // get topic of interest
     try {
-      const res = await fetch(`${BACKEND_URL}/user-chats`, {credentials: "include"});
-      const userChats = await res.json();
+      const res = await axios.get("/user-chats");
+      const userChats = res.data;
 
       const topicsOfInterest = userChats.map((userChat) => userChat.topicsOfInterest)
 
@@ -115,22 +116,20 @@ export const DataProvider = ({children}) => {
     if (selectedAnswer === "") {
       // get pss score from llm
       try {
-        const res = await fetch(`${BACKEND_URL}/pss`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            question: questionText,
-            answer: text
-          }),
-          credentials: "include",
+        const res = await axios.post("/pss", {
+          question: questionText,
+          answer: text,
         });
-        if (!res.ok) {
-          throw new Error("Failed to get pss score");
+        score = res.data.pss;
+        if (score === -1) {
+          setShowResult(false);
+          setShowStart(false);
+          setShowQuiz(true);
+          setShowLoading(false);
+          setSelectedAnswer('');
+          toast.error("โอ๊ะ! คำตอบนี้ดูไม่ค่อยตรงกับคำถามเท่าไหร่เลยนะ 😅 ลองตอบใหม่แล้วเพิ่มรายละเอียดอีกนิดนะครับ 🌟")
+          return
         }
-        const data = await res.json();
-        score = data.pss;
       } catch (err) {
         console.log(err)
       }
@@ -171,22 +170,20 @@ export const DataProvider = ({children}) => {
     if (selectedAnswer === ""){
       // get pss score from llm
       try {
-        const res = await fetch(`${BACKEND_URL}/pss`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            question: questionText,
-            answer: text
-          }),
-          credentials: "include",
+        const res = await axios.post("/pss", {
+          question: questionText,
+          answer: text,
         });
-        if (!res.ok) {
-          throw new Error("Failed to get pss score");
+        score = res.data.pss;
+        if (score === -1) {
+          setShowResult(false);
+          setShowStart(false);
+          setShowQuiz(true);
+          setShowLoading(false);
+          setSelectedAnswer('');
+          toast.error("โอ๊ะ! คำตอบนี้ดูไม่ค่อยตรงกับคำถามเท่าไหร่เลยนะ 😅 ลองตอบใหม่แล้วเพิ่มรายละเอียดอีกนิดนะครับ 🌟")
+          return
         }
-        const data = await res.json();
-        score = data.pss;
       } catch (err) {
         console.log(err)
       }

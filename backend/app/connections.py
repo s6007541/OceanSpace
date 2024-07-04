@@ -7,6 +7,7 @@ SID = Any
 
 
 class ChatEvent:
+    AUTHENTICATE: str = "authenticate"
     MESSAGE: str = "message"
     UPDATE_CHAT: str = "update-chat"
     COMMIT_MESSAGES: str = "commit-messages"

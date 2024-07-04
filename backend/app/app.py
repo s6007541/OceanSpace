@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 from PIL import Image
 from contextlib import asynccontextmanager
@@ -206,7 +205,6 @@ async def update_user_info(
 @app.get("/profile-image/{user_id}")
 async def get_profile_image(
     user_id: str,
-    user: User = Depends(current_active_user),
     user_db: UserDatabase = Depends(get_user_db),
 ):
     other_user = await user_db.get(UUID(user_id))
@@ -370,10 +368,10 @@ async def get_messages(
 @app.post("/pss")
 async def predict_pss(
     pss_question: PSSQuestionModel, user: User = Depends(current_active_user)
-):
+):  
     print(pss_question.question)
     print(pss_question.answer)
-    score = llm_client.predict_pss(pss_question)
+    score = await llm_client.predict_pss(pss_question)
     return {"pss": score}
 
 
@@ -386,7 +384,6 @@ async def websocket_endpoint(
     user: User = Depends(get_ws_current_user),
     db: AsyncSession = Depends(get_async_session),
 ):
-    await websocket.accept()
     print(f"[WebSocket] {user.email} connected")
     connection_manager.add_connection(user.id, websocket)
     try:

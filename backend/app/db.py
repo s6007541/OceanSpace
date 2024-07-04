@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple
 from uuid import UUID, uuid4
 
+import jwt
 from fastapi import Depends, HTTPException, WebSocket, WebSocketException, status
 from fastapi_users_db_sqlalchemy import (
     GUID,
@@ -29,6 +30,9 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy_utils import ScalarListType  # type: ignore
+
+from .connections import ChatEvent
+from .utils import AUTH_SECRET, JWT_ALGORITHM, JWT_AUDIENCE
 
 DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
@@ -317,17 +321,49 @@ async def get_access_token_db(
 
 async def get_ws_current_user(
     websocket: WebSocket, db: AsyncSession = Depends(get_async_session)
-):
+) -> User:
+    async def cookie_authenticate(token: str) -> str:
+        if token is None:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated"
+            )
+        access_token_result = await db.execute(select(AccessToken).filter(AccessToken.token == token))  # type: ignore
+        access_token = access_token_result.scalars().first()
+        if not access_token:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION, reason="Invalid session token"
+            )
+        return str(access_token.user_id)
+
+    async def jwt_authenticate() -> str:
+        await websocket.accept()
+        data = await websocket.receive_json()
+        if data["type"] != ChatEvent.AUTHENTICATE:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION, reason="Failed to authenticate"
+            )
+        token = data["data"].get("access_token")
+        if token is None:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION, reason="Invalid session token"
+            )
+        payload: Dict[str, Any] = jwt.decode(
+            token, AUTH_SECRET, algorithms=[JWT_ALGORITHM], audience=JWT_AUDIENCE
+        )
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION, reason="Invalid session token"
+            )
+        return user_id
+
     token = websocket.cookies.get("fastapiusersauth")
     if token is None:
-        raise WebSocketException(
-            code=status.WS_1008_POLICY_VIOLATION, reason="Not authenticated"
-        )
-    access_token_result = await db.execute(select(AccessToken).filter(AccessToken.token == token))  # type: ignore
-    access_token = access_token_result.scalars().first()
-    if not access_token:
-        raise HTTPException(status_code=401, detail="Invalid session token")
-    user_result = await db.execute(select(User).filter(User.id == access_token.user_id))  # type: ignore
+        user_id = await jwt_authenticate()
+    else:
+        user_id = await cookie_authenticate(token)
+    
+    user_result = await db.execute(select(User).filter(User.id == user_id))  # type: ignore
     user = user_result.unique().scalar_one()
     if not user:
         raise WebSocketException(

@@ -1,9 +1,6 @@
 import "./llmprofile.css";
-import { useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { useChatStore } from "../../lib/chatStore";
-import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
-import { BACKEND_URL } from "../../lib/config";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
 
@@ -36,13 +33,8 @@ const LLMprofile = ( ) => {
 
   const handleAddLLM = async (LLMId) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/user-info/name/${LLMId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to fetch user info");
-      }
-      const llmUser = await res.json();
+      const res = await axios.get(`/user-info/name/${LLMId}`);
+      const llmUser = res.data;
       const newUserChat = {
         userId: currentUser.id,
         receiverId: llmUser.id,
@@ -50,14 +42,7 @@ const LLMprofile = ( ) => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newUserChat),
-        credentials: "include",
-      });
+      await axios.post("/user-chats", newUserChat);
       navigate("/chat")
     } catch (err) {
       console.log(err);
@@ -78,14 +63,13 @@ const LLMprofile = ( ) => {
       </div>
       <div className="tag_outer">
         <div className="tag_inner">
-          <div className="tag">ใจดี</div>
-          <div className="tag">เป็นผู้ฟังที่ดี</div>
-          <div className="tag">ไม่ตัดสิน</div>
+          <div className="tag">{LLM_info.tag[0]}</div>
+          <div className="tag">{LLM_info.tag[1]}</div>
+          <div className="tag">{LLM_info.tag[2]}</div>
         </div>
         <div className="tag_inner">
-          <div className="tag">สุภาพ</div>
-          <div className="tag">อบอุ่น</div>
-          <div className="tag">ให้กำลังใจ</div>
+          <div className="tag">{LLM_info.tag[3]}</div>
+          <div className="tag">{LLM_info.tag[4]}</div>
         </div>
       </div>
 

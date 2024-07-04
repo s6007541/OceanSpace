@@ -8,6 +8,7 @@ import { LLM_LIST } from "../../lib/llm_lists";
 import { useSocket } from "../../lib/socket";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_URL } from "../../lib/config";
+import axios from "axios";
 
 const Chat = () => {
   const navigate = useNavigate(); 
@@ -65,13 +66,8 @@ const Chat = () => {
         return;
       }
       try {
-        const res = await fetch(`${BACKEND_URL}/messages/${chatId}`, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          throw new Error("Failed to fetch messages.");
-        }
-        const messages = await res.json();
+        const res = await axios.get(`/messages/${chatId}`);
+        const messages = res.data;
         chatRef.current = messages;
         setChat([...chatRef.current]);
       } catch (err) {
@@ -85,22 +81,10 @@ const Chat = () => {
   useEffect(() => {
     async function update_unreadMessages() {
       try {
-        const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
-          credentials: "include",
-        });
-        if (!res.ok) {
-          throw new Error("Failed to fetch user chats.");
-        }
-        const userChat = await res.json();
+        const res = await axios.get(`/user-chats/${chatId}`);
+        const userChat = res.data;
         userChat.unreadMessages = 0;
-        await fetch(`${BACKEND_URL}/user-chats`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(userChat),
-          credentials: "include",
-        });
+        await axios.put("/user-chats", userChat);
       } catch (err) {
         console.log(err);
       }
@@ -146,22 +130,10 @@ const Chat = () => {
 
   const handleBack = async (e) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to fetch user chats.");
-      }
-      const userChat = await res.json();
+      const res = await axios.get(`/user-chats/${chatId}`);
+      const userChat = res.data;
       userChat.unreadMessages = 0;
-      await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userChat),
-        credentials: "include",
-      });
+      await axios.put("/user-chats", userChat);
     } catch (err) {
       console.log(err);
     }
@@ -179,26 +151,14 @@ const Chat = () => {
 
   const handleFeedback = async (e) => {
     try{
-      const res = await fetch(`${BACKEND_URL}/user-chats/${chatId}`, {
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to fetch user chats.");
-      }
-      const userChat = await res.json();
+      const res = await axios.get(`/user-chats/${chatId}`);
+      const userChat = res.data;
       if (e.target.id === "angry") {
         userChat.blacklist.push(chatRef.current[openFeedback].text);
       } else {
         userChat.whitelist.push(chatRef.current[openFeedback].text);
       }
-      await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userChat),
-        credentials: "include",
-      });
+      await axios.put("/user-chats", userChat);
       setOpenFeedback(-1);
       toast.success(`Feedback has been received! "${user.username}" will enhance the response according to your suggestions.`);
     } catch (err){

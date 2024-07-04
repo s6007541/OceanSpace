@@ -4,6 +4,8 @@ import { useUserStore } from "../../lib/userStore";
 import { useChatStore } from "../../lib/chatStore";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_URL } from "../../lib/config";
+import { useAuth } from "../provider/AuthProvider";
+import axios from "axios";
 
 const Myprofile = ( ) => {
   const { resetChat } = useChatStore();
@@ -19,17 +21,14 @@ const Myprofile = ( ) => {
   const { currentUser, updateCurrentUserInfo } = useUserStore();
   const [notiOpen, setNotiOpen] = useState(currentUser.notification);
   const [text, setText] = useState(currentUser.emergencyContact ?? "");
+
+  const { setToken } = useAuth();
   
   const handleLogout = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Logout failed");
-      }
-      resetChat()
+      await axios.post("/auth/jwt/logout");
+      setToken(null);
+      resetChat();
       navigate('/login', { replace: true });
     } catch (err) {
       console.log(err);

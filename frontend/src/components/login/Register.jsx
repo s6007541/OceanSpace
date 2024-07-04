@@ -2,10 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./login.css";
 import { toast } from "react-toastify";
-import { BACKEND_URL } from "../../lib/config";
+import axios from "axios";
 
-
-// import upload from "../../lib/upload";
 
 const Register = () => {
   // const [avatar, setAvatar] = useState({
@@ -40,24 +38,12 @@ const Register = () => {
     }
 
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: "include",
-      });
-      
-      if (!res.ok) {
-        throw new Error("ไม่สามารถลงทะเบียนได้!");
-      }
-
+      await axios.post("/auth/register", { email, password });
       toast.success("ลงทะเบียนสำเร็จ คุณสามารถเข้าสู่ระบบได้แล้ว");
       navigate("/login")
     } catch (err) {
       console.log(err);
-      toast.error(err.message);
+      toast.error("ไม่สามารถลงทะเบียนได้!");
     } finally {
       setLoading(false);
     }
