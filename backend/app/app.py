@@ -120,7 +120,7 @@ app.include_router(
 app.include_router(
     fastapi_users.get_oauth_router(
         google_oauth_client,
-        auth_backends[0],
+        auth_backends[1],
         ENV.get("GOOGLE_CLIENT_SECRET"),
         associate_by_email=True,
     ),

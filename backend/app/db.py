@@ -322,6 +322,8 @@ async def get_access_token_db(
 async def get_ws_current_user(
     websocket: WebSocket, db: AsyncSession = Depends(get_async_session)
 ) -> User:
+    await websocket.accept()
+
     async def cookie_authenticate(token: str) -> str:
         if token is None:
             raise WebSocketException(
@@ -336,7 +338,6 @@ async def get_ws_current_user(
         return str(access_token.user_id)
 
     async def jwt_authenticate() -> str:
-        await websocket.accept()
         data = await websocket.receive_json()
         if data["type"] != ChatEvent.AUTHENTICATE:
             raise WebSocketException(
@@ -361,7 +362,10 @@ async def get_ws_current_user(
     if token is None:
         user_id = await jwt_authenticate()
     else:
-        user_id = await cookie_authenticate(token)
+        try:
+            user_id = await cookie_authenticate(token)
+        except WebSocketException:
+            user_id = await jwt_authenticate()
     
     user_result = await db.execute(select(User).filter(User.id == user_id))  # type: ignore
     user = user_result.unique().scalar_one()
