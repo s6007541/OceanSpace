@@ -1,10 +1,9 @@
 import "./addfriend.css";
-import { useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
 import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
-import { BACKEND_URL } from "../../lib/config";
+import axios from "axios";
 
 const AddFriend = ( ) => {
   
@@ -34,14 +33,9 @@ const AddFriend = ( ) => {
 
   const handleAddLLM = async (LLMId) => {
     try {
-      const res = await fetch(`${BACKEND_URL}/user-info/name/${LLMId}`, {
-        credentials: "include",
-      });
+      const res = await axios.get(`/user-info/name/${LLMId}`);
       console.log(res)
-      if (!res.ok) {
-        throw new Error("Failed to fetch user info");
-      }
-      const llmUser = await res.json();
+      const llmUser = res.data;
       const newUserChat = {
         userId: currentUser.id,
         receiverId: llmUser.id,
@@ -49,14 +43,7 @@ const AddFriend = ( ) => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      await fetch(`${BACKEND_URL}/user-chats`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newUserChat),
-        credentials: "include",
-      });
+      await axios.post("/user-chats", newUserChat);
       navigate("/ChatList")
       navigate(0)
     } catch (err) {

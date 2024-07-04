@@ -1,6 +1,5 @@
 import { createContext, useState, useEffect } from "react";
 import { useUserStore } from "../../../lib/userStore";
-import { BACKEND_URL } from "../../../lib/config";
 import { toast } from "react-toastify";
 
 const DataContext = createContext({});
