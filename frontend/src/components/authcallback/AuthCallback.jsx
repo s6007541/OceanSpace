@@ -14,6 +14,7 @@ const AuthCallback = () => {
     if (token) {
       setToken(token);
       navigate("/ChatList");
+      navigate(0);
     } else {
       navigate("/Login");
     }
