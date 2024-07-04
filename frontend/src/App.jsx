@@ -11,6 +11,7 @@ import LLMprofile from "./components/llmprofile/LLMprofile";
 import Register from "./components/login/Register";
 import Notification from "./components/notification/Notification";
 import AuthProvider from "./components/provider/AuthProvider";
+import AuthCallback from "./components/authcallback/AuthCallback";
 import { useUserStore } from "./lib/userStore";
 import { useSocket } from "./lib/socket";
 import { WEBSOCKET_URL } from "./lib/config";
