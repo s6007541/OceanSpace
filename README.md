@@ -34,4 +34,4 @@ The Typhoon Hackathon 2024, organized by SCBX Group and SCB 10X, is a prestigiou
 
 The hackathon provides an incredible opportunity for participants to collaborate with esteemed partners, including Microsoft, AI Singapore, DataX, Vidyasirimedhi Institute of Science and Technology (VISTEC), VISAI.ai, and Gowajee.ai. These partnerships empower teams with cutting-edge resources and mentorship, fostering an environment ripe for groundbreaking advancements in AI.
 
-We are thrilled to announce that our project has been selected as one of the top six finalists in this highly competitive event. This recognition is a testament to our team's dedication to driving forward AI research and its application in promoting Thai culture and language inclusivity.
+We are thrilled to announce that OceanSpace has been selected as one of the top six finalists in this highly competitive event. This recognition is a testament to our team's dedication to driving forward AI research and its application in promoting Thai culture and language inclusivity.
