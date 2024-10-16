@@ -1,5 +1,5 @@
 # OceanSpace : Your Digital Sanctuary for Stress Relief
-[[`Slides`]([https://www.figma.com/deck/TlA4E86wSU4GRxtJ0nB0XD])]
+[[`Slides`](https://www.figma.com/deck/TlA4E86wSU4GRxtJ0nB0XD)]
 
 > Contributors: Pidchayanin Chutipattana (Product Owner), Watit Hathaisirikul (Project Manager), Pimpisut Chanpanich (UXUI Designer), Noppanat Wadlom (ML+App Dev), Sorn Chottananurak (ML+App Dev)
 
