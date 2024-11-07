@@ -3,7 +3,6 @@ import os
 from PIL import Image
 from contextlib import asynccontextmanager
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List
 from uuid import UUID, uuid4
 
@@ -28,6 +27,7 @@ from .db import (
     ChatDatabase,
     Message,
     MessageDatabase,
+    NotificationTaskDatabase,
     User,
     UserChat,
     UserChatDatabase,
@@ -37,11 +37,13 @@ from .db import (
     get_chat_db,
     get_chat_info,
     get_message_db,
+    get_notification_task_db,
     get_user_db,
     get_user_chat_db,
     get_ws_current_user,
 )
-from .llm import SambaLLMClient
+from .llm import GeminiLLMClient
+from .scheduler import NotificationScheduler
 from .schemas import (
     MessageModel,
     PSSQuestionModel,
@@ -55,22 +57,27 @@ from .users import auth_backends, current_active_user, fastapi_users
 from .utils import get_local_ip_address
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Not needed if you setup a migration system like Alembic
-    await create_db_and_tables()
-    yield
-
-
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     f"http://{get_local_ip_address()}:5173",
 ]
 
-app = FastAPI(lifespan=lifespan)
 connection_manager = ConnectionManager()
-llm_client = SambaLLMClient()
+# llm_client = SambaLLMClient()
+llm_client = GeminiLLMClient()
+notification_scheduler = NotificationScheduler(llm_client, connection_manager)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Not needed if you setup a migration system like Alembic
+    await create_db_and_tables()
+    await notification_scheduler.start()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -322,8 +329,15 @@ async def delete_user_chat(
     chat_id: str,
     user: User = Depends(current_active_user),
     user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
+    notification_task_db: NotificationTaskDatabase = Depends(get_notification_task_db),
 ):
-    await user_chat_db.delete(user.id, UUID(chat_id))
+    chat_uuid = UUID(chat_id)
+    await user_chat_db.delete(user.id, chat_uuid)
+    tasks = await notification_task_db.delete_by_chat_id_and_return(chat_uuid)
+    for task in tasks:
+        notification_scheduler.remove_task(task.id)
+    if connection_manager.is_online(user.id):
+        await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
 
 
 @app.get("/messages/{chat_id}", tags=["messages"])
@@ -351,7 +365,7 @@ async def get_messages(
 @app.post("/pss")
 async def predict_pss(
     pss_question: PSSQuestionModel, user: User = Depends(current_active_user)
-):  
+):
     print(pss_question.question)
     print(pss_question.answer)
     score = await llm_client.predict_pss(pss_question)
@@ -407,7 +421,6 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
         created_at=created_at,
         text=message_model.text,
     )
-    
 
     db.add(user_chat)
     db.add(chat)
@@ -418,7 +431,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
         llm_name = receiver.username
         assert llm_name is not None
         prediction = await llm_client.security_detection(new_message)
-            
+
         if connection_manager.is_online(user.id):
             await connection_manager.send(
                 user.id,
@@ -427,7 +440,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
                     "pred": prediction,
                 },
             )
-            
+
         if not message_model.buffer:
             llm_name = receiver.username
             assert llm_name is not None
@@ -501,7 +514,7 @@ async def send_current_messages_to_llm(
     message_model = MessageModel.model_validate(message["data"])
     print(message_model.emotionMode)
     chat_info = await get_chat_info(user.id, UUID(message_model.chatId), db)
-    
+
     if chat_info is None:
         raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
 
@@ -511,8 +524,10 @@ async def send_current_messages_to_llm(
     assert llm_name is not None
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
     print([(m.text, m.sender_id) for m in messages])
-    
-    sentences = await llm_client.generate_reply(llm_name, user, user_chat, messages, message_model.emotionMode)
+
+    sentences = await llm_client.generate_reply(
+        llm_name, user, user_chat, messages, message_model.emotionMode
+    )
 
     # Send sentence one by one
     for sentence_i, sentence in enumerate(sentences):
@@ -549,7 +564,11 @@ async def send_current_messages_to_llm(
                 },
             )
         await db.commit()
-        
+
+    await notification_scheduler.analyze_and_schedule(
+        messages, user, llm_user, user_chat, chat, db
+    )
+
     # await db.commit()
 
 
@@ -561,7 +580,9 @@ async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSessio
     chat_id = UUID(message_model.chatId)
     messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat_id)
 
-    topics = await llm_client.predict_topics(user, list(messages), topic_list, n_messages)
+    topics = await llm_client.predict_topics(
+        user, list(messages), topic_list, n_messages
+    )
 
     user_chat = await UserChatDatabase(db).get(user.id, chat_id)
     if user_chat is None:
@@ -571,4 +592,3 @@ async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSessio
 
     await connection_manager.send(user.id, ChatEvent.CHECKPOINT, {"topics": topics})
     await db.commit()
-

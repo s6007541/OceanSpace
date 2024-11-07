@@ -5,7 +5,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple
 from uuid import UUID, uuid4
 
 import jwt
-from fastapi import Depends, HTTPException, WebSocket, WebSocketException, status
+from fastapi import Depends, WebSocket, WebSocketException, status
 from fastapi_users_db_sqlalchemy import (
     GUID,
     SQLAlchemyBaseOAuthAccountTableUUID,
@@ -123,6 +123,20 @@ class Message(Base):
     text: Mapped[str] = mapped_column(String(), nullable=False)
 
 
+class NotificationTask(Base):
+    __tablename__ = "notification_task"
+
+    id: Mapped[UUID_ID] = mapped_column(GUID, primary_key=True)
+    user_id: Mapped[UUID_ID] = mapped_column(ForeignKey("user.id"), nullable=False)
+    chat_id: Mapped[UUID_ID] = mapped_column(ForeignKey("chat.id"), nullable=False)
+    context: Mapped[List[UUID_ID]] = mapped_column(
+        ScalarListType(UUID_ID), nullable=False
+    )
+    scheduled_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+
 class UserDatabase(SQLAlchemyUserDatabase):
     async def get(self, user_id: UUID_ID) -> Optional[User]:
         stmt = select(User).where(User.id == user_id)  # type: ignore
@@ -224,6 +238,38 @@ class UserChatDatabase(BaseDatabase):
         return result.scalar()
 
 
+class NotificationTaskDatabase(BaseDatabase):
+    async def get(self, task_id: UUID_ID) -> NotificationTask:
+        statement = select(NotificationTask).where(NotificationTask.id == task_id)
+        results = await self.session.execute(statement)
+        return results.scalar_one()
+
+    async def delete_and_return(self, task_id: UUID_ID) -> NotificationTask:
+        statement = (
+            delete(NotificationTask)
+            .where(NotificationTask.id == task_id)
+            .returning(NotificationTask)
+        )
+        results = await self.session.execute(statement)
+        return results.scalar_one()
+
+    async def delete_by_chat_id(self, chat_id: UUID_ID):
+        statement = delete(NotificationTask).where(NotificationTask.chat_id == chat_id)
+        await self.session.execute(statement)
+        await self.session.commit()
+
+    async def delete_by_chat_id_and_return(
+        self, chat_id: UUID_ID
+    ) -> Sequence[NotificationTask]:
+        statement = (
+            delete(NotificationTask)
+            .where(NotificationTask.chat_id == chat_id)
+            .returning(NotificationTask)
+        )
+        results = await self.session.execute(statement)
+        return results.scalars().all()
+
+
 class MessageDatabase(BaseDatabase):
     async def create(self, message: Message) -> Message:
         self.session.add(message)
@@ -239,6 +285,11 @@ class MessageDatabase(BaseDatabase):
         stmt = select(Message).where(Message.chat_id == chat_id)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def get_by_id_list(self, message_ids: List[UUID_ID]) -> Sequence[Message]:
+        statement = select(Message).where(Message.id.in_(message_ids))
+        results = await self.session.execute(statement)
+        return results.scalars().all()
 
     async def get_by_user_chat_id(
         self, user_id: UUID_ID, chat_id: UUID_ID
@@ -319,6 +370,12 @@ async def get_access_token_db(
     yield AccessTokenDatabase(session, AccessToken)
 
 
+async def get_notification_task_db(
+    session: AsyncSession = Depends(get_async_session),
+):
+    yield NotificationTaskDatabase(session)
+
+
 async def get_ws_current_user(
     websocket: WebSocket, db: AsyncSession = Depends(get_async_session)
 ) -> User:
@@ -362,7 +419,7 @@ async def get_ws_current_user(
         user_id = await jwt_authenticate()
     else:
         user_id = await cookie_authenticate(token)
-    
+
     user_result = await db.execute(select(User).filter(User.id == user_id))  # type: ignore
     user = user_result.unique().scalar_one()
     if not user:
