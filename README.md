@@ -29,7 +29,7 @@ Inspired by the Thai sentiment, 'When stressed, I just want to sit and relax by 
 </p>
 
 ## About Typhoon Hackathon 2024
-[[`Website`]([https://www.figma.com/deck/TlA4E86wSU4GRxtJ0nB0XD](https://www.scb.co.th/en/about-us/news/may-2024/typhoon-hackathon-2024.html))]
+[[`Website`](https://www.scb.co.th/en/about-us/news/may-2024/typhoon-hackathon-2024.html)]
 
 The Typhoon Hackathon 2024, organized by SCBX Group and SCB 10X, is a prestigious event centered on developing innovative AI solutions to enhance the use and representation of the Thai language and culture. This year's theme, "Empowering Thai Language AI for Inclusivity," emphasizes creating inclusive, accessible technologies that reflect the richness and diversity of the Thai language.
 
