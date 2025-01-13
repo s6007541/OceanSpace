@@ -1,3 +1,4 @@
+uvicorn[standard]
 aiosqlite
 fastapi
 fastapi-users[sqlalchemy,oauth]
@@ -6,3 +7,6 @@ pillow
 openai
 requests
 httpx-oauth
+APScheduler
+google-generativeai
+pythainlp

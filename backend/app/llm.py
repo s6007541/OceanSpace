@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Tuple
 from pathlib import Path
 
 import requests  # type: ignore
+import google.generativeai as genai  # type: ignore
+from google.generativeai.types import content_types  # type: ignore
 from openai import OpenAI
 
 from .db import Message, User, UserChat
@@ -15,7 +17,7 @@ from .utils import ENV
 PROMPT_TEMPLATE_DIR = Path("./prompt_templates")
 
 
-class LLMCLient:
+class LLMClient:
     DEFAULT_GENERATION_KWARGS = {
         "model": "typhoon-instruct",
         "max_tokens": 1000,
@@ -28,8 +30,8 @@ class LLMCLient:
         raise NotImplementedError
 
     def _post_process(self, text: str) -> List[str]:
-        return [
-            sent.replace("ๆ", " ๆ ")
+        sentences = [
+            sent.replace("ๆ", " ๆ ").rstrip()
             for sent in (
                 text.rstrip(".")
                 .replace(", ", " ")
@@ -41,6 +43,7 @@ class LLMCLient:
                 .split(" ")
             )
         ]
+        return [sent for sent in sentences if sent]
 
     def _prepare_messages(
         self, user: User, messages: List[Message]
@@ -54,27 +57,43 @@ class LLMCLient:
         ]
         return message_list
 
-    def _get_system_prompt(self, llm_name: str, user_chat: UserChat, emotionMode: str = "") -> str:
-        
-        
-        
+    def _get_system_prompt(
+        self, llm_name: str, user_chat: UserChat, emotionMode: str = ""
+    ) -> str:
+
         if emotionMode == "":
-            prompt_template_file = PROMPT_TEMPLATE_DIR / ("blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt")
-            
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (
+                "blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt"
+            )
+
         elif emotionMode == "รับฟัง":
             print("emotionMode", emotionMode)
-            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (
+                f"blue_whale_{emotionMode}.txt"
+                if llm_name == "สีน้ำเงิน"
+                else f"pink_dolphin_{emotionMode}.txt"
+            )
 
         elif emotionMode == "ให้กำลังใจ":
             print("emotionMode", emotionMode)
-            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (
+                f"blue_whale_{emotionMode}.txt"
+                if llm_name == "สีน้ำเงิน"
+                else f"pink_dolphin_{emotionMode}.txt"
+            )
 
         elif emotionMode == "ให้คำแนะนำ":
             print("emotionMode", emotionMode)
-            prompt_template_file = PROMPT_TEMPLATE_DIR / (f"blue_whale_{emotionMode}.txt" if llm_name == "สีน้ำเงิน" else f"pink_dolphin_{emotionMode}.txt")
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (
+                f"blue_whale_{emotionMode}.txt"
+                if llm_name == "สีน้ำเงิน"
+                else f"pink_dolphin_{emotionMode}.txt"
+            )
 
         else:
-            prompt_template_file = PROMPT_TEMPLATE_DIR / ("blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt")
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (
+                "blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt"
+            )
 
         with open(prompt_template_file) as f:
             prompt = f.read()
@@ -132,16 +151,14 @@ class LLMCLient:
 
     def _get_augmented_prompt(self) -> str:
         return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ และที่สำคัญ พยายามอย่าพูดซ้ำกับข้อความล่าสุด"
-    
-    
+
     def _get_security_prompt(self) -> str:
-        
+
         prompt_template_file = PROMPT_TEMPLATE_DIR / ("security_prompt.txt")
 
         with open(prompt_template_file) as f:
             prompt = f.read()
         return prompt
-    
 
     def _split_message_list(
         self, message_list: List[Dict[str, Any]]
@@ -154,9 +171,10 @@ class LLMCLient:
         return message_list, []
 
     async def security_detection(
-        self, message: Message,
-    ) -> List[str]:
-        
+        self,
+        message: Message,
+    ) -> str:
+
         security_system_message = {
             "role": "system",
             "content": self._get_security_prompt(),
@@ -166,39 +184,40 @@ class LLMCLient:
             "role": "user",
             "content": message.text,
         }
-        input_messages = (
-            [security_system_message]
-            + [target_message]
-        )
-        
+        input_messages = [security_system_message] + [target_message]
+
         generated_text = await self.generate_text(
             input_messages, temperature=0, max_tokens=1000
         )
-        
+
         generated_text = generated_text.lower()
-        print('gen',generated_text)
-        if ("self-harm" in generated_text):
+        print("gen", generated_text)
+        if "self-harm" in generated_text:
             return "self-harm"
-        if ("harm others" in generated_text):
+        if "harm others" in generated_text:
             return "harm others"
         return "normal"
-        
-        
+
         # topics = [topic for topic in topic_list if topic in generated_text]
         return generated_text
-    
+
     async def generate_reply(
-        self, llm_name: str, user: User, user_chat: UserChat, messages: List[Message], emotionMode: str="",
+        self,
+        llm_name: str,
+        user: User,
+        user_chat: UserChat,
+        messages: List[Message],
+        emotionMode: str = "",
     ) -> List[str]:
-        
+
         system_message = {
             "role": "system",
             "content": self._get_system_prompt(llm_name, user_chat, emotionMode),
         }
-        
+
         message_list = self._prepare_messages(user, messages)
         old_messages, new_messages = self._split_message_list(message_list)
-        
+
         augmented_message = {
             "role": "system",
             "content": self._get_augmented_prompt(),
@@ -277,7 +296,7 @@ class LLMCLient:
         return score
 
 
-class TyphoonLLMClient(LLMCLient):
+class TyphoonLLMClient(LLMClient):
     def __init__(self):
         self.client = OpenAI(
             api_key=ENV.get("TYPHOON_API_KEY"), base_url="https://api.opentyphoon.ai/v1"
@@ -291,7 +310,7 @@ class TyphoonLLMClient(LLMCLient):
         return generated_text
 
 
-class SambaLLMClient(LLMCLient):
+class SambaLLMClient(LLMClient):
     ENDPOINT = "https://kjddazcq2e2wzvzv.snova.ai/api/v1/chat/completion"
     DEFAULT_GENERATION_KWARGS = {
         "model": "llama3-70b-typhoon",
@@ -331,3 +350,74 @@ class SambaLLMClient(LLMCLient):
 
     async def generate_text(self, messages: Any, **kwargs) -> str:
         return await self._request(messages, kwargs)
+
+
+class OpenAILLMClient(LLMClient):
+    DEFAULT_GENERATION_KWARGS = {
+        "model": "gpt-3.5-turbo",
+        "max_tokens": 1000,
+        "temperature": 0.6,
+        "top_p": 1,
+    }
+
+    def __init__(self):
+        self.client = OpenAI(
+            api_key=ENV.get("OPENAI_API_KEY"),
+            base_url="https://api.openai.com/v1",
+        )
+
+    async def generate_text(self, messages: Any, **kwargs) -> str:
+        stream = self.client.chat.completions.create(
+            messages=messages, **(self.DEFAULT_GENERATION_KWARGS | kwargs)
+        )
+        generated_text = stream.choices[0].message.content
+        return generated_text
+
+
+class GeminiLLMClient(LLMClient):
+    DEFAULT_GENERATION_KWARGS = {
+        "max_output_tokens": 1000,
+        "temperature": 0.6,
+        "top_p": 1,
+    }
+
+    def __init__(self):
+        genai.configure(api_key=ENV.get("GOOGLE_API_KEY"))
+        self.model = "gemini-1.5-flash-002"
+        self.client = genai.GenerativeModel(self.model)
+
+    def _to_google_messsages(
+        self, messages: List[Dict[str, str]]
+    ) -> Tuple[str, List[Dict[str, str]]]:
+        i = 0
+        system_instructions = []
+        while i < len(messages):
+            if messages[i]["role"] != "system":
+                break
+            system_instructions.append(messages[i]["content"])
+            i += 1
+
+        ret: List[Dict[str, str]] = []
+        for message in messages[i:]:
+            role = message["role"]
+            if role == "system":
+                system_instructions.append(message["content"])
+            else:
+                ret.append({"role": role, "parts": message["content"]})
+
+        return "\n".join(system_instructions), ret
+
+    async def generate_text(self, messages: Any, **kwargs) -> str:
+        system_instruction, messages = self._to_google_messsages(messages)
+        max_output_tokens = kwargs.pop(
+            "max_tokens", self.DEFAULT_GENERATION_KWARGS["max_output_tokens"]
+        )
+        kwargs["max_output_tokens"] = max_output_tokens
+
+        self.client._system_instruction = content_types.to_content(system_instruction)
+
+        chat = self.client.start_chat(history=messages[:-1])
+        config = genai.GenerationConfig(**(self.DEFAULT_GENERATION_KWARGS | kwargs))
+        response = chat.send_message(messages[-1]["parts"], generation_config=config)
+        generated_text = response.text
+        return generated_text
