@@ -163,6 +163,7 @@ class LLMClient:
     def _split_message_list(
         self, message_list: List[Dict[str, Any]]
     ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        i = 0
         for i in range(1, len(message_list) + 1):
             if message_list[-i]["role"] != "user":
                 break

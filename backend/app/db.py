@@ -7,7 +7,6 @@ from uuid import UUID, uuid4
 import jwt
 from fastapi import Depends, WebSocket, WebSocketException, status
 from fastapi_users_db_sqlalchemy import (
-    GUID,
     SQLAlchemyBaseOAuthAccountTableUUID,
     SQLAlchemyBaseUserTableUUID,
     SQLAlchemyUserDatabase,
@@ -17,6 +16,7 @@ from fastapi_users_db_sqlalchemy.access_token import (
     SQLAlchemyAccessTokenDatabase,
     SQLAlchemyBaseAccessTokenTableUUID,
 )
+from fastapi_users_db_sqlalchemy.generics import GUID
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -130,7 +130,7 @@ class NotificationTask(Base):
     user_id: Mapped[UUID_ID] = mapped_column(ForeignKey("user.id"), nullable=False)
     chat_id: Mapped[UUID_ID] = mapped_column(ForeignKey("chat.id"), nullable=False)
     context: Mapped[List[UUID_ID]] = mapped_column(
-        ScalarListType(UUID_ID), nullable=False
+        ScalarListType(UUID_ID), nullable=False  # type: ignore
     )
     scheduled_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -138,8 +138,8 @@ class NotificationTask(Base):
 
 
 class UserDatabase(SQLAlchemyUserDatabase):
-    async def get(self, user_id: UUID_ID) -> Optional[User]:
-        stmt = select(User).where(User.id == user_id)  # type: ignore
+    async def get(self, id: UUID_ID) -> Optional[User]:
+        stmt = select(User).where(User.id == id)  # type: ignore
         result = await self.session.execute(stmt)
         return result.scalar()
 
@@ -423,7 +423,7 @@ async def get_ws_current_user(
             user_id = await cookie_authenticate(token)
         except WebSocketException:
             user_id = await jwt_authenticate()
-    
+
     user_result = await db.execute(select(User).filter(User.id == user_id))  # type: ignore
     user = user_result.unique().scalar_one()
     if not user:
