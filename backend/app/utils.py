@@ -13,7 +13,7 @@ def get_local_ip_address() -> str:
     return local_ip_address
 
 
-ENV = Config(".env")
+ENV = Config("../.env")
 
 with open(Path(__file__).parent.parent / "llm_config.json") as f:
     LLM_CONFIG: Dict[str, Any] = json.load(f)
