@@ -3,6 +3,7 @@ import { useUserStore } from "../../lib/userStore";
 import { useChatStore } from "../../lib/chatStore";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import { STATIC_BASE } from "../../lib/config";
 
 const LLMprofile = ( ) => {
   const { resetChat } = useChatStore();
@@ -54,9 +55,9 @@ const LLMprofile = ( ) => {
 
   return (
     <div className="llmProfile" style={{background: LLM_info.color}}>
-      <img className="goback" src="./arrowLeft.svg" onClick={goback}/>     
+      <img className="goback" src={`${STATIC_BASE}/arrowLeft.svg`} onClick={goback}/>     
       <div className="header_text">{LLM_info.username}</div>
-      <img className="profile_pic" src={`./SeaCharacters/Large-150px/${LLM_info.avatar}`}/> 
+      <img className="profile_pic" src={`${STATIC_BASE}/SeaCharacters/Large-150px/${LLM_info.avatar}`}/> 
       <div className="profile_pic_wrapper">
         <div className="profile_name">{LLM_info.username}</div>
         <div className="profile_desc">{LLM_info.description}</div>

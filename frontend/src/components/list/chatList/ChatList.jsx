@@ -4,7 +4,7 @@ import OptionMenu from "./optionMenu/optionMenu";
 import { useUserStore } from "../../../lib/userStore";
 import { useChatStore } from "../../../lib/chatStore";
 import { useSocket } from "../../../lib/socket";
-import { BACKEND_URL } from "../../../lib/config";
+import { BACKEND_URL, STATIC_BASE } from "../../../lib/config";
 import { LLM_DICT, LLM_LIST } from "../../../lib/llm_lists";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -165,7 +165,7 @@ const ChatList = ({ setAddMode }) => {
                 <img
                   src={
                     `${BACKEND_URL}/profile-image/${chat.receiverId}` ||
-                    "./avatar.png"
+                    `${STATIC_BASE}/avatar.png`
                   }
                   alt=""
                 />
@@ -223,7 +223,7 @@ const ChatList = ({ setAddMode }) => {
             เพิ่มเพื่อนข้างล่างได้เลย
           </div>
           <div className="center">
-            <img src="./SeaCharacters/Large-150px/Whale.svg"></img>
+            <img src={`${STATIC_BASE}/SeaCharacters/Large-150px/Whale.svg`}></img>
             <div className="desc-container">
               <div className="desc-head">สีน้ำเงิน</div>
               <div className="desc">พี่ชายที่อบอุ่นแบบเตาไมโครเวฟ</div>

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { useChatStore } from "../../lib/chatStore";
 import { useNavigate } from "react-router-dom";
-import { BACKEND_URL } from "../../lib/config";
+import { BACKEND_URL, STATIC_BASE } from "../../lib/config";
 import { useAuth } from "../provider/AuthProvider";
 import axios from "axios";
 
@@ -56,7 +56,7 @@ const Myprofile = ( ) => {
 
   return (
     <div className="myProfile">
-      <img className="goback" src="./cross.svg" onClick={goback}/>
+      <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
       <div className="header_text">หน้าของฉัน</div>
       <div className="profile_pic_wrapper">
         <img className="profile_pic" src={`${BACKEND_URL}/profile-image/${currentUser.id}`}/> 

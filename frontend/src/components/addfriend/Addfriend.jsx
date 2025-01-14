@@ -4,6 +4,7 @@ import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
 import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
 import axios from "axios";
+import { STATIC_BASE } from "../../lib/config";
 
 const AddFriend = ( ) => {
   
@@ -55,7 +56,7 @@ const AddFriend = ( ) => {
   
   return (
     <div className="addFriend">
-      <img className="goback" src="./arrowLeft.svg" onClick={goback}/>
+      <img className="goback" src={`${STATIC_BASE}/arrowLeft.svg`} onClick={goback}/>
       <div className="header_text">
       รายชื่อเพื่อนทั้งหมด
       </div>
@@ -64,7 +65,7 @@ const AddFriend = ( ) => {
         {LLM_LIST.map((llm) => (
           <div className="item" onClick={()=>{goLLMProfile(LLM_DICT[llm])}}>
             <img
-              src={`./SeaCharacters/Small-56px/${LLM_DICT[llm].avatar}`}
+              src={`${STATIC_BASE}/SeaCharacters/Small-56px/${LLM_DICT[llm].avatar}`}
               className="llm_button"
               id={llm}
               alt=""

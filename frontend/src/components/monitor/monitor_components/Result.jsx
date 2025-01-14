@@ -4,6 +4,7 @@ import DataContext from '../monitor_context/dataContext';
 import Userinfo from "../../list/userInfo/Userinfo";
 import Navbar from "../../navbar/Navbar";
 import { useNavigate } from "react-router-dom";
+import { STATIC_BASE } from "../../../lib/config";
 
 const Result = () => {
     const navigate = useNavigate();
@@ -18,7 +19,7 @@ const Result = () => {
     return (
         
         <div className="results">
-            <img className="goback" src="./cross.svg" onClick={goback}/>
+            <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
             <div className="header_text">ผลแบบทดสอบ</div>
             <div className="container">
                 <div className="outer-main-result">
@@ -47,7 +48,7 @@ const Result = () => {
                     </div>
                     
                 </div>
-                <img className='background-img' src="./pss_end_greeting.svg"/>
+                <img className='background-img' src={`${STATIC_BASE}/pss_end_greeting.svg`}/>
 
             </div>
             

@@ -7,7 +7,7 @@ import { useUserStore } from "../../lib/userStore";
 import { LLM_LIST } from "../../lib/llm_lists";
 import { useSocket } from "../../lib/socket";
 import { useNavigate } from "react-router-dom";
-import { BACKEND_URL } from "../../lib/config";
+import { BACKEND_URL, STATIC_BASE } from "../../lib/config";
 import axios from "axios";
 
 const Chat = () => {
@@ -281,10 +281,10 @@ const Chat = () => {
       {showSelfHarm ? 
       <div className="self-harm">
         <div className="img-wrap">
-          <img className="goback" src="./cross.svg" onClick={()=>{setShowSelfHarm(false)}}/>
+          <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={()=>{setShowSelfHarm(false)}}/>
         </div>
         <div className="divout">
-          <img className="harm_logo" src="./harm_logo.svg"/>
+          <img className="harm_logo" src={`${STATIC_BASE}/harm_logo.svg`}/>
           <div className="upper-text">
             <div className="topic">ข้อความเตือนเกี่ยวกับการทำร้ายตนเอง</div>
             <div className="detail1">{"สวัสดี :)"}<br/>คุณดูเหมือนจะกำลังเผชิญกับความเครียดที่หนักมาก <br/>และเราเข้าใจว่าบางครั้งการระบายความรู้สึก<br/>อาจทำให้คุณรู้สึกดีขึ้น</div>
@@ -330,7 +330,7 @@ const Chat = () => {
         {chat?.length === 0 ? 
         <div className="chat-greeting">
           <div className="img-topic">
-            <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : "./avatar.png"}></img>
+            <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : `${STATIC_BASE}/avatar.png`}></img>
             <div className="greeting-text-box">
               <div className="greeting-topic">เพื่อนที่เข้าใจคุณ</div>
               <div className="greeting-text">สนับสนุนและเข้าใจคุณไม่ว่าเมื่อไหร่</div>
@@ -370,12 +370,12 @@ const Chat = () => {
 
               { index == openFeedback ?
                 <div className="reactions" >
-                  <img id="like" className="feedbacks" src={"./likes.png"} onClick={handleFeedback} />
-                  <img id="love" className="feedbacks" src={"./love.png"} onClick={handleFeedback} />
-                  <img id="wow" className="feedbacks" src={"./wow.png"} onClick={handleFeedback} />
-                  <img id="laugh" className="feedbacks" src={"./laugh.png"} onClick={handleFeedback} />
-                  <img id="cry" className="feedbacks" src={"./cry.png"} onClick={handleFeedback} />
-                  <img id="angry" className="feedbacks" src={"./angry.png"} onClick={handleFeedback} />
+                  <img id="like" className="feedbacks" src={`${STATIC_BASE}/likes.png`} onClick={handleFeedback} />
+                  <img id="love" className="feedbacks" src={`${STATIC_BASE}/love.png`} onClick={handleFeedback} />
+                  <img id="wow" className="feedbacks" src={`${STATIC_BASE}/wow.png`} onClick={handleFeedback} />
+                  <img id="laugh" className="feedbacks" src={`${STATIC_BASE}/laugh.png`} onClick={handleFeedback} />
+                  <img id="cry" className="feedbacks" src={`${STATIC_BASE}/cry.png`} onClick={handleFeedback} />
+                  <img id="angry" className="feedbacks" src={`${STATIC_BASE}/angry.png`} onClick={handleFeedback} />
 
                 </div>
                 :
@@ -475,7 +475,7 @@ const Chat = () => {
         />
         <div className="emoji">
           <img
-            src="./emoji.png"
+            src={`${STATIC_BASE}/emoji.png`}
             alt=""
             onClick={() => setOpen((prev) => !prev)}
           />
@@ -485,7 +485,7 @@ const Chat = () => {
         </div>
         <img
           className="sendButtonImg"
-          src="./send.png"
+          src={`${STATIC_BASE}/send.png`}
           alt=""
           onClick={handleSend}
         />

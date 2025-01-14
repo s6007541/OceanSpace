@@ -3,6 +3,7 @@ import DataContext from '../monitor_context/dataContext';
 import "./start.css";
 import Userinfo from "../../list/userInfo/Userinfo";
 import Navbar from "../../navbar/Navbar";
+import { STATIC_BASE } from '../../../lib/config';
 
 const Start = () => {
     const {startQuiz, showStart} = useContext(DataContext);
@@ -16,8 +17,8 @@ const Start = () => {
                     <div className="header-body">
                         <div className='header'>วัดความเครียด</div>
                         <div className='body'>
-                            <img className='background-img' src="./pss_start_bg.svg"></img>
-                            <img className='body-image' src="./whale_nobg.svg"></img>
+                            <img className='background-img' src={`${STATIC_BASE}/pss_start_bg.svg`}></img>
+                            <img className='body-image' src={`${STATIC_BASE}/whale_nobg.svg`}></img>
                             <div className='body_text'>
                                 <div className='quote'>“</div>
                                 <div className='texts'>พวกเราควรทำแบบทดสอบ<br/>วัดระดับความเครียดเดือนละ 1 ครั้ง</div>

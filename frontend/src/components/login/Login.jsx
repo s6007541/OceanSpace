@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserStore } from "../../lib/userStore";
 import axios from "axios";
 import { useAuth } from "../provider/AuthProvider";
+import { STATIC_BASE } from "../../lib/config";
 
 
 // import upload from "../../lib/upload";
@@ -93,7 +94,7 @@ const Login = () => {
           </svg> */}
         </div>
         <div className="signin-google-outer">
-          <img src="./google.png"/>
+          <img src={`${STATIC_BASE}/google.png`}/>
           <div className="google-text" onClick={handleContinueWithGoogle}>Continue with Google</div>
         </div>
       </div>

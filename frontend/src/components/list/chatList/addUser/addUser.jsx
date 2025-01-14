@@ -3,6 +3,7 @@ import "./addUser.css";
 import { useState } from "react";
 import { useUserStore } from "../../../../lib/userStore";
 import axios from "axios";
+import { STATIC_BASE } from "../../../../lib/config";
 
 const AddUser = () => {
   const [user, setUser] = useState(null);
@@ -51,7 +52,7 @@ const AddUser = () => {
       {user && (
         <div className="user">
           <div className="detail">
-            <img src={user.avatar || "./avatar.png"} alt="" />
+            <img src={user.avatar || `${STATIC_BASE}/avatar.png`} alt="" />
             <span>{user.username}</span>
           </div>
           <button onClick={handleAdd}>Add User</button>

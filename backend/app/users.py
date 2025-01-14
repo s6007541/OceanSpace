@@ -46,7 +46,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         response: Optional[Response] = None,
     ) -> None:
         if request is not None:
-            if request.url.path == "/auth/google/callback":
+            if request.url.path == "/api/auth/google/callback":
                 assert response is not None
                 if response.status_code == 204 or response.status_code == 200:
                     response.status_code = 307

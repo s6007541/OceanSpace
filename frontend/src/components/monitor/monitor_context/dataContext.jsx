@@ -2,6 +2,7 @@ import { createContext, useState, useEffect } from "react";
 import { useUserStore } from "../../../lib/userStore";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { STATIC_BASE } from "../../../lib/config";
 
 const DataContext = createContext({});
 
@@ -33,7 +34,7 @@ export const DataProvider = ({children}) => {
   
   // Load JSON Data
   useEffect(() => {
-    fetch('quiz.json')
+    fetch(`${STATIC_BASE}/quiz.json`)
       .then(res => res.json())
       .then(data => {
         setQuizs(data)

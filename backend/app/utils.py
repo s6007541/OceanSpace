@@ -13,10 +13,6 @@ def get_local_ip_address() -> str:
     return local_ip_address
 
 
-# TODO: fix this to the deployed URL
-frontend_url = f"http://localhost:5173"
-backend_url = f"http://localhost:8000"
-
 ENV = Config(".env")
 
 with open(Path(__file__).parent.parent / "llm_config.json") as f:

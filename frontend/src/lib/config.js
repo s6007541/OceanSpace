@@ -1,7 +1,10 @@
 // TODO: fix this to the deployed URL
-export const BACKEND_URL = `http://${window.location.hostname}:8000`;
-export const WEBSOCKET_URL = `ws://${window.location.hostname}:8000`;
-// export const BACKEND_URL = `https://ocean-space-backend.onrender.com`;
-// export const WEBSOCKET_URL = `wss://ocean-space-backend.onrender.com`;
-export const GOOGLE_CLIENT_ID = "1079915592880-u6kf2527fji1scja4ligh271fa1ru5v5.apps.googleusercontent.com";
+let protocol = window.location.protocol;
+let hostname = window.location.hostname;
+let ws_protocol = protocol === "https:" ? "wss:" : "ws:";
 
+export const BACKEND_URL = `${protocol}//${hostname}/api`;
+export const WEBSOCKET_URL = `${ws_protocol}//${hostname}/api`;
+export const GOOGLE_CLIENT_ID =
+  "241481830305-nccd24d43lpcuoovvmgdm51l2u7lqqm3.apps.googleusercontent.com";
+export const STATIC_BASE = "./static";

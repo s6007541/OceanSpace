@@ -1,6 +1,7 @@
 import "./home.css";
 import Userinfo from "../list/userInfo/Userinfo";
 import Navbar from "../navbar/Navbar";
+import { STATIC_BASE } from "../../lib/config";
 const Home = () => {
 
   return (
@@ -10,9 +11,9 @@ const Home = () => {
       <div className="main-content">
         <div className="outer-layer">
           <div className="latest_chat">
-            <img src='./dolphin.svg'></img>
+            <img src={`${STATIC_BASE}/dolphin.svg`}></img>
             <div className="latest_chat_text">แชทล่าสุดกับเพื่อนสาว “สีชมพู”</div>
-            <img src='./arrow-right.svg'></img>
+            <img src={`${STATIC_BASE}/arrow-right.svg`}></img>
           </div>
           <div className="diary-outer">
             <div className="diary-header-wrapper">
@@ -23,17 +24,17 @@ const Home = () => {
               <div className="diary">
                 <div className="emoji">🙂<br/>หาดร้างทุกข์</div>
                 <div className="diary-detail">มีเรื่องอะไรอยากให้ ทรายช่วยพัดมั้ย</div>
-                <img src='./diary1.svg'/>
+                <img src={`${STATIC_BASE}/diary1.svg`}/>
               </div>
               <div className="diary">
                 <div className="emoji">⭐<br/>สุขสมหวัง</div>
                 <div className="diary-detail">มีเรื่องอะไรอยาก ขอพรกันมั้ย</div>
-                <img src='./diary2.svg'/>
+                <img src={`${STATIC_BASE}/diary2.svg`}/>
               </div>
               <div className="diary">
                 <div className="emoji">💪🏻<br/>พลังใจ</div>
                 <div className="diary-detail">รับจดหมายลับ ให้กำลังใจจากทะเล</div>
-                <img src='./diary3.svg'/>
+                <img src={`${STATIC_BASE}/diary3.svg`}/>
               </div>
             </div>
             <div className="rank-outer">

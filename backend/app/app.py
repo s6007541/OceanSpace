@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 from uuid import UUID, uuid4
 
 from fastapi import (
+    APIRouter,
     Body,
     Depends,
     FastAPI,
@@ -17,7 +18,8 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
+from fastapi.staticfiles import StaticFiles
 from httpx_oauth.clients.google import GoogleOAuth2  # type: ignore
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,16 +60,9 @@ from .users import auth_backends, current_active_user, fastapi_users
 from .utils import ENV, get_local_ip_address
 
 
-origins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    f"http://{get_local_ip_address()}:5173",
-    "https://ocean-space.onrender.com",
-    "https://oceanspace.onrender.com"
-]
+origins = []
 
 connection_manager = ConnectionManager()
-# llm_client = SambaLLMClient()
 llm_client = GeminiLLMClient()
 notification_scheduler = NotificationScheduler(llm_client, connection_manager)
 
@@ -80,11 +75,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-google_oauth_client = GoogleOAuth2(
-    ENV.get("GOOGLE_CLIENT_ID"), ENV.get("GOOGLE_CLIENT_SECRET")
-)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -92,39 +82,47 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.mount("/assets", StaticFiles(directory="../frontend/dist/assets"), name="assets")
+app.mount("/static", StaticFiles(directory="../frontend/dist/static"), name="static")
 
-app.include_router(
+google_oauth_client = GoogleOAuth2(
+    ENV.get("GOOGLE_CLIENT_ID"), ENV.get("GOOGLE_CLIENT_SECRET")
+)
+
+api_router = APIRouter()
+
+api_router.include_router(
     fastapi_users.get_auth_router(auth_backends[0]),
     prefix="/auth",
     tags=["auth cookie"],
 )
-app.include_router(
+api_router.include_router(
     fastapi_users.get_auth_router(auth_backends[1]),
     prefix="/auth/jwt",
     tags=["auth jwt"],
 )
-app.include_router(
+api_router.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["auth"],
 )
-app.include_router(
+api_router.include_router(
     fastapi_users.get_reset_password_router(),
     prefix="/auth",
     tags=["auth"],
 )
-app.include_router(
+api_router.include_router(
     fastapi_users.get_verify_router(UserRead),
     prefix="/auth",
     tags=["auth"],
 )
-app.include_router(
+api_router.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
     tags=["users"],
 )
 
-app.include_router(
+api_router.include_router(
     fastapi_users.get_oauth_router(
         google_oauth_client,
         auth_backends[1],
@@ -136,7 +134,7 @@ app.include_router(
 )
 
 
-@app.get("/user-info", tags=["user info"])
+@api_router.get("/user-info", tags=["user info"])
 async def get_current_user_info(user: User = Depends(current_active_user)) -> UserModel:
     return UserModel(
         id=str(user.id),
@@ -150,7 +148,7 @@ async def get_current_user_info(user: User = Depends(current_active_user)) -> Us
     )
 
 
-@app.get("/user-info/id/{user_id}", tags=["user info"])
+@api_router.get("/user-info/id/{user_id}", tags=["user info"])
 async def get_user_info_by_id(
     user_id: str,
     user_db: UserDatabase = Depends(get_user_db),
@@ -166,7 +164,7 @@ async def get_user_info_by_id(
     )
 
 
-@app.get("/user-info/name/{username}", tags=["user info"])
+@api_router.get("/user-info/name/{username}", tags=["user info"])
 async def get_user_info_by_name(
     username: str,
     user_db: UserDatabase = Depends(get_user_db),
@@ -182,7 +180,7 @@ async def get_user_info_by_name(
     )
 
 
-@app.put("/user-info", tags=["user info"])
+@api_router.put("/user-info", tags=["user info"])
 async def update_user_info(
     body: Dict[str, Any] = Body(),
     user: User = Depends(current_active_user),
@@ -209,7 +207,7 @@ async def update_user_info(
     )
 
 
-@app.get("/profile-image/{user_id}")
+@api_router.get("/profile-image/{user_id}")
 async def get_profile_image(
     user_id: str,
     user_db: UserDatabase = Depends(get_user_db),
@@ -233,7 +231,7 @@ async def get_profile_image(
     return Response(content=img_bytes, media_type=f"image/{img_format.lower()}")
 
 
-@app.get("/user-chats", tags=["user chats"])
+@api_router.get("/user-chats", tags=["user chats"])
 async def get_current_user_chats(
     user: User = Depends(current_active_user),
     user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
@@ -257,7 +255,7 @@ async def get_current_user_chats(
     ]
 
 
-@app.get("/user-chats/{chat_id}", tags=["user chats"])
+@api_router.get("/user-chats/{chat_id}", tags=["user chats"])
 async def get_user_chat_by_id(
     chat_id: str,
     user: User = Depends(current_active_user),
@@ -283,7 +281,7 @@ async def get_user_chat_by_id(
     )
 
 
-@app.post("/user-chats", tags=["user chats"])
+@api_router.post("/user-chats", tags=["user chats"])
 async def create_user_chat(
     body: Dict[str, Any] = Body(),
     user: User = Depends(current_active_user),
@@ -317,7 +315,7 @@ async def create_user_chat(
     await db.commit()
 
 
-@app.put("/user-chats", tags=["user chats"])
+@api_router.put("/user-chats", tags=["user chats"])
 async def update_user_chat(
     user_chat_model: UserChatModel,
     chat_db: ChatDatabase = Depends(get_chat_db),
@@ -341,7 +339,7 @@ async def update_user_chat(
     await chat_db.update(chat)
 
 
-@app.delete("/user-chats/{chat_id}", tags=["user chats"])
+@api_router.delete("/user-chats/{chat_id}", tags=["user chats"])
 async def delete_user_chat(
     chat_id: str,
     user: User = Depends(current_active_user),
@@ -357,7 +355,7 @@ async def delete_user_chat(
         await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
 
 
-@app.get("/messages/{chat_id}", tags=["messages"])
+@api_router.get("/messages/{chat_id}", tags=["messages"])
 async def get_messages(
     chat_id: str,
     user: User = Depends(current_active_user),
@@ -379,7 +377,7 @@ async def get_messages(
     ]
 
 
-@app.post("/pss")
+@api_router.post("/pss")
 async def predict_pss(
     pss_question: PSSQuestionModel, user: User = Depends(current_active_user)
 ):
@@ -392,7 +390,7 @@ async def predict_pss(
 # Web socket handlers
 
 
-@app.websocket("/wss")
+@api_router.websocket("/wss")
 async def websocket_endpoint(
     websocket: WebSocket,
     user: User = Depends(get_ws_current_user),
@@ -609,3 +607,9 @@ async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSessio
 
     await connection_manager.send(user.id, ChatEvent.CHECKPOINT, {"topics": topics})
     await db.commit()
+
+app.include_router(api_router, prefix="/api")
+
+@app.get("/{other_path:path}")
+async def serve_react_app(other_path: str):
+    return FileResponse("../frontend/dist/index.html")

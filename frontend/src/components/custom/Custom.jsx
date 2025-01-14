@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useUserStore } from "../../lib/userStore";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { STATIC_BASE } from "../../lib/config";
 const Custom = ( ) => {
 
   const navigate = useNavigate(); 
@@ -27,7 +28,7 @@ const Custom = ( ) => {
 
   return (
     <div className="customPage">
-      <img className="goback" src="./cross.svg" onClick={goback}/>
+      <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
       <div className="header_text">
       ตั้งชื่อและโปรไฟล์
       </div>
@@ -38,7 +39,7 @@ const Custom = ( ) => {
       </svg> : <></>}
       {page === 2 || page === 3 ? 
       <div className="profile_pic_wrapper">
-        <img className="profile_pic" src={`./SeaCharacters/Large-150px/${image}.svg`}/> 
+        <img className="profile_pic" src={`${STATIC_BASE}/SeaCharacters/Large-150px/${image}.svg`}/> 
         <div className="profile_character">{character}</div>
         <div className="profile_name">{name}</div>
         {desc.length > 0 ? <div className="profile_desc">{desc}</div> : <></>}
@@ -50,16 +51,16 @@ const Custom = ( ) => {
       { page === 1 ?
       <div className="list_profile">
         <div className="list_profiles_inner">
-          <img src="./SeaCharacters/Medium-72px/Whale.svg" onClick={()=>setImage("Whale")}/>
-          <img src="./SeaCharacters/Medium-72px/Dolphin.svg" onClick={()=>setImage("Dolphin")}/>
-          <img src="./SeaCharacters/Medium-72px/Turtle.svg" onClick={()=>setImage("Turtle")}/>
-          <img src="./SeaCharacters/Medium-72px/Nemo.svg" onClick={()=>setImage("Nemo")}/>
+          <img src={`${STATIC_BASE}/SeaCharacters/Medium-72px/Whale.svg`} onClick={()=>setImage("Whale")}/>
+          <img src={`${STATIC_BASE}/SeaCharacters/Medium-72px/Dolphin.svg`} onClick={()=>setImage("Dolphin")}/>
+          <img src={`${STATIC_BASE}/SeaCharacters/Medium-72px/Turtle.svg`} onClick={()=>setImage("Turtle")}/>
+          <img src={`${STATIC_BASE}/SeaCharacters/Medium-72px/Nemo.svg`} onClick={()=>setImage("Nemo")}/>
         </div>
         <div className="list_profiles_inner">
-          <img src="./SeaCharacters/Medium-72px/Seal.svg"onClick={()=>setImage("Seal")}/>
-          <img src="./SeaCharacters/Medium-72px/Jellyfish.svg"onClick={()=>setImage("Jellyfish")}/>
-          <img src="./SeaCharacters/Medium-72px/Star.svg"onClick={()=>setImage("Star")}/>
-          <img src="./SeaCharacters/Medium-72px/Shark.svg"onClick={()=>setImage("Shark")}/>
+          <img src={`${STATIC_BASE}/SeaCharacters/Medium-72px/Seal.svg`}onClick={()=>setImage("Seal")}/>
+          <img src={`${STATIC_BASE}/SeaCharacters/Medium-72px/Jellyfish.svg`}onClick={()=>setImage("Jellyfish")}/>
+          <img src={`${STATIC_BASE}/SeaCharacters/Medium-72px/Star.svg`}onClick={()=>setImage("Star")}/>
+          <img src={`${STATIC_BASE}/SeaCharacters/Medium-72px/Shark.svg`}onClick={()=>setImage("Shark")}/>
         </div>
       </div>
       : <></>}

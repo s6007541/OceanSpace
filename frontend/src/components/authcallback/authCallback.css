@@ -7,13 +7,13 @@
 }
 
 body {
-  /* background-image: url("/OceanSpaceBg.jpg"); */
+  /* background-image: url("/static/OceanSpaceBg.jpg"); */
   background: linear-gradient(
       180deg,
       rgba(0, 0, 0, 0) 0%,
       rgba(0, 0, 0, 0.5) 58%
     ),
-    url("/OceanSpaceBg.jpg") lightgray 50%;
+    url("/static/OceanSpaceBg.jpg") lightgray 50%;
   display: flex;
   align-items: center;
   justify-content: center;

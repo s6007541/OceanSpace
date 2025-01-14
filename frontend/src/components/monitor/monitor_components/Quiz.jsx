@@ -3,6 +3,7 @@ import DataContext from '../monitor_context/dataContext';
 import { useEffect, useRef, useState } from "react";
 import "./quiz.css";
 import { useNavigate } from "react-router-dom";
+import { STATIC_BASE } from '../../../lib/config';
 
 
 const Quiz = () => {
@@ -20,7 +21,7 @@ const Quiz = () => {
       }
     return (
         <section className="question_section" style={{ display: `${showQuiz ? 'block' : 'none'}` }}>
-            <img className="goback" src="./cross.svg" onClick={goback}/>
+            <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
             <div className="header_text">แบบทดสอบ</div>
             <div className="progress">{quizs.indexOf(question) + 1} / {quizs?.length}</div>
 

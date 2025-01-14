@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./login.css";
 import { toast } from "react-toastify";
 import axios from "axios";
+import { STATIC_BASE } from "../../lib/config";
 
 
 const Register = () => {
@@ -83,7 +84,7 @@ const Register = () => {
           </svg> */}
         </div>
         <div className="signin-google-outer">
-          <img src="./google.png"/>
+          <img src={`${STATIC_BASE}/google.png`}/>
           <div className="google-text">Continue with Google</div>
         </div>
         

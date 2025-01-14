@@ -383,7 +383,7 @@ class GeminiLLMClient(LLMClient):
     }
 
     def __init__(self):
-        genai.configure(api_key=ENV.get("GOOGLE_API_KEY"))
+        genai.configure(api_key=ENV.get("GEMINI_API_KEY"))
         self.model = "gemini-1.5-flash-002"
         self.client = genai.GenerativeModel(self.model)
 

@@ -7,8 +7,8 @@
 }
 
 body {
-  /* background-image: url("/OceanSpaceBg.jpg"); */
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, rgba(0, 0, 0, 0.50) 58%), url("/OceanSpaceBg.jpg") lightgray 50%;
+  /* background-image: url("/static/OceanSpaceBg.jpg"); */
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, rgba(0, 0, 0, 0.50) 58%), url("/static/OceanSpaceBg.jpg") lightgray 50%;
   display: flex;
   align-items: center;
   justify-content: center;
