@@ -1,5 +1,4 @@
 import json
-import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple
@@ -18,7 +17,6 @@ from fastapi_users_db_sqlalchemy.access_token import (
     SQLAlchemyBaseAccessTokenTableUUID,
 )
 from fastapi_users_db_sqlalchemy.generics import GUID
-from pydantic_core import MultiHostUrl
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -31,32 +29,20 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy.pool import NullPool
 from sqlalchemy_utils import ScalarListType  # type: ignore
 
 from .connections import ChatEvent
 from .utils import AUTH_SECRET, ENV, JWT_ALGORITHM, JWT_AUDIENCE
 
-DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
-username = ENV.get("SUPABASE_USERNAME")
-password = ENV.get("SUPABASE_PASSWORD")
-dbname = ENV.get("SUPABASE_NAME")
-port = ENV.get("SUPABASE_PORT")
-host = ENV.get("SUPABASE_HOST")
+driver = "postgresql+asyncpg"
+username = ENV.get("AIVEN_USERNAME")
+password = ENV.get("AIVEN_PASSWORD")
+host = ENV.get("AIVEN_HOST")
+port = ENV.get("AIVEN_PORT")
+dbname = ENV.get("AIVEN_DB_NAME")
 
-# DATABASE_URL = f"postgresql+asyncpg://postgres:{password}@{host}:{port}/{dbname}"
-DATABASE_URL = MultiHostUrl.build(
-    scheme="postgresql+asyncpg",
-    username="postgres",
-    password=password,
-    host=f"{host}:{port}",
-    path=dbname,
-).unicode_string()
-# print(DATABASE_URL, flush=True)
-# postgresql://postgres:[YOUR-PASSWORD]@db.iiztcwhwabpnwecvlyrk.supabase.co:5432/postgres
-# DATABASE_URL = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}"
-
+DATABASE_URL = f"{driver}://{username}:{password}@{host}:{port}/{dbname}"
 USER_IMAGE_DIR = Path(__file__).parent.parent / "user_images"
 
 
@@ -325,18 +311,7 @@ class MessageDatabase(BaseDatabase):
         return results.scalars().all()
 
 
-# engine = create_async_engine(DATABASE_URL)
-
-engine = create_async_engine(
-    DATABASE_URL,
-    poolclass=NullPool, # important setting #1 , but maybe it's not required actually
-    # future=True,
-    # connect_args={ # important settings for asyncpg
-    #     "prepared_statement_name_func": lambda:  f"__asyncpg_{uuid.uuid4()}__",
-    #     "statement_cache_size": 0,
-    #     "prepared_statement_cache_size": 0,
-    # },
-) 
+engine = create_async_engine(DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 
