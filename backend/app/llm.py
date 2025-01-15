@@ -8,6 +8,7 @@ import requests  # type: ignore
 import google.generativeai as genai  # type: ignore
 from google.generativeai.types import content_types  # type: ignore
 from openai import OpenAI
+from pythainlp import sent_tokenize
 
 from .db import Message, User, UserChat
 from .schemas import PSSQuestionModel
@@ -30,18 +31,27 @@ class LLMClient:
         raise NotImplementedError
 
     def _post_process(self, text: str) -> List[str]:
-        sentences = [
-            sent.replace("ๆ", " ๆ ").rstrip()
-            for sent in (
-                text.rstrip(".")
+        def reformat(s: str) -> str:
+            return (
+                s.rstrip(".")
                 .replace(", ", " ")
                 .replace(". ", " ")
                 .replace(":", "")
                 .replace("ครับ", "")
                 .replace(" ๆ", "ๆ")
                 .replace("ๆ ", "ๆ")
-                .split(" ")
             )
+
+        def split(s: str, method: str = "whitespace") -> List[str]:
+            if method == "whitespace":
+                return s.split(" ")
+            elif method == "crfcut":
+                return sent_tokenize(s, engine="crfcut")
+            raise NotImplementedError()
+
+        sentences = [
+            sent.replace("ๆ", " ๆ ").rstrip()
+            for sent in split(reformat(text), "crfcut")
         ]
         return [sent for sent in sentences if sent]
 
