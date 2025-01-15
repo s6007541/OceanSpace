@@ -9,6 +9,7 @@ import { useSocket } from "../../lib/socket";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_URL, STATIC_BASE } from "../../lib/config";
 import axios from "axios";
+import { getTimezone } from "../../lib/timezone";
 
 const Chat = () => {
   const navigate = useNavigate(); 
@@ -178,6 +179,7 @@ const Chat = () => {
         chatId: chatId,
         senderId: currentUser.id,
         createdAt: Date.now(),
+        timezone: getTimezone(),
         text: text,
         buffer: true,
         emotionMode: "",
@@ -224,6 +226,7 @@ const Chat = () => {
           chatId: chatId,
           senderId: user.id,
           createdAt: Date.now(),
+          timezone: getTimezone(),
           text: "",
           buffer: false,
           emotionMode : emotionMode,
@@ -250,6 +253,7 @@ const Chat = () => {
             chatId: chatId,
             senderId: user.id,
             createdAt: Date.now(),
+            timezone: getTimezone(),
             text: "",
             buffer: false,
             emotionMode: "",

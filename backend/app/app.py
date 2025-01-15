@@ -66,6 +66,7 @@ connection_manager = ConnectionManager()
 llm_client = GeminiLLMClient()
 notification_scheduler = NotificationScheduler(llm_client, connection_manager)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Not needed if you setup a migration system like Alembic
@@ -368,6 +369,7 @@ async def get_messages(
             chatId=str(message.chat_id),
             senderId=str(message.sender_id),
             createdAt=int(message.created_at.timestamp() * 1000),
+            timezone=0,
             text=message.text,
             buffer=False,
             emotionMode="",
@@ -469,6 +471,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
                 new_message = Message(
                     sender_id=receiver.id,
                     chat_id=chat.id,
+                    created_at=datetime.now(),
                     text=sentence,
                 )
 
@@ -550,8 +553,8 @@ async def send_current_messages_to_llm(
         await asyncio.sleep(2)
         new_message = Message(
             id=uuid4(),
-            chat_id=chat.id,
             sender_id=llm_user.id,
+            chat_id=chat.id,
             created_at=datetime.now(),
             text=sentence,
         )
@@ -581,7 +584,7 @@ async def send_current_messages_to_llm(
         await db.commit()
 
     await notification_scheduler.analyze_and_schedule(
-        messages, user, llm_user, user_chat, chat, db
+        messages, message_model.timezone, user, llm_user, user_chat, chat, db
     )
 
     # await db.commit()
@@ -608,7 +611,9 @@ async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSessio
     await connection_manager.send(user.id, ChatEvent.CHECKPOINT, {"topics": topics})
     await db.commit()
 
+
 app.include_router(api_router, prefix="/api")
+
 
 @app.get("/{other_path:path}")
 async def serve_react_app(other_path: str):

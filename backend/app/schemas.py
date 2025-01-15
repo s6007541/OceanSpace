@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from fastapi_users import schemas
 from pydantic import BaseModel
@@ -47,6 +47,7 @@ class MessageModel(BaseModel):
     chatId: str
     senderId: str
     createdAt: int
+    timezone: Union[str, int]
     text: str
     buffer: bool
     emotionMode: str

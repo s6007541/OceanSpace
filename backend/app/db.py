@@ -89,10 +89,10 @@ class Chat(Base):
 
     id: Mapped[UUID_ID] = mapped_column(GUID, primary_key=True, default=uuid4)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(), nullable=False, default=datetime.now
+        DateTime(timezone=True), nullable=False, default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(), nullable=False, default=datetime.now
+        DateTime(timezone=True), nullable=False, default=func.now()
     )
 
 
@@ -125,7 +125,7 @@ class Message(Base):
     sender_id: Mapped[UUID_ID] = mapped_column(ForeignKey("user.id"), nullable=False)
     chat_id: Mapped[UUID_ID] = mapped_column(ForeignKey("chat.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(), nullable=False, default=datetime.now
+        DateTime(timezone=True), nullable=False, default=func.now()
     )
     text: Mapped[str] = mapped_column(String(), nullable=False)
 
@@ -142,6 +142,8 @@ class NotificationTask(Base):
     scheduled_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
+    timezone: Mapped[Optional[str]] = mapped_column(String(), nullable=True)
+    timedelta: Mapped[Optional[int]] = mapped_column(Integer(), nullable=True)
 
 
 class UserDatabase(SQLAlchemyUserDatabase):

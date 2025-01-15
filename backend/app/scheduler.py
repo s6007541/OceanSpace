@@ -1,9 +1,11 @@
 import asyncio
+import datetime
 import uuid
-from datetime import datetime, timedelta
-from typing import List
+from typing import List, Optional, Union
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
+import tzlocal
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from apscheduler.triggers.date import DateTrigger  # type: ignore
 from fastapi_users_db_sqlalchemy import UUID_ID
@@ -49,7 +51,11 @@ class NotificationScheduler:
             result = await db.execute(statement)
             tasks = result.scalars().all()
             for task in tasks:
-                if not self._validate_scheduled_time(datetime.now(), task.scheduled_at):
+                tz = _get_timezone(task.timezone, task.timedelta)
+                if not self._validate_scheduled_time(
+                    _astimezone(datetime.datetime.now(), tz),
+                    _astimezone(task.scheduled_at, tz),
+                ):
                     await db.delete(task)
                     continue
                 trigger = DateTrigger(run_date=task.scheduled_at)
@@ -120,10 +126,10 @@ class NotificationScheduler:
 
     def _validate_scheduled_time(
         self,
-        current_time: datetime,
-        scheduled_time: datetime,
-        min_time_delay: timedelta = timedelta(minutes=30),
-        max_time_delay: timedelta = timedelta(days=30),
+        current_time: datetime.datetime,
+        scheduled_time: datetime.datetime,
+        min_time_delay: datetime.timedelta = datetime.timedelta(minutes=30),
+        max_time_delay: datetime.timedelta = datetime.timedelta(days=30),
     ) -> bool:
         if scheduled_time < current_time + min_time_delay:
             return False
@@ -138,9 +144,10 @@ class NotificationScheduler:
         user_chat: UserChat,
         chat: Chat,
         context: List[Message],
+        timezone: Union[str, int],
         db: AsyncSession,
     ):
-        now = datetime.now()
+        now = _astimezone(datetime.datetime.now(), timezone)
         date_now = now.date().strftime("%d/%m/%Y")
         time_now = now.time().strftime("%H:%M")
 
@@ -167,7 +174,9 @@ class NotificationScheduler:
             message_list, temperature=0
         )
         answer_text = generated_text.rsplit("คำตอบ: ", 1)[1]
-        schedule_time = datetime.strptime(answer_text.strip(), "%d/%m/%Y, %H:%M")
+        schedule_time = _replace_timezone(
+            datetime.datetime.strptime(answer_text.strip(), "%d/%m/%Y, %H:%M"), timezone
+        )
 
         if not self._validate_scheduled_time(now, schedule_time):
             return
@@ -177,7 +186,9 @@ class NotificationScheduler:
             user_id=user.id,
             chat_id=user_chat.chat_id,
             context=[message.id for message in context],
-            scheduled_at=schedule_time,
+            scheduled_at=schedule_time.astimezone(tzlocal.get_localzone()),
+            timezone=timezone if isinstance(timezone, str) else None,
+            timedelta=timezone if isinstance(timezone, int) else None,
         )
         trigger = DateTrigger(run_date=schedule_time)
         self.scheduler.add_job(
@@ -202,6 +213,7 @@ class NotificationScheduler:
     async def analyze_and_schedule(
         self,
         messages: List[Message],
+        timezone: Union[str, int],
         user: User,
         llm_user: User,
         user_chat: UserChat,
@@ -210,7 +222,33 @@ class NotificationScheduler:
     ):
         context = self._get_context(user, messages)
         if await self.should_schedule(user, context):
-            await self.schedule(user, llm_user, user_chat, chat, context, db)
+            await self.schedule(user, llm_user, user_chat, chat, context, timezone, db)
+
+
+def _get_timezone(timezone: Optional[str], timedelta: Optional[int]) -> Union[str, int]:
+    if timezone is not None:
+        return timezone
+    if timedelta is not None:
+        return timedelta
+    raise ValueError("Either timezone or timedelta must be provided")
+
+
+def _astimezone(dt: datetime.datetime, timezone: Union[str, int]) -> datetime.datetime:
+    if isinstance(timezone, int):
+        tz = datetime.timezone(datetime.timedelta(minutes=timezone))
+    else:
+        tz = ZoneInfo(timezone)
+    return dt.astimezone(tz)
+
+
+def _replace_timezone(
+    dt: datetime.datetime, timezone: Union[str, int]
+) -> datetime.datetime:
+    if isinstance(timezone, int):
+        tz = datetime.timezone(datetime.timedelta(minutes=timezone))
+    else:
+        tz = ZoneInfo(timezone)
+    return dt.replace(tzinfo=tz)
 
 
 async def notification_task(
@@ -231,15 +269,16 @@ async def notification_task(
 
     assert llm_user.username is not None
 
-    context_time = context[-1].created_at if context else None
-    scheduled_time = task.scheduled_at
+    tz = _get_timezone(task.timezone, task.timedelta)
+    context_time = _astimezone(context[-1].created_at, tz) if context else None
+    scheduled_time = _astimezone(task.scheduled_at, tz)
     scheduled_time_date_str = util.thai_strftime(scheduled_time, "%-d %B %Y")
     scheduled_time_time_str = scheduled_time.strftime("%H:%M:%S")
     query_message = Message(
         id=uuid4(),
         sender_id=user.id,
         chat_id=chat.id,
-        created_at=datetime.now(),
+        created_at=datetime.datetime.now(),
         text=(
             (
                 f"คุณได้รับข้อความข้างต้นเมื่อวันที่ {util.thai_strftime(context_time, '%-d %B %Y')} เวลา {context_time.strftime('%H:%M:%S')} "
@@ -280,7 +319,7 @@ async def send_messages(
             id=uuid.uuid4(),
             chat_id=chat.id,
             sender_id=llm_user.id,
-            created_at=datetime.now(),
+            created_at=datetime.datetime.now(),
             text=message,
         )
 
