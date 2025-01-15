@@ -354,6 +354,8 @@ async def delete_user_chat(
         notification_scheduler.remove_task(task.id)
     if connection_manager.is_online(user.id):
         await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
+    await user_chat_db.session.commit()
+    await notification_task_db.session.commit()
 
 
 @api_router.get("/messages/{chat_id}", tags=["messages"])
