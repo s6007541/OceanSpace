@@ -20,6 +20,7 @@ const Chat = () => {
 
   const [showSelfHarm, setShowSelfHarm] = useState(false);
   const [harmOthers, setHarmOthers] = useState(false);
+  const [isFloatingDown, setIsFloatingDown] = useState(false);
 
   const [openFeedback, setOpenFeedback] = useState(-1);
   const [startWait, setStartWait] = useState(true);
@@ -118,11 +119,13 @@ const Chat = () => {
         console.log(data.data)
         if (data?.data?.pred === "self-harm") {
           // toast.error("self-harm")
-          setShowSelfHarm(true)
+          setShowSelfHarm(true);
+          setIsFloatingDown(false);
         }
         else if (data?.data?.pred === "harm others") {
           // toast.error("harm-others")
-          setHarmOthers(true)
+          setHarmOthers(true);
+          setIsFloatingDown(false);
         }
       }
     });
@@ -280,12 +283,21 @@ const Chat = () => {
     console.log(choosing)
   };
 
+  const handleGoBack = () => {
+    // Trigger the floating down animation
+    setIsFloatingDown(true);
+    // Wait for the animation to finish before hiding the component
+    setTimeout(() => {
+      setShowSelfHarm(false);
+    }, 700); // Match the timeout to the animation duration (0.7s)
+  };
+
   return (
     <div className="chat">
       {showSelfHarm ? 
-      <div className="self-harm">
+      <div className={`self-harm ${isFloatingDown ? 'float-down' : ''}`}>
         <div className="img-wrap">
-          <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={()=>{setShowSelfHarm(false)}}/>
+          <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={handleGoBack}/>
         </div>
         <div className="divout">
           <img className="harm_logo" src={`${STATIC_BASE}/harm_logo.svg`}/>

@@ -1,3 +1,25 @@
+@keyframes floatUp {
+  0% {
+      opacity: 0;
+      transform: translateY(100%);
+  }
+  100% {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes floatDown {
+  0% {
+      opacity: 1;
+      transform: translateY(0);
+  }
+  100% {
+      opacity: 0;
+      transform: translateY(100%);
+  }
+}
+
 .chat {
   flex: 1;
   padding:20px 0px 0px 0px;
@@ -7,103 +29,89 @@
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #92DEF3 0%, #074782 100%);
-  
+
+
   .self-harm {
-
-
-    position: absolute;
-    background: var(--OceanSpace-Brand-Secondary, #F06C9B);
-
-    width : 100vw;
-    height : 100vh;
-
-    .goback {
-      position: absolute;
-      /* padding : 20px; */
-      margin: 20px;
-      top : 0px;
-      right : 0px;
-      width: 24px;
-      height: 24px;
-    }
-    .divout {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--OceanSpace-Brand-Secondary, #F06C9B);
+      z-index: 1000;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      padding : 50px;
-      gap : 28px;
-      .harm_logo {
-        width: 150px;
-        height: 150px;
-      }
-      .upper-text {
-        display: flex;
-        width: 342px;
-        flex-direction: column;
-        align-items: center;
-        gap: 24px;
-        .topic {
-          align-self: stretch;
-          color: var(--White, #FFF);
-  
-          text-align: center;
-          /* OceanSpace/H3-500 */
-          font-family: Mitr;
-          font-size: 20px;
-          font-style: normal;
-          font-weight: 500;
-          line-height: normal;
-        }
-        .detail1 {
-          color: var(--White, #FFF);
+      animation: floatUp 0.7s ease-out forwards; /* Float Up animation when it appears */
 
-          text-align: center;
-          /* OceanSpace/Caption-L-300 */
-          font-family: Mitr;
-          font-size: 16px;
-          font-style: normal;
-          font-weight: 300;
-          line-height: normal;
-        }
-        .detail2 {
-          color: var(--White, #FFF);
+      &.float-down {
+          animation: floatDown 0.7s ease-in forwards; /* Float Down animation when Go Back is clicked */
+      }
 
-          text-align: center;
-          /* OceanSpace/Caption-L-300 */
-          font-family: Mitr;
-          font-size: 16px;
-          font-style: normal;
-          font-weight: 300;
-          line-height: normal;
-        }
+      .goback {
+          position: absolute;
+          margin: 20px;
+          top: 0;
+          right: 0;
+          width: 24px;
+          height: 24px;
+          cursor: pointer;
       }
-      .call {
-        color: var(--White, #FFF);
-        min-width : 80vw;
-        text-align: center;
-        /* OceanSpace/H2-500 */
-        font-family: Mitr;
-        font-size: 24px;
-        font-style: normal;
-        font-weight: 500;
-        line-height: normal;
-      }
-      .ending {
-        color: var(--White, #FFF);
 
-        text-align: center;
-        /* OceanSpace/Caption-L-300 */
-        font-family: Mitr;
-        font-size: 16px;
-        font-style: normal;
-        font-weight: 300;
-        line-height: normal;
+      .divout {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 50px;
+          gap: 28px;
+
+          .harm_logo {
+              width: 150px;
+              height: 150px;
+          }
+
+          .upper-text {
+              display: flex;
+              width: 342px;
+              flex-direction: column;
+              align-items: center;
+              gap: 24px;
+
+              .topic, .detail1, .detail2 {
+                  color: var(--White, #FFF);
+                  text-align: center;
+                  font-family: Mitr;
+                  line-height: normal;
+              }
+
+              .topic {
+                  font-size: 20px;
+                  font-weight: 500;
+              }
+
+              .detail1, .detail2 {
+                  font-size: 16px;
+                  font-weight: 300;
+              }
+          }
+
+          .call {
+              color: var(--White, #FFF);
+              min-width: 80vw;
+              text-align: center;
+              font-family: Mitr;
+              font-size: 24px;
+              font-weight: 500;
+          }
+
+          .ending {
+              color: var(--White, #FFF);
+              text-align: center;
+              font-family: Mitr;
+              font-size: 16px;
+              font-weight: 300;
+          }
       }
-      
-    }
-    
-    
-    
   }
   .top {
     padding: 8px;
