@@ -1,3 +1,12 @@
+@keyframes slideRight {
+  0% {
+      transform: translateX(0);
+  }
+  100% {
+      transform: translateX(100%);
+  }
+}
+
 .llmProfile {
   display: flex;
   flex-direction: column;
@@ -8,7 +17,10 @@
   gap : 24px;
   /* padding : 28px; */
 
-
+  &.slide-right {
+    animation: slideRight 0.2s forwards ease-out; /* Apply the slide-right animation */
+  }
+  
   .goback {
       position: absolute;
       left:0;

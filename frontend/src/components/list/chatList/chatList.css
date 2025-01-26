@@ -1,11 +1,37 @@
+@keyframes slideRight {
+  0% {
+      transform: translateX(0);
+  }
+  100% {
+      transform: translateX(100%);
+  }
+}
+
+@keyframes slideLeft {
+  0% {
+      transform: translateX(0);
+  }
+  100% {
+      transform: translateX(-100%);
+  }
+}
+
+
+
 .outer {  
   flex : 1;
   display : flex;
   justify-content : center;
   background: #F4FCFF;
-  /* background : green; */
-  /* width : 50vw; */
-  /* height :100vh; */
+
+  &.slide-right {
+    animation: slideRight 0.2s forwards ease-out; /* Apply the slide-right animation */
+  }
+
+  &.slide-left {
+    animation: slideLeft 0.2s forwards ease-out; /* Apply the slide-right animation */
+  }
+
   .outer_chatlist {
     height :100vh;
     .addbar {
