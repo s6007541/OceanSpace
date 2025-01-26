@@ -17,6 +17,7 @@ const Chat = () => {
   const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [isSlidingRight, setIsSlidingRight] = useState(false);
 
   const [showSelfHarm, setShowSelfHarm] = useState(false);
   const [harmOthers, setHarmOthers] = useState(false);
@@ -56,8 +57,40 @@ const Chat = () => {
     }
   };
 
+  // Function to request fullscreen
+  const enterFullscreen = () => {
+    const elem = document.documentElement; // Get the entire document (html)
+
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.mozRequestFullScreen) { // Firefox
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) { // Chrome, Safari
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { // IE/Edge
+      elem.msRequestFullscreen();
+    }
+  };
+
+  // Function to exit fullscreen
+  const exitFullscreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.mozCancelFullScreen) { // Firefox
+      document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) { // Chrome, Safari
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { // IE/Edge
+      document.msExitFullscreen();
+    }
+  };
+
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (endRef.current) {
+      endRef.current.scrollTop = endRef.current.scrollHeight; // Scroll to the bottom
+    }
+    enterFullscreen();
+
   }, []);
 
   useEffect(() => {
@@ -141,9 +174,15 @@ const Chat = () => {
     } catch (err) {
       console.log(err);
     }
-
-    navigate("/ChatList");
-    resetChat();
+    // Trigger the floating down animation
+    setIsSlidingRight(true);
+    // Wait for the animation to finish before hiding the component
+    setTimeout(() => {
+      navigate("/ChatList");
+      resetChat();
+      exitFullscreen();
+    }, 200); // Match the timeout to the animation duration (0.7s)
+    
   };
 
   
@@ -171,6 +210,7 @@ const Chat = () => {
   };
 
   const handleSend = async () => {
+    enterFullscreen();
     if (latestRead === -3) {
       setLatestRead(chatRef.current.length);
     }
@@ -283,7 +323,7 @@ const Chat = () => {
     console.log(choosing)
   };
 
-  const handleGoBack = () => {
+  const handleCloseHarm = () => {
     // Trigger the floating down animation
     setIsFloatingDown(true);
     // Wait for the animation to finish before hiding the component
@@ -292,12 +332,13 @@ const Chat = () => {
     }, 700); // Match the timeout to the animation duration (0.7s)
   };
 
+
   return (
-    <div className="chat">
+    <div className={`chat ${isSlidingRight ? 'slide-right' : ''}`}>
       {showSelfHarm ? 
       <div className={`self-harm ${isFloatingDown ? 'float-down' : ''}`}>
         <div className="img-wrap">
-          <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={handleGoBack}/>
+          <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={handleCloseHarm}/>
         </div>
         <div className="divout">
           <img className="harm_logo" src={`${STATIC_BASE}/harm_logo.svg`}/>
@@ -342,7 +383,7 @@ const Chat = () => {
       </div>
 
       
-      <div className="center">
+      <div className="center" onClick={enterFullscreen} ref={endRef}> 
         {chat?.length === 0 ? 
         <div className="chat-greeting">
           <div className="img-topic">
@@ -385,7 +426,7 @@ const Chat = () => {
               </div>
 
               { index == openFeedback ?
-                <div className="reactions" >
+                <div className={`reactions animated-reactions`}>
                   <img id="like" className="feedbacks" src={`${STATIC_BASE}/likes.png`} onClick={handleFeedback} />
                   <img id="love" className="feedbacks" src={`${STATIC_BASE}/love.png`} onClick={handleFeedback} />
                   <img id="wow" className="feedbacks" src={`${STATIC_BASE}/wow.png`} onClick={handleFeedback} />
@@ -412,7 +453,7 @@ const Chat = () => {
         </div>
         }
 
-        <div ref={endRef}></div>
+        
         {/* <div ref={this.messagesEndRef} /> */}
       </div>
 
@@ -488,6 +529,7 @@ const Chat = () => {
           onKeyDown={handleKeyDown}
           onChange={(e) => setText(e.target.value)}
           disabled={isCurrentUserBlocked || isReceiverBlocked}
+          onClick={exitFullscreen}
         />
         <div className="emoji">
           <img
