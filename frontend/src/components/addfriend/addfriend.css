@@ -1,3 +1,22 @@
+@keyframes slideRight {
+  0% {
+      transform: translateX(0);
+  }
+  100% {
+      transform: translateX(100%);
+  }
+}
+
+@keyframes slideLeft {
+  0% {
+      transform: translateX(0);
+  }
+  100% {
+      transform: translateX(-100%);
+  }
+}
+
+
 .addFriend{
   
   display: flex;
@@ -7,6 +26,14 @@
   height: 100vh;  
   background: #F4FCFF;
   gap : 40px;
+  
+  &.slide-right {
+    animation: slideRight 0.2s forwards ease-out; /* Apply the slide-right animation */
+  }
+
+  &.slide-left {
+    animation: slideLeft 0.2s forwards ease-out; /* Apply the slide-right animation */
+  }
 
   .goback {
     position: absolute;

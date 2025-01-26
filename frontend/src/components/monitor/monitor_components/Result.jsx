@@ -2,7 +2,6 @@ import "./result.css";
 import React, { useContext } from 'react';
 import DataContext from '../monitor_context/dataContext';
 import Userinfo from "../../list/userInfo/Userinfo";
-import Navbar from "../../navbar/Navbar";
 import { useNavigate } from "react-router-dom";
 import { STATIC_BASE } from "../../../lib/config";
 

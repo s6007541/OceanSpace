@@ -5,13 +5,13 @@ import Navbar from "../../components/navbar/Navbar";
 import { useState, useEffect } from "react";
 
 const List = () => {
-  const [addMode, setAddMode] = useState(false);
+  const [isSlidingLeft, setIsSlidingLeft] = useState(false);
 
   return (
-    <div className="list">
+    <div className={`list ${isSlidingLeft ? 'slide-left' : ''}`}>
       <Userinfo />
       <Navbar />
-      <ChatList setAddMode={setAddMode} />
+      <ChatList setIsSlidingLeft={setIsSlidingLeft} />
 
     </div>
   );

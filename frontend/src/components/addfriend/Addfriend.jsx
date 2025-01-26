@@ -5,27 +5,35 @@ import { useNavigate } from "react-router-dom";
 import { useLocation } from 'react-router-dom';
 import axios from "axios";
 import { STATIC_BASE } from "../../lib/config";
+import { useState } from "react";
 
 const AddFriend = ( ) => {
   
   const navigate = useNavigate(); 
   const location = useLocation();
   const current_chat_list = location.state;
+  const [isSlidingRight, setIsSlidingRight] = useState(false);
+  const [isSlidingLeft, setIsSlidingLeft] = useState(false);
 
   const goback = () =>{ 
-    let path = `/ChatList`; 
-    // console.log("done");
-    navigate(path);
+    setIsSlidingRight(true);
+    setTimeout(() => {
+      navigate(`/ChatList`);
+    }, 200); // Match the timeout to the animation duration (0.7s)
+    
   }
   const gocustom = () =>{ 
-    let path = `/Custom`; 
-    // console.log("done");
-    navigate(path);
+    setIsSlidingLeft(true);
+    setTimeout(() => {
+      navigate(`/Custom`);
+    }, 200); // Match the timeout to the animation duration (0.7s)
   }
 
   const goLLMProfile = async (LLM_info) => {
-    navigate("/LLMProfile", {state : [LLM_info, location.state]});
-    // setAddMode(false);
+    setIsSlidingLeft(true);
+    setTimeout(() => {
+      navigate("/LLMProfile", {state : [LLM_info, location.state]});
+    }, 200); // Match the timeout to the animation duration (0.7s)
   };
 
 
@@ -45,8 +53,12 @@ const AddFriend = ( ) => {
         updatedAt: Date.now(),
       };
       await axios.post("/user-chats", newUserChat);
-      navigate("/ChatList")
-      navigate(0)
+      setIsSlidingRight(true);
+      setTimeout(() => {
+        navigate("/ChatList")
+        navigate(0)
+      }, 200); // Match the timeout to the animation duration (0.7s)
+      
     } catch (err) {
       console.log(err);
     }
@@ -55,7 +67,7 @@ const AddFriend = ( ) => {
 
   
   return (
-    <div className="addFriend">
+    <div className={`addFriend ${isSlidingRight ? 'slide-right' : (isSlidingLeft ? 'slide-left' : '')}`}>
       <img className="goback" src={`${STATIC_BASE}/arrowLeft.svg`} onClick={goback}/>
       <div className="header_text">
       รายชื่อเพื่อนทั้งหมด
