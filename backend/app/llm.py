@@ -171,6 +171,18 @@ class LLMClient:
         if cur_token is None:
             sentence = cur_str
             cur_str = ""
+        # elif len(in_bucket) > 0:
+        #     if in_bucket in cur_token:
+        #         if len(cur_token) == 1:
+        #             sentence = cur_str + cur_token[0]
+        #             cur_str = ""
+        #         else:
+        #             temp = cur_token.split(in_bucket)
+        #             sentence = cur_str + temp[0] + in_bucket
+        #             cur_str = in_bucket.join(temp[1:])
+        #     else:
+        #         cur_str += cur_token
+        #         continue_loop = True
         elif " " in cur_token:
             if len(cur_token) == 1:
                 if cur_str[-1] in ["ๆ", ",", '"', "'"]:
@@ -192,6 +204,9 @@ class LLMClient:
 
         if sentence is not None:
             sentence = sentence.strip(".")
+            sentence = sentence.replace("ครับ", "")
+            if len(sentence) == 0:
+                sentence = None
 
         return cur_str, sentence
 
