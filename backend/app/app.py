@@ -408,12 +408,16 @@ async def websocket_endpoint(
         while True:
             data = await websocket.receive_json()
             await db.refresh(user)
-            if data["type"] == ChatEvent.MESSAGE:
-                await handle_message(user, data, db)
-            elif data["type"] == ChatEvent.COMMIT_MESSAGES:
-                await send_current_messages_to_llm(user, data, db)
-            elif data["type"] == ChatEvent.CHECKPOINT:
-                await handle_checkpoint(user, data, db)
+            try:
+                if data["type"] == ChatEvent.MESSAGE:
+                    await handle_message(user, data, db)
+                elif data["type"] == ChatEvent.COMMIT_MESSAGES:
+                    await send_current_messages_to_llm(user, data, db)
+                elif data["type"] == ChatEvent.CHECKPOINT:
+                    await handle_checkpoint(user, data, db)
+            except Exception as e:
+                print("[WebSocker] Exception occurred:", e)
+                await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
     except WebSocketDisconnect:
         connection_manager.remove_connection(user.id, websocket)
         print(f"[WebSocket] {user.email} disconnected.")
