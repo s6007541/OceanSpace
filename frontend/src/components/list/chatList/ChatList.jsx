@@ -129,9 +129,6 @@ const ChatList = ({ setIsSlidingLeft }) => {
       console.log(err);
     }
   };
-  // setTimeout(() => {
-  //   setReady(true);
-  // }, 1000);
 
   const filteredChats = chats.filter((c) =>
     c.user.username.toLowerCase().includes(input.toLowerCase())
@@ -150,7 +147,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
     )
   </div>
       
-
+  
   return (
     <div className="outer">
       {(filteredChats.length > 0) && ready ? (
