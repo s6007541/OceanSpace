@@ -156,16 +156,24 @@ class LLMClient:
             sentence = cur_str
             cur_str = ""
         elif " " in cur_token:
-            cur_token = cur_token.split(" ")
-            assert len(cur_token) == 2
-            if len(cur_token[0]) == 0 and cur_str[-1] in ["ๆ", ","]:
-                cur_str += cur_token[1]
-                continue_loop = True
-            if len(cur_token[0]) > 0 and cur_token[0][-1] in ["ๆ", ","]:
-                cur_str += cur_token[1]
-                continue_loop = True
-            sentence = cur_str + cur_token[0]
-            cur_str = cur_token[1]
+            if len(cur_token) == 1:
+                if cur_str[-1] in ["ๆ", ",", '"', "'"]:
+                    cur_str += cur_token[0]
+                    continue_loop = True
+                else:
+                    sentence = cur_str
+                    cur_str = ""
+            else:
+                cur_token = cur_token.split(" ")
+                if len(cur_token[0]) == 0 and cur_str[-1] in ["ๆ", ",", '"', "'"]:
+                    cur_str += " ".join(cur_token[1:])
+                    continue_loop = True
+                elif len(cur_token[0]) > 0 and cur_token[0][-1] in ["ๆ", ",", '"', "'"]:
+                    cur_str += " ".join(cur_token)
+                    continue_loop = True
+                else:
+                    sentence = cur_str + cur_token[0]
+                    cur_str = cur_token[1]
         else:
             cur_str += cur_token
             continue_loop = True
