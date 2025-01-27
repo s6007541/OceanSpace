@@ -4,12 +4,12 @@ import { toast } from "react-toastify";
 import EmojiPicker from "emoji-picker-react";
 import { useChatStore } from "../../lib/chatStore";
 import { useUserStore } from "../../lib/userStore";
-import { LLM_LIST } from "../../lib/llm_lists";
 import { useSocket } from "../../lib/socket";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_URL, STATIC_BASE } from "../../lib/config";
 import axios from "axios";
 import { getTimezone } from "../../lib/timezone";
+import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
 
 const Chat = () => {
   const navigate = useNavigate(); 
@@ -328,6 +328,9 @@ const Chat = () => {
     }, 700); // Match the timeout to the animation duration (0.7s)
   };
 
+  console.log(user);
+  // console.log(LLM_DICT[user.alias]);
+
 
   return (
     <div className={`chat ${isSlidingRight ? 'slide-right' : ''}`}>
@@ -383,7 +386,8 @@ const Chat = () => {
         {chat?.length === 0 ? 
         <div className="chat-greeting">
           <div className="img-topic">
-            <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : `${STATIC_BASE}/avatar.png`}></img>
+            {/* <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : `${STATIC_BASE}/avatar.png`}></img> */}
+            <img src={(user && user.avatar) ? `${STATIC_BASE}/nobg_${LLM_DICT[user.alias].avatar}` : `${STATIC_BASE}/avatar.png`}></img>
             <div className="greeting-text-box">
               <div className="greeting-topic">เพื่อนที่เข้าใจคุณ</div>
               <div className="greeting-text">สนับสนุนและเข้าใจคุณไม่ว่าเมื่อไหร่</div>

@@ -173,7 +173,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
               >
                 <img
                   src={
-                    `${BACKEND_URL}/profile-image/${chat.receiverId}` ||
+                    `${STATIC_BASE}/SeaCharacters/Small-56px/${LLM_DICT[chat.user.alias].avatar}` ||
                     `${STATIC_BASE}/avatar.png`
                   }
                   alt=""
