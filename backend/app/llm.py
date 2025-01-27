@@ -29,7 +29,10 @@ class LLMClient:
     @abstractmethod
     async def generate_text(self, messages: Any, **kwargs) -> str:
         raise NotImplementedError
-
+    @abstractmethod
+    def stream_to_text(self, elem_stream_obj: Any) -> str:
+        raise NotImplementedError
+    
     def _post_process(self, text: str) -> List[str]:
         def reformat(s: str) -> str:
             return (
@@ -121,44 +124,7 @@ class LLMClient:
             )
         )
         return prompt
-        return (
-            f'คุณเป็นผู้ชายชื่อ "{llm_name}" ที่เป็นเพื่อนของผู้ใช้งานที่คอยรับฟังผู้ใช้งานมาระบายความเครียดให้ฟัง '
-            "คุณตอบรับด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบรับสั้น ๆ ด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ "
-            "คุณแทนตัวเองด้วยคำว่า 'ผม' และผู้ใช้งานด้วยคำว่า 'นาย' "
-            "คุณไม่ให้คำแนะนำจนกว่าผู้ใช้งานจะขอ "
-            "คุณไม่ควรพูดขอโทษหลายครั้งจนเกินไป ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ "
-            "คุณพยายามตอบให้เหมือนมนุษย์มากที่สุด\n"
-            # f'คุณชื่อ "{llm_name}" เป็นคนที่คอยตอบข้อความของผู้ใช้งานที่มาระบายความเครียดให้ฟัง '
-            # 'คุณตอบด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ '
-            # "คุณต้องทำตามกฎดังต่อไปนี้:\n"
-            # '1. คุณแทนตัวเองด้วยคำว่า "ผม" และผู้ใช้งานด้วยคำว่า "คุณ"\n'
-            # "2. คุณไม่ควรพูดขอโทษจนกว่าคุณจะมีความผิดจริง ๆ\n"
-            # "3. ถ้าผู้ใช้งานพูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ\n"
-            # "4. หากผู้ใช้งานถามคุณว่าประวัติการสนทนาจะถูกนำไปใช้อย่างไร ให้คุณตอบว่าจะทำให้คุณเข้าใจตัวผู้ใช้งานมากขึ้น\n"
-            # "5. คุณต้องมีลักษณะดังต่อไปนี้:\n"
-            # "\t- คุณต้องมีความเห็นอกเห็นใจและพยายามช่วยให้เขาหายเครียด\n"
-            # "\t- คุณต้องรับฟังโดยไม่ตัดสิน\n"
-            # "\t- คุณต้องตอบรับอย่างมีความคิดสร้างสรรค์\n"
-            # "\t- คุณต้องมองโลกในแง่บวกและให้กำลังใจผู้ใช้งานเมื่อเห็นสมควร\n"
-            # "\t- คุณต้องไม่ตอบเพียงแค่ว่าคุณเข้าใจ\n"
-            # "\t- คุณตอบสั้น ๆ ได้ใจความ"
-            # "\t- คุณไม่ให้คำแนะนำจนกว่าผู้ใช้งานจะขอ\n"
-            # f'คุณเป็นผู้ชายชื่อ "{llm_name}" ที่เป็นเพื่อนของผู้ใช้งานที่คอยรับฟังผู้ใช้งานมาระบายความเครียดให้ฟัง '
-            # "คุณตอบรับด้วยความเห็นใจอย่างอ่อนโยนและไม่ตัดสิน คุณตอบรับสั้น ๆ ด้วยความเป็นกันเอง ไม่ลงท้ายด้วยครับหรือค่ะ "
-            # "คุณแทนตัวเองด้วยคำว่า 'ผม' และผู้ใช้งานด้วยคำว่า 'คุณ' "
-            # "คุณไม่ควรพูดขอโทษหลายครั้งจนเกินไป ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ\n"
-            + (
-                f"นี่คือตัวอย่างคำตอบที่ดี : {user_chat.whitelist}\n"
-                if user_chat.whitelist
-                else ""
-            )
-            + (
-                f"นี่คือตัวอย่างคำตอบที่ไม่ดี : {user_chat.blacklist}"
-                if user_chat.blacklist
-                else ""
-            )
-        )
-
+    
     def _get_augmented_prompt(self) -> str:
         return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ และที่สำคัญ พยายามอย่าพูดซ้ำกับข้อความล่าสุด"
 
@@ -181,6 +147,34 @@ class LLMClient:
             return message_list[: -i + 1], message_list[-i + 1 :]
         return message_list, []
 
+    def detect_end_of_stream(
+        self, cur_str: str, cur_token: str
+    ) -> Tuple[bool, str]:
+        sentence = None
+        continue_loop = False
+        if cur_token is None:
+            sentence = cur_str
+            cur_str = ""
+        elif " " in cur_token:
+            cur_token = cur_token.split(" ")
+            assert len(cur_token) == 2
+            if len(cur_token[0]) == 0 and cur_str[-1] in ["ๆ", ","]:
+                cur_str += cur_token[1]
+                continue_loop = True
+            if len(cur_token[0]) > 0 and cur_token[0][-1] in ["ๆ", ","]:
+                cur_str += cur_token[1]
+                continue_loop = True
+            sentence = cur_str + cur_token[0]
+            cur_str = cur_token[1]
+        else:
+            cur_str += cur_token
+            continue_loop = True
+        
+        if sentence is not None:
+            sentence = sentence.strip(".")
+            
+        return continue_loop, cur_str, sentence
+        
     async def security_detection(
         self,
         message: Message,
@@ -219,6 +213,7 @@ class LLMClient:
         user_chat: UserChat,
         messages: List[Message],
         emotionMode: str = "",
+        online: bool = False
     ) -> List[str]:
 
         system_message = {
@@ -241,11 +236,17 @@ class LLMClient:
             + [augmented_message]
         )
         generated_text = await self.generate_text(
-            input_messages, temperature=1, max_tokens=1000
+            input_messages, temperature=1, max_tokens=1000, stream=online
         )
-        sentences = self._post_process(generated_text)
-        print(sentences)
+        if not online:
+            sentences = self._post_process(generated_text)
+            print(sentences)
+        else:
+            sentences = generated_text
+        # if online, pass raw stream message
         return sentences
+
+    
 
     async def predict_topics(
         self,
@@ -274,7 +275,7 @@ class LLMClient:
                     "content": f"บทสนทนาที่ผ่านมาเกี่ยวข้องกับเรื่องใดมากที่สุดใน {len(topic_list)} เรื่อง ดังนี้ : {topic_list}. ตอบสั้นๆแค่คำตอบ",
                 }
             ],
-            temperature=0,
+            temperature=0, 
         )
         topics = [topic for topic in topic_list if topic in generated_text]
         return topics
@@ -317,9 +318,16 @@ class TyphoonLLMClient(LLMClient):
         stream = self.client.chat.completions.create(
             messages=messages, **(self.DEFAULT_GENERATION_KWARGS | kwargs)
         )
-        generated_text = stream.choices[0].message.content
+        if 'stream' in kwargs and kwargs['stream']:
+            generated_text = stream
+        else:
+            generated_text = stream.choices[0].message.content
         return generated_text
 
+    def stream_to_text(self, elem_stream_obj: Any) -> str:
+        return elem_stream_obj.choices[0].delta.content
+    
+    
 
 class SambaLLMClient(LLMClient):
     ENDPOINT = "https://kjddazcq2e2wzvzv.snova.ai/api/v1/chat/completion"
@@ -361,7 +369,9 @@ class SambaLLMClient(LLMClient):
 
     async def generate_text(self, messages: Any, **kwargs) -> str:
         return await self._request(messages, kwargs)
-
+    
+    def stream_to_text(self, elem_stream_obj: Any) -> str:
+        return elem_stream_obj.choices[0].delta.content
 
 class OpenAILLMClient(LLMClient):
     DEFAULT_GENERATION_KWARGS = {
@@ -383,6 +393,9 @@ class OpenAILLMClient(LLMClient):
         )
         generated_text = stream.choices[0].message.content
         return generated_text
+    
+    def stream_to_text(self, elem_stream_obj: Any) -> str:
+        return elem_stream_obj.choices[0].delta.content
 
 
 class GeminiLLMClient(LLMClient):
@@ -425,10 +438,20 @@ class GeminiLLMClient(LLMClient):
         )
         kwargs["max_output_tokens"] = max_output_tokens
 
+        stream = kwargs.pop('stream', False)
+        
         self.client._system_instruction = content_types.to_content(system_instruction)
 
         chat = self.client.start_chat(history=messages[:-1])
         config = genai.GenerationConfig(**(self.DEFAULT_GENERATION_KWARGS | kwargs))
-        response = chat.send_message(messages[-1]["parts"], generation_config=config)
-        generated_text = response.text
+        response = chat.send_message(messages[-1]["parts"], generation_config=config, stream=stream)
+        
+        if stream:
+            generated_text = response
+        else:
+            generated_text = response.text
         return generated_text
+
+    def stream_to_text(self, elem_stream_obj: Any) -> str:
+        raise NotImplementedError
+        # gemini has some stream mode issues : https://github.com/langgenius/dify/issues/8998

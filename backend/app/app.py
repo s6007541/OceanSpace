@@ -46,6 +46,7 @@ from .db import (
     get_ws_current_user,
 )
 from .llm import GeminiLLMClient
+# from .llm import TyphoonLLMClient
 from .scheduler import NotificationScheduler
 from .schemas import (
     MessageModel,
@@ -64,6 +65,7 @@ origins = []
 
 connection_manager = ConnectionManager()
 llm_client = GeminiLLMClient()
+# llm_client = TyphoonLLMClient()
 notification_scheduler = NotificationScheduler(llm_client, connection_manager)
 
 
@@ -464,12 +466,20 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
             llm_name = receiver.username
             assert llm_name is not None
             messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id)
+            online = False
             sentences = await llm_client.generate_reply(
-                llm_name, user, user_chat, list(messages)
+                llm_name, user, user_chat, list(messages), online=online
             )
-
+            cur_str = ""
             # Send sentence one by one
-            for sentence in sentences:
+            for sentence_i, sentence in enumerate(sentences):
+                if online:
+                    print(sentence.text)
+                    cur_token = llm_client.stream_to_text(sentence)
+                    continue_loop, cur_str, sentence = llm_client.detect_end_of_stream(cur_str, cur_token)
+                    if continue_loop:
+                        continue
+                    
                 new_message = Message(
                     sender_id=receiver.id,
                     chat_id=chat.id,
@@ -496,6 +506,10 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
                         "text": sentence,
                     },
                 )
+                
+                if online and (cur_str is None):
+                    break
+                
     else:
         result = await db.execute(
             select(UserChat, Chat)
@@ -545,12 +559,20 @@ async def send_current_messages_to_llm(
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
     print([(m.text, m.sender_id) for m in messages])
 
+    online = False
     sentences = await llm_client.generate_reply(
-        llm_name, user, user_chat, messages, message_model.emotionMode
+        llm_name, user, user_chat, messages, message_model.emotionMode, online=online
     )
 
+    cur_str = ""
     # Send sentence one by one
     for sentence_i, sentence in enumerate(sentences):
+        if online:
+            print(sentence.text)
+            cur_token = llm_client.stream_to_text(sentence)
+            continue_loop, cur_str, sentence = llm_client.detect_end_of_stream(cur_str, cur_token)
+            if continue_loop:
+                continue
         # await time.sleep(2)
         await asyncio.sleep(2)
         new_message = Message(
@@ -580,17 +602,16 @@ async def send_current_messages_to_llm(
                     "senderId": str(new_message.sender_id),
                     "createdAt": int(new_message.created_at.timestamp() * 1000),
                     "text": sentence,
-                    "last_one": (sentence_i + 1) == len(sentences),
+                    "last_one": (sentence_i + 1) == len(sentences) if not online else (cur_token is None),
                 },
             )
         await db.commit()
+        if online and (cur_token is None):
+            break
 
     await notification_scheduler.analyze_and_schedule(
         messages, message_model.timezone, user, llm_user, user_chat, chat, db
     )
-
-    # await db.commit()
-
 
 async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSession):
     topic_list = ["ความรัก", "การเงิน", "การงาน", "ครอบครัว", "การเรียน"]
