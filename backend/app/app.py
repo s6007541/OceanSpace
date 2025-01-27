@@ -58,7 +58,7 @@ from .schemas import (
     UserUpdate,
 )
 from .users import auth_backends, current_active_user, fastapi_users
-from .utils import ENV, get_local_ip_address
+from .utils import ENV
 
 
 origins = []

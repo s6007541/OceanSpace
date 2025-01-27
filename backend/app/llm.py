@@ -12,16 +12,18 @@ from typing import (
 )
 from pathlib import Path
 
+import backoff
 import requests  # type: ignore
 import google.generativeai as genai  # type: ignore
+from google.api_core.exceptions import ResourceExhausted as GoogleRateLimitError
 from google.generativeai.types import content_types  # type: ignore
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError as OpenAIRateLimitError
 from openai.types.chat import ChatCompletion
 from pythainlp import sent_tokenize
 
 from .db import Message, User, UserChat
 from .schemas import PSSQuestionModel
-from .utils import ENV
+from .utils import ENV, APIKeyManager
 
 
 PROMPT_TEMPLATE_DIR = Path("./prompt_templates")
@@ -369,42 +371,44 @@ class OpenAILLMClient(LLMClient):
     }
 
     def __init__(self):
-        self.client = AsyncOpenAI(
-            api_key=ENV.get("OPENAI_API_KEY"),
-            base_url="https://api.openai.com/v1",
-        )
+        self.client = AsyncOpenAI(api_key="EMPTY", base_url="https://api.openai.com/v1")
+        self.key_manager = APIKeyManager.from_str(ENV.get("OPENAI_API_KEYS"))
 
+    @backoff.on_exception(backoff.expo, exception=OpenAIRateLimitError)
     async def generate_text(
         self, messages: Any, stream: bool = False, **kwargs
     ) -> AsyncGenerator[str, None]:
-        stream_or_resp = await self.client.chat.completions.create(
-            messages=messages,
-            stream=stream,
-            **(self.DEFAULT_GENERATION_KWARGS | kwargs),
-        )
-        if isinstance(stream_or_resp, ChatCompletion):
-            generated_text = stream_or_resp.choices[0].message.content
-            if generated_text is None:
-                raise ValueError("Invalid response from LLM")
-            yield generated_text
-        else:
-            async for chunk in stream_or_resp:
-                content = chunk.choices[0].delta.content
-                if content is None:
-                    return
-                yield content
+        with self.key_manager.context() as api_key:
+            self.client.api_key = api_key
+            stream_or_resp = await self.client.chat.completions.create(
+                messages=messages,
+                stream=stream,
+                **(self.DEFAULT_GENERATION_KWARGS | kwargs),
+            )
+            if isinstance(stream_or_resp, ChatCompletion):
+                generated_text = stream_or_resp.choices[0].message.content
+                if generated_text is None:
+                    raise ValueError("Invalid response from LLM")
+                yield generated_text
+            else:
+                async for chunk in stream_or_resp:
+                    content = chunk.choices[0].delta.content
+                    if content is None:
+                        return
+                    yield content
 
 
 class TyphoonLLMClient(OpenAILLMClient):
     DEFAULT_GENERATION_KWARGS = OpenAILLMClient.DEFAULT_GENERATION_KWARGS | {
-        "model": "typhoon-v2-70b-instruct",
+        "model": "typhoon-v1.5x-70b-instruct",
+        # "model": "typhoon-v2-70b-instruct",   # Found some bugs, the model may not be robust.
     }
 
     def __init__(self):
         self.client = AsyncOpenAI(
-            api_key=ENV.get("TYPHOON_API_KEY"), base_url="https://api.opentyphoon.ai/v1"
+            api_key="EMPTY", base_url="https://api.opentyphoon.ai/v1"
         )
-        self.num_api_keys = len(ENV.get("TYPHOON_API_KEY"))
+        self.key_manager = APIKeyManager.from_str(ENV.get("TYPHOON_API_KEY"))
 
 
 class SambaLLMClient(LLMClient):
@@ -417,7 +421,7 @@ class SambaLLMClient(LLMClient):
     }
 
     def __init__(self):
-        self.api_key = ENV.get("SAMBA_API_KEY")
+        self.key_manager = APIKeyManager.from_str(ENV.get("SAMBA_API_KEY"))
 
     def _get_payload(
         self, message_list: List[Dict[str, Any]], kwargs: Dict[str, Any]
@@ -425,10 +429,10 @@ class SambaLLMClient(LLMClient):
         return self.DEFAULT_GENERATION_KWARGS | kwargs | {"inputs": message_list}
 
     async def _request(
-        self, messages: List[Dict[str, Any]], kwargs: Dict[str, Any]
+        self, api_key: str, messages: List[Dict[str, Any]], kwargs: Dict[str, Any]
     ) -> str:
         headers = {
-            "Authorization": f"Basic {self.api_key}",
+            "Authorization": f"Basic {api_key}",
             "Content-Type": "application/json",
         }
 
@@ -448,7 +452,8 @@ class SambaLLMClient(LLMClient):
     async def generate_text(
         self, messages: Any, stream: bool = False, **kwargs
     ) -> AsyncGenerator[str, None]:
-        yield await self._request(messages, kwargs)
+        with self.key_manager.context() as api_key:
+            yield await self._request(api_key, messages, kwargs)
 
 
 class GeminiLLMClient(LLMClient):
@@ -459,8 +464,8 @@ class GeminiLLMClient(LLMClient):
     }
 
     def __init__(self):
-        genai.configure(api_key=ENV.get("GEMINI_API_KEY"))
         self.model = "gemini-1.5-flash-002"
+        self.key_manager = APIKeyManager.from_str(ENV.get("GEMINI_API_KEY"))
         self.client = genai.GenerativeModel(self.model)
 
     def _to_google_messsages(
@@ -484,22 +489,28 @@ class GeminiLLMClient(LLMClient):
 
         return "\n".join(system_instructions), ret
 
+    @backoff.on_exception(backoff.expo, exception=GoogleRateLimitError)
     async def generate_text(
         self, messages: Any, stream: bool = False, **kwargs
     ) -> AsyncGenerator[str, None]:
-        system_instruction, messages = self._to_google_messsages(messages)
-        max_output_tokens = kwargs.pop(
-            "max_tokens", self.DEFAULT_GENERATION_KWARGS["max_output_tokens"]
-        )
-        kwargs["max_output_tokens"] = max_output_tokens
+        with self.key_manager.context() as api_key:
+            genai.configure(api_key=api_key)
 
-        self.client._system_instruction = content_types.to_content(system_instruction)
+            system_instruction, messages = self._to_google_messsages(messages)
+            max_output_tokens = kwargs.pop(
+                "max_tokens", self.DEFAULT_GENERATION_KWARGS["max_output_tokens"]
+            )
+            kwargs["max_output_tokens"] = max_output_tokens
 
-        chat = self.client.start_chat(history=messages[:-1])
-        config = genai.GenerationConfig(**(self.DEFAULT_GENERATION_KWARGS | kwargs))
-        response = await chat.send_message_async(
-            messages[-1]["parts"], generation_config=config, stream=stream
-        )
+            self.client._system_instruction = content_types.to_content(
+                system_instruction
+            )
 
-        async for message in response:
-            yield message.candidates[0].content.parts[0].text
+            chat = self.client.start_chat(history=messages[:-1])
+            config = genai.GenerationConfig(**(self.DEFAULT_GENERATION_KWARGS | kwargs))
+            response = await chat.send_message_async(
+                messages[-1]["parts"], generation_config=config, stream=stream
+            )
+
+            async for message in response:
+                yield message.candidates[0].content.parts[0].text
