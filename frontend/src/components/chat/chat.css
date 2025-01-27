@@ -346,6 +346,35 @@
         }
       }
 
+      &.failed {
+        align-self: flex-end;
+        .texts {
+          
+          .textRead {
+            
+            justify-content: end;
+            p {
+              max-width: 80%;
+              border-radius: 8px;
+            
+              background: var(--OceanSpace-Black, grey);
+              opacity: 0.6;
+
+              color: #FFF;
+              text-align: left;
+              /* OceanSpace/Caption-M-300 */
+              font-family: Mitr;
+              font-size: 14px;
+              font-style: normal;
+              font-weight: 300;
+              line-height: normal;
+            }
+
+          }
+          
+        }
+      }
+
       img {
         width: 30px;
         height: 30px;

@@ -18,6 +18,9 @@ export const useSocket = create((set) => ({
           })
         );
       });
+      ws.addEventListener("close", (_) => {
+        set({ socket: null, socketConnected: false });
+      });
     } else {
       console.log("No token found.");
     }

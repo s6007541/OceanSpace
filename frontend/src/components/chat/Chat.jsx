@@ -126,6 +126,9 @@ const Chat = () => {
     }
 
     if (!socket || socketHandledRef.current) {
+      if (!textReady) {
+        setTextReady(true); // bubble stop
+      }
       return;
     }
     socketHandledRef.current = true;
@@ -212,6 +215,21 @@ const Chat = () => {
     }
     
     if (text === "") return;
+
+    if (socket === null) {
+      const message = {
+        chatId: chatId,
+        senderId: currentUser.id,
+        createdAt: Date.now(),
+        timezone: getTimezone(),
+        text: text,
+        failed: true,
+      };
+      chatRef.current.push(message);
+      setChat([...chatRef.current]);
+      setText("");
+      return;
+    }
 
     try {
       const message = {
@@ -406,7 +424,11 @@ const Chat = () => {
         {chat?.map((message, index) => (
           <div
             className={
-              message.senderId === currentUser?.id ? "message own" : "message"
+              message.senderId === currentUser?.id
+                ? Object.prototype.hasOwnProperty.call(message, "failed")
+                  ? "message failed"
+                  : "message own"
+                : "message"
             }
             key={message?.createAt}
           >
