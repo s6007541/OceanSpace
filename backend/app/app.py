@@ -474,7 +474,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
             # Send sentence one by one
             for sentence_i, sentence in enumerate(sentences):
                 if online:
-                    print(sentence.text)
+                    # print(sentence.text)
                     cur_token = llm_client.stream_to_text(sentence)
                     continue_loop, cur_str, sentence = llm_client.detect_end_of_stream(cur_str, cur_token)
                     if continue_loop:
@@ -568,7 +568,7 @@ async def send_current_messages_to_llm(
     # Send sentence one by one
     for sentence_i, sentence in enumerate(sentences):
         if online:
-            print(sentence.text)
+            # print(sentence.text)
             cur_token = llm_client.stream_to_text(sentence)
             continue_loop, cur_str, sentence = llm_client.detect_end_of_stream(cur_str, cur_token)
             if continue_loop:
