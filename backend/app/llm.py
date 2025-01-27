@@ -20,7 +20,7 @@ PROMPT_TEMPLATE_DIR = Path("./prompt_templates")
 
 class LLMClient:
     DEFAULT_GENERATION_KWARGS = {
-        "model": "typhoon-instruct",
+        "model": "typhoon-v2-70b-instruct",
         "max_tokens": 1000,
         "temperature": 0.6,
         "top_p": 1,
@@ -313,6 +313,7 @@ class TyphoonLLMClient(LLMClient):
         self.client = OpenAI(
             api_key=ENV.get("TYPHOON_API_KEY"), base_url="https://api.opentyphoon.ai/v1"
         )
+        self.num_api_keys = len(ENV.get("TYPHOON_API_KEY"))
 
     async def generate_text(self, messages: Any, **kwargs) -> str:
         stream = self.client.chat.completions.create(
