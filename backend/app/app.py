@@ -45,8 +45,8 @@ from .db import (
     get_user_chat_db,
     get_ws_current_user,
 )
-from .llm import GeminiLLMClient
-# from .llm import TyphoonLLMClient
+# from .llm import GeminiLLMClient
+from .llm import TyphoonLLMClient
 from .scheduler import NotificationScheduler
 from .schemas import (
     MessageModel,
@@ -64,8 +64,8 @@ from .utils import ENV, get_local_ip_address
 origins = []
 
 connection_manager = ConnectionManager()
-llm_client = GeminiLLMClient()
-# llm_client = TyphoonLLMClient()
+# llm_client = GeminiLLMClient()
+llm_client = TyphoonLLMClient()
 notification_scheduler = NotificationScheduler(llm_client, connection_manager)
 
 
@@ -466,7 +466,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
             llm_name = receiver.username
             assert llm_name is not None
             messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id)
-            online = False
+            online = True
             sentences = await llm_client.generate_reply(
                 llm_name, user, user_chat, list(messages), online=online
             )
@@ -559,7 +559,7 @@ async def send_current_messages_to_llm(
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
     print([(m.text, m.sender_id) for m in messages])
 
-    online = False
+    online = True
     sentences = await llm_client.generate_reply(
         llm_name, user, user_chat, messages, message_model.emotionMode, online=online
     )
