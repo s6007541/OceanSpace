@@ -1,13 +1,22 @@
 import asyncio
 import json
 from abc import abstractmethod
-from typing import Any, Dict, List, Tuple
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterator,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 from pathlib import Path
 
 import requests  # type: ignore
 import google.generativeai as genai  # type: ignore
 from google.generativeai.types import content_types  # type: ignore
-from openai import OpenAI
+from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletion
 from pythainlp import sent_tokenize
 
 from .db import Message, User, UserChat
@@ -20,19 +29,27 @@ PROMPT_TEMPLATE_DIR = Path("./prompt_templates")
 
 class LLMClient:
     DEFAULT_GENERATION_KWARGS = {
-        "model": "typhoon-v2-70b-instruct",
         "max_tokens": 1000,
         "temperature": 0.6,
         "top_p": 1,
     }
 
     @abstractmethod
-    async def generate_text(self, messages: Any, **kwargs) -> str:
-        raise NotImplementedError
-    @abstractmethod
-    def stream_to_text(self, elem_stream_obj: Any) -> str:
-        raise NotImplementedError
-    
+    def generate_text(
+        self, messages: Any, stream: bool = False, **kwargs
+    ) -> AsyncIterator[str]:
+        raise NotImplementedError()
+
+    async def generate_text_raw(
+        self, messages: Any, stream: bool = False, **kwargs
+    ) -> str:
+        return "".join(
+            [
+                text
+                async for text in self.generate_text(messages, stream=stream, **kwargs)
+            ]
+        )
+
     def _post_process(self, text: str) -> List[str]:
         def reformat(s: str) -> str:
             return (
@@ -124,7 +141,7 @@ class LLMClient:
             )
         )
         return prompt
-    
+
     def _get_augmented_prompt(self) -> str:
         return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ และที่สำคัญ พยายามอย่าพูดซ้ำกับข้อความล่าสุด"
 
@@ -148,10 +165,9 @@ class LLMClient:
         return message_list, []
 
     def detect_end_of_stream(
-        self, cur_str: str, cur_token: str
-    ) -> Tuple[bool, str]:
+        self, cur_str: str, cur_token: Optional[str]
+    ) -> Tuple[str, Optional[str]]:
         sentence = None
-        continue_loop = False
         if cur_token is None:
             sentence = cur_str
             cur_str = ""
@@ -159,35 +175,30 @@ class LLMClient:
             if len(cur_token) == 1:
                 if cur_str[-1] in ["ๆ", ",", '"', "'"]:
                     cur_str += cur_token[0]
-                    continue_loop = True
                 else:
                     sentence = cur_str
                     cur_str = ""
             else:
-                cur_token = cur_token.split(" ")
-                if len(cur_token[0]) == 0 and cur_str[-1] in ["ๆ", ",", '"', "'"]:
-                    cur_str += " ".join(cur_token[1:])
-                    continue_loop = True
-                elif len(cur_token[0]) > 0 and cur_token[0][-1] in ["ๆ", ",", '"', "'"]:
-                    cur_str += " ".join(cur_token)
-                    continue_loop = True
+                splitted = cur_token.split(" ")
+                if len(splitted[0]) == 0 and cur_str[-1] in ["ๆ", ",", '"', "'"]:
+                    cur_str += " ".join(splitted[1:])
+                elif len(splitted[0]) > 0 and splitted[0][-1] in ["ๆ", ",", '"', "'"]:
+                    cur_str += " ".join(splitted)
                 else:
-                    sentence = cur_str + cur_token[0]
-                    cur_str = cur_token[1]
+                    sentence = cur_str + splitted[0]
+                    cur_str = " ".join(splitted[1:])
         else:
             cur_str += cur_token
-            continue_loop = True
-        
+
         if sentence is not None:
             sentence = sentence.strip(".")
-            
-        return continue_loop, cur_str, sentence
-        
+
+        return cur_str, sentence
+
     async def security_detection(
         self,
         message: Message,
     ) -> str:
-
         security_system_message = {
             "role": "system",
             "content": self._get_security_prompt(),
@@ -199,20 +210,23 @@ class LLMClient:
         }
         input_messages = [security_system_message] + [target_message]
 
-        generated_text = await self.generate_text(
-            input_messages, temperature=0, max_tokens=1000
-        )
+        generated_texts = [
+            s
+            async for s in self.generate_text(
+                input_messages, temperature=0, max_tokens=1000
+            )
+        ]
+        if len(generated_texts) > 1:
+            raise ValueError("Security detection must be used in non-stream mode")
+        if len(generated_texts) == 0:
+            return "normal"
 
-        generated_text = generated_text.lower()
-        print("gen", generated_text)
+        generated_text = generated_texts[0].lower()
         if "self-harm" in generated_text:
             return "self-harm"
         if "harm others" in generated_text:
             return "harm others"
         return "normal"
-
-        # topics = [topic for topic in topic_list if topic in generated_text]
-        return generated_text
 
     async def generate_reply(
         self,
@@ -221,9 +235,8 @@ class LLMClient:
         user_chat: UserChat,
         messages: List[Message],
         emotionMode: str = "",
-        online: bool = False
-    ) -> List[str]:
-
+        stream: bool = False,
+    ) -> AsyncGenerator[str, None]:
         system_message = {
             "role": "system",
             "content": self._get_system_prompt(llm_name, user_chat, emotionMode),
@@ -243,18 +256,29 @@ class LLMClient:
             + new_messages
             + [augmented_message]
         )
-        generated_text = await self.generate_text(
-            input_messages, temperature=1, max_tokens=1000, stream=online
-        )
-        if not online:
-            sentences = self._post_process(generated_text)
-            print(sentences)
-        else:
-            sentences = generated_text
-        # if online, pass raw stream message
-        return sentences
 
-    
+        generator = self.generate_text(
+            input_messages, stream=stream, temperature=1, max_tokens=1000
+        )
+
+        if stream:
+            # Manually split sentences
+            cur_str = ""
+            async for generated_text in self.generate_text(
+                input_messages, stream=stream, temperature=1, max_tokens=1000
+            ):
+                cur_str, sentence = self.detect_end_of_stream(cur_str, generated_text)
+                if sentence is not None:
+                    yield sentence
+            if len(cur_str) > 0:
+                # Flush the remaining text
+                yield cur_str
+        else:
+            generated_texts = [s async for s in generator]
+            assert len(generated_texts) == 1
+            generated_text = generated_texts[0]
+            for sentence in self._post_process(generated_text):
+                yield sentence
 
     async def predict_topics(
         self,
@@ -263,7 +287,7 @@ class LLMClient:
         topic_list: List[str],
         n_messages: int,
     ) -> List[str]:
-        generated_text = await self.generate_text(
+        generator = self.generate_text(
             messages=[
                 {
                     "role": "system",
@@ -283,13 +307,20 @@ class LLMClient:
                     "content": f"บทสนทนาที่ผ่านมาเกี่ยวข้องกับเรื่องใดมากที่สุดใน {len(topic_list)} เรื่อง ดังนี้ : {topic_list}. ตอบสั้นๆแค่คำตอบ",
                 }
             ],
-            temperature=0, 
+            temperature=0,
         )
-        topics = [topic for topic in topic_list if topic in generated_text]
+
+        generated_texts = [s async for s in generator]
+        if len(generated_texts) > 1:
+            raise ValueError("Security detection must be used in non-stream mode")
+        if len(generated_texts) == 0:
+            return []
+
+        topics = [topic for topic in topic_list if topic in generated_texts[0]]
         return topics
 
     async def predict_pss(self, pss_question: PSSQuestionModel) -> float:
-        generated_text = await self.generate_text(
+        generated_text = self.generate_text(
             messages=[
                 {
                     "role": "system",
@@ -306,6 +337,7 @@ class LLMClient:
             ],
             temperature=0,
         )
+        assert isinstance(generated_text, str), "PSS must be used in non-stream mode"
         print(generated_text)
 
         try:
@@ -316,27 +348,49 @@ class LLMClient:
         return score
 
 
-class TyphoonLLMClient(LLMClient):
+class OpenAILLMClient(LLMClient):
+    DEFAULT_GENERATION_KWARGS = LLMClient.DEFAULT_GENERATION_KWARGS | {
+        "model": "gpt-3.5-turbo",
+    }
+
     def __init__(self):
-        self.client = OpenAI(
+        self.client = AsyncOpenAI(
+            api_key=ENV.get("OPENAI_API_KEY"),
+            base_url="https://api.openai.com/v1",
+        )
+
+    async def generate_text(
+        self, messages: Any, stream: bool = False, **kwargs
+    ) -> AsyncGenerator[str, None]:
+        stream_or_resp = await self.client.chat.completions.create(
+            messages=messages,
+            stream=stream,
+            **(self.DEFAULT_GENERATION_KWARGS | kwargs),
+        )
+        if isinstance(stream_or_resp, ChatCompletion):
+            generated_text = stream_or_resp.choices[0].message.content
+            if generated_text is None:
+                raise ValueError("Invalid response from LLM")
+            yield generated_text
+        else:
+            async for chunk in stream_or_resp:
+                content = chunk.choices[0].delta.content
+                if content is None:
+                    return
+                yield content
+
+
+class TyphoonLLMClient(OpenAILLMClient):
+    DEFAULT_GENERATION_KWARGS = OpenAILLMClient.DEFAULT_GENERATION_KWARGS | {
+        "model": "typhoon-v2-70b-instruct",
+    }
+
+    def __init__(self):
+        self.client = AsyncOpenAI(
             api_key=ENV.get("TYPHOON_API_KEY"), base_url="https://api.opentyphoon.ai/v1"
         )
         self.num_api_keys = len(ENV.get("TYPHOON_API_KEY"))
 
-    async def generate_text(self, messages: Any, **kwargs) -> str:
-        stream = self.client.chat.completions.create(
-            messages=messages, **(self.DEFAULT_GENERATION_KWARGS | kwargs)
-        )
-        if 'stream' in kwargs and kwargs['stream']:
-            generated_text = stream
-        else:
-            generated_text = stream.choices[0].message.content
-        return generated_text
-
-    def stream_to_text(self, elem_stream_obj: Any) -> str:
-        return elem_stream_obj.choices[0].delta.content
-    
-    
 
 class SambaLLMClient(LLMClient):
     ENDPOINT = "https://kjddazcq2e2wzvzv.snova.ai/api/v1/chat/completion"
@@ -376,35 +430,10 @@ class SambaLLMClient(LLMClient):
 
         raise Exception("Request failed with status code {response.status_code}")
 
-    async def generate_text(self, messages: Any, **kwargs) -> str:
-        return await self._request(messages, kwargs)
-    
-    def stream_to_text(self, elem_stream_obj: Any) -> str:
-        return elem_stream_obj.choices[0].delta.content
-
-class OpenAILLMClient(LLMClient):
-    DEFAULT_GENERATION_KWARGS = {
-        "model": "gpt-3.5-turbo",
-        "max_tokens": 1000,
-        "temperature": 0.6,
-        "top_p": 1,
-    }
-
-    def __init__(self):
-        self.client = OpenAI(
-            api_key=ENV.get("OPENAI_API_KEY"),
-            base_url="https://api.openai.com/v1",
-        )
-
-    async def generate_text(self, messages: Any, **kwargs) -> str:
-        stream = self.client.chat.completions.create(
-            messages=messages, **(self.DEFAULT_GENERATION_KWARGS | kwargs)
-        )
-        generated_text = stream.choices[0].message.content
-        return generated_text
-    
-    def stream_to_text(self, elem_stream_obj: Any) -> str:
-        return elem_stream_obj.choices[0].delta.content
+    async def generate_text(
+        self, messages: Any, stream: bool = False, **kwargs
+    ) -> AsyncGenerator[str, None]:
+        yield await self._request(messages, kwargs)
 
 
 class GeminiLLMClient(LLMClient):
@@ -440,27 +469,22 @@ class GeminiLLMClient(LLMClient):
 
         return "\n".join(system_instructions), ret
 
-    async def generate_text(self, messages: Any, **kwargs) -> str:
+    async def generate_text(
+        self, messages: Any, stream: bool = False, **kwargs
+    ) -> AsyncGenerator[str, None]:
         system_instruction, messages = self._to_google_messsages(messages)
         max_output_tokens = kwargs.pop(
             "max_tokens", self.DEFAULT_GENERATION_KWARGS["max_output_tokens"]
         )
         kwargs["max_output_tokens"] = max_output_tokens
 
-        stream = kwargs.pop('stream', False)
-        
         self.client._system_instruction = content_types.to_content(system_instruction)
 
         chat = self.client.start_chat(history=messages[:-1])
         config = genai.GenerationConfig(**(self.DEFAULT_GENERATION_KWARGS | kwargs))
-        response = chat.send_message(messages[-1]["parts"], generation_config=config, stream=stream)
-        
-        if stream:
-            generated_text = response
-        else:
-            generated_text = response.text
-        return generated_text
+        response = await chat.send_message_async(
+            messages[-1]["parts"], generation_config=config, stream=stream
+        )
 
-    def stream_to_text(self, elem_stream_obj: Any) -> str:
-        raise NotImplementedError
-        # gemini has some stream mode issues : https://github.com/langgenius/dify/issues/8998
+        async for message in response:
+            yield message.candidates[0].content.parts[0].text

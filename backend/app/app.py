@@ -466,21 +466,9 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
             llm_name = receiver.username
             assert llm_name is not None
             messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id)
-            online = True
-            sentences = await llm_client.generate_reply(
-                llm_name, user, user_chat, list(messages), online=online
-            )
-            cur_str = ""
-            # Send sentence one by one
-            for sentence_i, sentence in enumerate(sentences):
-                if online:
-                    # print(sentence.text)
-                    print(sentence)
-                    cur_token = llm_client.stream_to_text(sentence)
-                    continue_loop, cur_str, sentence = llm_client.detect_end_of_stream(cur_str, cur_token)
-                    if continue_loop:
-                        continue
-                    
+            async for sentence in llm_client.generate_reply(
+                llm_name, user, user_chat, list(messages), stream=True
+            ):
                 new_message = Message(
                     sender_id=receiver.id,
                     chat_id=chat.id,
@@ -507,10 +495,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
                         "text": sentence,
                     },
                 )
-                
-                if online and (cur_str is None):
-                    break
-                
+            await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
     else:
         result = await db.execute(
             select(UserChat, Chat)
@@ -560,22 +545,9 @@ async def send_current_messages_to_llm(
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
     print([(m.text, m.sender_id) for m in messages])
 
-    online = True
-    sentences = await llm_client.generate_reply(
-        llm_name, user, user_chat, messages, message_model.emotionMode, online=online
-    )
-
-    cur_str = ""
-    # Send sentence one by one
-    for sentence_i, sentence in enumerate(sentences):
-        if online:
-            # print(sentence.text)
-            print(sentence)
-            cur_token = llm_client.stream_to_text(sentence)
-            continue_loop, cur_str, sentence = llm_client.detect_end_of_stream(cur_str, cur_token)
-            if continue_loop:
-                continue
-        # await time.sleep(2)
+    async for sentence in llm_client.generate_reply(
+        llm_name, user, user_chat, messages, message_model.emotionMode, stream=True
+    ):
         await asyncio.sleep(2)
         new_message = Message(
             id=uuid4(),
@@ -604,16 +576,15 @@ async def send_current_messages_to_llm(
                     "senderId": str(new_message.sender_id),
                     "createdAt": int(new_message.created_at.timestamp() * 1000),
                     "text": sentence,
-                    "last_one": (sentence_i + 1) == len(sentences) if not online else (cur_token is None),
                 },
             )
         await db.commit()
-        if online and (cur_token is None):
-            break
+    await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
 
     await notification_scheduler.analyze_and_schedule(
         messages, message_model.timezone, user, llm_user, user_chat, chat, db
     )
+
 
 async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSession):
     topic_list = ["ความรัก", "การเงิน", "การงาน", "ครอบครัว", "การเรียน"]

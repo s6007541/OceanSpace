@@ -135,17 +135,13 @@ const Chat = () => {
         update_unreadMessages()
         chatRef.current.push(data.data);
         setChat([...chatRef.current]);
-
-        if (data.data.last_one === true){
-          console.log("socket")
-          console.log(textReady)
-          if (!newTextArrive) {
-            setTextReady(true); // bubble stop
-          }
-          setLatestRead(chatRef.current.length);
-
+      } else if (data.type === "message-done") {
+        console.log("socket")
+        console.log(textReady)
+        if (!newTextArrive) {
+          setTextReady(true); // bubble stop
         }
-        
+        setLatestRead(chatRef.current.length);
       } else if (data.type === "checkpoint") {
         console.log("Topic of interest: ", data.data)
       } else if (data.type === "sec-detection") {
