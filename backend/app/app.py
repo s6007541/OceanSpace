@@ -45,7 +45,8 @@ from .db import (
     get_user_chat_db,
     get_ws_current_user,
 )
-from .llm import GeminiLLMClient
+# from .llm import GeminiLLMClient
+from .llm import TyphoonLLMClient
 from .scheduler import NotificationScheduler
 from .schemas import (
     MessageModel,
@@ -57,13 +58,14 @@ from .schemas import (
     UserUpdate,
 )
 from .users import auth_backends, current_active_user, fastapi_users
-from .utils import ENV, get_local_ip_address
+from .utils import ENV
 
 
 origins = []
 
 connection_manager = ConnectionManager()
-llm_client = GeminiLLMClient()
+# llm_client = GeminiLLMClient()
+llm_client = TyphoonLLMClient()
 notification_scheduler = NotificationScheduler(llm_client, connection_manager)
 
 
@@ -406,12 +408,16 @@ async def websocket_endpoint(
         while True:
             data = await websocket.receive_json()
             await db.refresh(user)
-            if data["type"] == ChatEvent.MESSAGE:
-                await handle_message(user, data, db)
-            elif data["type"] == ChatEvent.COMMIT_MESSAGES:
-                await send_current_messages_to_llm(user, data, db)
-            elif data["type"] == ChatEvent.CHECKPOINT:
-                await handle_checkpoint(user, data, db)
+            try:
+                if data["type"] == ChatEvent.MESSAGE:
+                    await handle_message(user, data, db)
+                elif data["type"] == ChatEvent.COMMIT_MESSAGES:
+                    await send_current_messages_to_llm(user, data, db)
+                elif data["type"] == ChatEvent.CHECKPOINT:
+                    await handle_checkpoint(user, data, db)
+            except Exception as e:
+                print("[WebSocker] Exception occurred:", e)
+                await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
     except WebSocketDisconnect:
         connection_manager.remove_connection(user.id, websocket)
         print(f"[WebSocket] {user.email} disconnected.")
@@ -464,12 +470,9 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
             llm_name = receiver.username
             assert llm_name is not None
             messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id)
-            sentences = await llm_client.generate_reply(
-                llm_name, user, user_chat, list(messages)
-            )
-
-            # Send sentence one by one
-            for sentence in sentences:
+            async for sentence in llm_client.generate_reply(
+                llm_name, user, user_chat, list(messages), stream=True
+            ):
                 new_message = Message(
                     sender_id=receiver.id,
                     chat_id=chat.id,
@@ -496,6 +499,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
                         "text": sentence,
                     },
                 )
+            await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
     else:
         result = await db.execute(
             select(UserChat, Chat)
@@ -545,13 +549,9 @@ async def send_current_messages_to_llm(
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id))
     print([(m.text, m.sender_id) for m in messages])
 
-    sentences = await llm_client.generate_reply(
-        llm_name, user, user_chat, messages, message_model.emotionMode
-    )
-
-    # Send sentence one by one
-    for sentence_i, sentence in enumerate(sentences):
-        # await time.sleep(2)
+    async for sentence in llm_client.generate_reply(
+        llm_name, user, user_chat, messages, message_model.emotionMode, stream=True
+    ):
         await asyncio.sleep(2)
         new_message = Message(
             id=uuid4(),
@@ -580,16 +580,14 @@ async def send_current_messages_to_llm(
                     "senderId": str(new_message.sender_id),
                     "createdAt": int(new_message.created_at.timestamp() * 1000),
                     "text": sentence,
-                    "last_one": (sentence_i + 1) == len(sentences),
                 },
             )
         await db.commit()
+    await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
 
     await notification_scheduler.analyze_and_schedule(
         messages, message_model.timezone, user, llm_user, user_chat, chat, db
     )
-
-    # await db.commit()
 
 
 async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSession):

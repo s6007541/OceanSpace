@@ -1,9 +1,21 @@
+@keyframes slideLeft {
+  0% {
+      transform: translateX(0);
+  }
+  100% {
+      transform: translateX(-100%);
+  }
+}
+
 .list {
   flex: 1;
   display: flex;
   flex-direction: column;
   background-color: #F4FCFF;
-  
+
+  &.slide-left {
+    animation: slideLeft 0.2s forwards ease-out; /* Apply the slide-right animation */
+  }
   
   .addbar {
     border-top: 2px solid rgba(0, 0, 0, 0.20);;

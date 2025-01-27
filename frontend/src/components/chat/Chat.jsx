@@ -4,12 +4,12 @@ import { toast } from "react-toastify";
 import EmojiPicker from "emoji-picker-react";
 import { useChatStore } from "../../lib/chatStore";
 import { useUserStore } from "../../lib/userStore";
-import { LLM_LIST } from "../../lib/llm_lists";
 import { useSocket } from "../../lib/socket";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_URL, STATIC_BASE } from "../../lib/config";
 import axios from "axios";
 import { getTimezone } from "../../lib/timezone";
+import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
 
 const Chat = () => {
   const navigate = useNavigate(); 
@@ -17,9 +17,11 @@ const Chat = () => {
   const [chat, setChat] = useState();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [isSlidingRight, setIsSlidingRight] = useState(false);
 
   const [showSelfHarm, setShowSelfHarm] = useState(false);
   const [harmOthers, setHarmOthers] = useState(false);
+  const [isFloatingDown, setIsFloatingDown] = useState(false);
 
   const [openFeedback, setOpenFeedback] = useState(-1);
   const [startWait, setStartWait] = useState(true);
@@ -55,8 +57,40 @@ const Chat = () => {
     }
   };
 
+  // Function to request fullscreen
+  const enterFullscreen = () => {
+    const elem = document.documentElement; // Get the entire document (html)
+
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.mozRequestFullScreen) { // Firefox
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) { // Chrome, Safari
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { // IE/Edge
+      elem.msRequestFullscreen();
+    }
+  };
+
+  // Function to exit fullscreen
+  const exitFullscreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.mozCancelFullScreen) { // Firefox
+      document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) { // Chrome, Safari
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { // IE/Edge
+      document.msExitFullscreen();
+    }
+  };
+
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (endRef.current) {
+      endRef.current.scrollTop = endRef.current.scrollHeight; // Scroll to the bottom
+    }
+    enterFullscreen();
+
   }, []);
 
   useEffect(() => {
@@ -92,6 +126,9 @@ const Chat = () => {
     }
 
     if (!socket || socketHandledRef.current) {
+      if (!textReady) {
+        setTextReady(true); // bubble stop
+      }
       return;
     }
     socketHandledRef.current = true;
@@ -101,28 +138,26 @@ const Chat = () => {
         update_unreadMessages()
         chatRef.current.push(data.data);
         setChat([...chatRef.current]);
-
-        if (data.data.last_one === true){
-          console.log("socket")
-          console.log(textReady)
-          if (!newTextArrive) {
-            setTextReady(true); // bubble stop
-          }
-          setLatestRead(chatRef.current.length);
-
+      } else if (data.type === "message-done") {
+        console.log("socket")
+        console.log(textReady)
+        if (!newTextArrive) {
+          setTextReady(true); // bubble stop
         }
-        
+        setLatestRead(chatRef.current.length);
       } else if (data.type === "checkpoint") {
         console.log("Topic of interest: ", data.data)
       } else if (data.type === "sec-detection") {
         console.log(data.data)
         if (data?.data?.pred === "self-harm") {
           // toast.error("self-harm")
-          setShowSelfHarm(true)
+          setShowSelfHarm(true);
+          setIsFloatingDown(false);
         }
         else if (data?.data?.pred === "harm others") {
           // toast.error("harm-others")
-          setHarmOthers(true)
+          setHarmOthers(true);
+          setIsFloatingDown(false);
         }
       }
     });
@@ -138,9 +173,15 @@ const Chat = () => {
     } catch (err) {
       console.log(err);
     }
-
-    navigate("/ChatList");
-    resetChat();
+    // Trigger the floating down animation
+    setIsSlidingRight(true);
+    // Wait for the animation to finish before hiding the component
+    setTimeout(() => {
+      navigate("/ChatList");
+      resetChat();
+      exitFullscreen();
+    }, 200); // Match the timeout to the animation duration (0.7s)
+    
   };
 
   
@@ -168,11 +209,27 @@ const Chat = () => {
   };
 
   const handleSend = async () => {
+    enterFullscreen();
     if (latestRead === -3) {
       setLatestRead(chatRef.current.length);
     }
     
     if (text === "") return;
+
+    if (socket === null) {
+      const message = {
+        chatId: chatId,
+        senderId: currentUser.id,
+        createdAt: Date.now(),
+        timezone: getTimezone(),
+        text: text,
+        failed: true,
+      };
+      chatRef.current.push(message);
+      setChat([...chatRef.current]);
+      setText("");
+      return;
+    }
 
     try {
       const message = {
@@ -280,12 +337,25 @@ const Chat = () => {
     console.log(choosing)
   };
 
+  const handleCloseHarm = () => {
+    // Trigger the floating down animation
+    setIsFloatingDown(true);
+    // Wait for the animation to finish before hiding the component
+    setTimeout(() => {
+      setShowSelfHarm(false);
+    }, 700); // Match the timeout to the animation duration (0.7s)
+  };
+
+  console.log(user);
+  // console.log(LLM_DICT[user.alias]);
+
+
   return (
-    <div className="chat">
+    <div className={`chat ${isSlidingRight ? 'slide-right' : ''}`}>
       {showSelfHarm ? 
-      <div className="self-harm">
+      <div className={`self-harm ${isFloatingDown ? 'float-down' : ''}`}>
         <div className="img-wrap">
-          <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={()=>{setShowSelfHarm(false)}}/>
+          <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={handleCloseHarm}/>
         </div>
         <div className="divout">
           <img className="harm_logo" src={`${STATIC_BASE}/harm_logo.svg`}/>
@@ -330,11 +400,12 @@ const Chat = () => {
       </div>
 
       
-      <div className="center">
+      <div className="center" onClick={enterFullscreen} ref={endRef}> 
         {chat?.length === 0 ? 
         <div className="chat-greeting">
           <div className="img-topic">
-            <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : `${STATIC_BASE}/avatar.png`}></img>
+            {/* <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : `${STATIC_BASE}/avatar.png`}></img> */}
+            <img src={(user && user.avatar) ? `${STATIC_BASE}/nobg_${LLM_DICT[user.alias].avatar}` : `${STATIC_BASE}/avatar.png`}></img>
             <div className="greeting-text-box">
               <div className="greeting-topic">เพื่อนที่เข้าใจคุณ</div>
               <div className="greeting-text">สนับสนุนและเข้าใจคุณไม่ว่าเมื่อไหร่</div>
@@ -353,7 +424,11 @@ const Chat = () => {
         {chat?.map((message, index) => (
           <div
             className={
-              message.senderId === currentUser?.id ? "message own" : "message"
+              message.senderId === currentUser?.id
+                ? Object.prototype.hasOwnProperty.call(message, "failed")
+                  ? "message failed"
+                  : "message own"
+                : "message"
             }
             key={message?.createAt}
           >
@@ -373,7 +448,7 @@ const Chat = () => {
               </div>
 
               { index == openFeedback ?
-                <div className="reactions" >
+                <div className={`reactions animated-reactions`}>
                   <img id="like" className="feedbacks" src={`${STATIC_BASE}/likes.png`} onClick={handleFeedback} />
                   <img id="love" className="feedbacks" src={`${STATIC_BASE}/love.png`} onClick={handleFeedback} />
                   <img id="wow" className="feedbacks" src={`${STATIC_BASE}/wow.png`} onClick={handleFeedback} />
@@ -400,7 +475,7 @@ const Chat = () => {
         </div>
         }
 
-        <div ref={endRef}></div>
+        
         {/* <div ref={this.messagesEndRef} /> */}
       </div>
 
@@ -476,6 +551,7 @@ const Chat = () => {
           onKeyDown={handleKeyDown}
           onChange={(e) => setText(e.target.value)}
           disabled={isCurrentUserBlocked || isReceiverBlocked}
+          onClick={exitFullscreen}
         />
         <div className="emoji">
           <img

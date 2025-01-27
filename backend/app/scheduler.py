@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import uuid
-from typing import List, Optional, Union
+from typing import AsyncGenerator, List, Optional, Union
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -108,7 +108,7 @@ class NotificationScheduler:
                 }
             ]
         )
-        generated_text = await self.llm_client.generate_text(
+        generated_text = await self.llm_client.generate_text_raw(
             message_list, temperature=0
         )
         result = True if generated_text.strip() == "ใช่" else False
@@ -146,7 +146,7 @@ class NotificationScheduler:
         context: List[Message],
         timezone: Union[str, int],
         db: AsyncSession,
-    ):
+    ) -> None:
         now = _astimezone(datetime.datetime.now(), timezone)
         date_now = now.date().strftime("%d/%m/%Y")
         time_now = now.time().strftime("%H:%M")
@@ -170,7 +170,7 @@ class NotificationScheduler:
                 }
             ]
         )
-        generated_text = await self.llm_client.generate_text(
+        generated_text = await self.llm_client.generate_text_raw(
             message_list, temperature=0
         )
         answer_text = generated_text.rsplit("คำตอบ: ", 1)[1]
@@ -291,28 +291,28 @@ async def notification_task(
             "ฉันควรจะได้รับข้อความให้กำลังใจว่าอย่างไรดี"
         ),
     )
-    sentences = await llm_client.generate_reply(
+    generator = llm_client.generate_reply(
         llm_user.username,
         user,
         user_chat,
         list(context) + [query_message],
     )
 
-    await send_messages(
-        connection_manager, sentences, user, llm_user, user_chat, chat, db
+    await send_messages_async(
+        connection_manager, generator, user, llm_user, user_chat, chat, db
     )
 
 
-async def send_messages(
+async def send_messages_async(
     connection_manager: ConnectionManager,
-    messages: List[str],
+    message_generator: AsyncGenerator[str, None],
     user: User,
     llm_user: User,
     user_chat: UserChat,
     chat: Chat,
     db: AsyncSession,
 ):
-    for i, message in enumerate(messages):
+    async for message in message_generator:
         await asyncio.sleep(2)
 
         new_message = Message(
@@ -342,7 +342,7 @@ async def send_messages(
                     "senderId": str(new_message.sender_id),
                     "createdAt": int(new_message.created_at.timestamp() * 1000),
                     "text": message,
-                    "last_one": (i + 1) == len(messages),
                 },
             )
         await db.commit()
+    await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)

@@ -1,3 +1,34 @@
+@keyframes floatUp {
+  0% {
+      opacity: 0;
+      transform: translateY(100%);
+  }
+  100% {
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes floatDown {
+  0% {
+      opacity: 1;
+      transform: translateY(0);
+  }
+  100% {
+      opacity: 0;
+      transform: translateY(100%);
+  }
+}
+
+@keyframes slideRight {
+  0% {
+      transform: translateX(0);
+  }
+  100% {
+      transform: translateX(100%);
+  }
+}
+
 .chat {
   flex: 1;
   padding:20px 0px 0px 0px;
@@ -7,103 +38,91 @@
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #92DEF3 0%, #074782 100%);
-  
+
+  &.slide-right {
+    animation: slideRight 0.2s forwards ease-out; /* Apply the slide-right animation */
+  }
   .self-harm {
-
-
-    position: absolute;
-    background: var(--OceanSpace-Brand-Secondary, #F06C9B);
-
-    width : 100vw;
-    height : 100vh;
-
-    .goback {
-      position: absolute;
-      /* padding : 20px; */
-      margin: 20px;
-      top : 0px;
-      right : 0px;
-      width: 24px;
-      height: 24px;
-    }
-    .divout {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--OceanSpace-Brand-Secondary, #F06C9B);
+      z-index: 1000;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      padding : 50px;
-      gap : 28px;
-      .harm_logo {
-        width: 150px;
-        height: 150px;
-      }
-      .upper-text {
-        display: flex;
-        width: 342px;
-        flex-direction: column;
-        align-items: center;
-        gap: 24px;
-        .topic {
-          align-self: stretch;
-          color: var(--White, #FFF);
-  
-          text-align: center;
-          /* OceanSpace/H3-500 */
-          font-family: Mitr;
-          font-size: 20px;
-          font-style: normal;
-          font-weight: 500;
-          line-height: normal;
-        }
-        .detail1 {
-          color: var(--White, #FFF);
+      animation: floatUp 0.7s ease-out forwards; /* Float Up animation when it appears */
 
-          text-align: center;
-          /* OceanSpace/Caption-L-300 */
-          font-family: Mitr;
-          font-size: 16px;
-          font-style: normal;
-          font-weight: 300;
-          line-height: normal;
-        }
-        .detail2 {
-          color: var(--White, #FFF);
+      &.float-down {
+          animation: floatDown 0.7s ease-in forwards; /* Float Down animation when Go Back is clicked */
+      }
 
-          text-align: center;
-          /* OceanSpace/Caption-L-300 */
-          font-family: Mitr;
-          font-size: 16px;
-          font-style: normal;
-          font-weight: 300;
-          line-height: normal;
-        }
+      .goback {
+          position: absolute;
+          margin: 20px;
+          top: 0;
+          right: 0;
+          width: 24px;
+          height: 24px;
+          cursor: pointer;
       }
-      .call {
-        color: var(--White, #FFF);
-        min-width : 80vw;
-        text-align: center;
-        /* OceanSpace/H2-500 */
-        font-family: Mitr;
-        font-size: 24px;
-        font-style: normal;
-        font-weight: 500;
-        line-height: normal;
-      }
-      .ending {
-        color: var(--White, #FFF);
 
-        text-align: center;
-        /* OceanSpace/Caption-L-300 */
-        font-family: Mitr;
-        font-size: 16px;
-        font-style: normal;
-        font-weight: 300;
-        line-height: normal;
+      .divout {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 50px;
+          gap: 28px;
+
+          .harm_logo {
+              width: 150px;
+              height: 150px;
+          }
+
+          .upper-text {
+              display: flex;
+              width: 342px;
+              flex-direction: column;
+              align-items: center;
+              gap: 24px;
+
+              .topic, .detail1, .detail2 {
+                  color: var(--White, #FFF);
+                  text-align: center;
+                  font-family: Mitr;
+                  line-height: normal;
+              }
+
+              .topic {
+                  font-size: 20px;
+                  font-weight: 500;
+              }
+
+              .detail1, .detail2 {
+                  font-size: 16px;
+                  font-weight: 300;
+              }
+          }
+
+          .call {
+              color: var(--White, #FFF);
+              min-width: 80vw;
+              text-align: center;
+              font-family: Mitr;
+              font-size: 24px;
+              font-weight: 500;
+          }
+
+          .ending {
+              color: var(--White, #FFF);
+              text-align: center;
+              font-family: Mitr;
+              font-size: 16px;
+              font-weight: 300;
+          }
       }
-      
-    }
-    
-    
-    
   }
   .top {
     padding: 8px;
@@ -327,6 +346,35 @@
         }
       }
 
+      &.failed {
+        align-self: flex-end;
+        .texts {
+          
+          .textRead {
+            
+            justify-content: end;
+            p {
+              max-width: 80%;
+              border-radius: 8px;
+            
+              background: var(--OceanSpace-Black, grey);
+              opacity: 0.6;
+
+              color: #FFF;
+              text-align: left;
+              /* OceanSpace/Caption-M-300 */
+              font-family: Mitr;
+              font-size: 14px;
+              font-style: normal;
+              font-weight: 300;
+              line-height: normal;
+            }
+
+          }
+          
+        }
+      }
+
       img {
         width: 30px;
         height: 30px;
@@ -423,21 +471,31 @@
           gap: 10px;
           border-radius: 20px;
           background: rgba(255, 255, 255, 0.50);
+          transform: translateY(20px); /* Start from below */
+          transition: opacity 0.3s ease, transform 0.3s ease;
 
 
           /* justify-content: space-between; */
           .feedbacks {
             max-width: 25px;
             height: auto;
-            margin-left : 5px;
-            transition:transform 0.25s ease;
-            
+            margin-left: 5px;
+            transition: transform 0.25s ease;
           }
+  
           .feedbacks:hover {
-            -webkit-transform:scale(1.35); /* or some other value */
-            transform:scale(1.35);
+            transform: scale(1.35); /* Scale up on hover */
           }
         }
+
+        /* The animation class */
+        .animated-reactions {
+          opacity: 1; /* Fade in */
+          transform: translateY(0); /* Slide up */
+        }
+
+
+
         
       }
     }
@@ -505,64 +563,58 @@
   }
   
   .bottom-emotion-bar {
-    display: flex;
-    width: 100vw;
-    height : 40vh;
-    padding: 20px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    background-color: white;
-    .bottom-emotion-top-bar{
-      color: #000;
+      display: flex;
+      width: 100vw;
+      height: auto; /* Adjust height to auto to allow content to determine size */
+      padding: 16px; /* Slightly reduced padding for better content fit */
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px; /* Increased gap for more breathing space */
+      background-color: white;
+      animation: floatUp 0.4s ease-out forwards; /* Float Up animation when it appears */
 
-      /* OceanSpace/Body-400 */
-      font-family: Mitr;
-      font-size: 16px;
-      font-style: normal;
-      font-weight: 400;
-      line-height: normal;
-    }
-    .bottom-emotion-select-list {
-        display: flex;
-        flex-direction: column;
-        gap : 10px;
-        .bottom-emotion-select{
+      .bottom-emotion-top-bar {
+          color: #000;
+          font-family: Mitr;
+          font-size: 16px;
+          font-style: normal;
+          font-weight: 400;
+          line-height: 1.4; /* Added better line-height for readability */
+      }
 
+      .bottom-emotion-select-list {
           display: flex;
-          width: 350px;
-          padding: 12px;
-          justify-content: space-between;
-          gap: 12px;
-          border-radius: 12px;
+          flex-direction: column;
+          gap: 12px; /* Slightly increased gap for better spacing between items */
+          width: 100%; /* Ensure list takes the full available width */
 
-          /* border: 1px solid #FFF;
-          background: rgba(255, 255, 255, 0.20); */
-          /* border-radius: 12px; */
-          border: 1px solid var(--OceanSpace-Brand-Primary, #0D7FE8);
-          background: rgba(255, 255, 255, 0.20);
-          
+          .bottom-emotion-select {
+              display: flex;
+              width: 100%; /* Full width for a responsive layout */
+              max-width: 350px; /* Limit width for better readability on larger screens */
+              padding: 12px;
+              justify-content: space-between;
+              align-items: center; /* Ensures vertical alignment */
+              gap: 12px;
+              border-radius: 12px;
+              border: 1px solid var(--OceanSpace-Brand-Primary, #0D7FE8);
+              background: rgba(255, 255, 255, 0.20);
 
-          .first-bottom-emotion{
-            
-            color: #000;
+              .first-bottom-emotion {
+                  color: #000;
+                  font-family: Mitr;
+                  font-size: 16px;
+                  font-weight: 400;
+                  line-height: normal;
+              }
 
-            /* OceanSpace/Body-400 */
-            font-family: Mitr;
-            font-size: 16px;
-            font-style: normal;
-            font-weight: 400;
-            line-height: normal;
+              svg {
+                  width: 24px;
+                  height: 24px;
+                  flex-shrink: 0;
+              }
           }
-          svg{
-            
-            width: 24px;
-            height: 24px;
-            flex-shrink: 0;
-          }
-
-        }
-    }
+      }
   }
   .bottom {
     padding: 20px;

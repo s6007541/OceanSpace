@@ -9,13 +9,17 @@ import { LLM_DICT, LLM_LIST } from "../../../lib/llm_lists";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const ChatList = ({ setAddMode }) => {
+const ChatList = ({ setIsSlidingLeft }) => {
   const navigate = useNavigate();
 
   const goSeeAll = (current_chat_list) => {
     const chat_alias_list = filteredChats.map((e) => e.user.alias);
     console.log(chat_alias_list);
-    navigate("/AddFriend", { state: chat_alias_list });
+    setIsSlidingLeft(true);
+      setTimeout(() => {
+        navigate("/AddFriend", { state: chat_alias_list });
+      }, 200); // Match the timeout to the animation duration (0.7s)
+    
   };
   
   const [chats, setChats] = useState([]);
@@ -26,6 +30,9 @@ const ChatList = ({ setAddMode }) => {
   const { currentUser } = useUserStore();
   const { changeChat } = useChatStore();
   const { socket } = useSocket();
+
+
+
 
   async function fetchChatList() {
     // Get chat list.
@@ -41,6 +48,7 @@ const ChatList = ({ setAddMode }) => {
 
       const chatData = await Promise.all(promises);
       setChats(chatData);
+      setReady(true);
     } catch (err) {
       console.log(err);
     }
@@ -72,7 +80,12 @@ const ChatList = ({ setAddMode }) => {
     try {
       await axios.put("/user-chats", userChat);
       changeChat(userChat, user);
-      navigate("/Chat");
+
+      setIsSlidingLeft(true);
+      setTimeout(() => {
+        navigate("/Chat");
+      }, 200); // Match the timeout to the animation duration (0.7s)
+      
     } catch (err) {
       console.log(err);
     }
@@ -112,14 +125,10 @@ const ChatList = ({ setAddMode }) => {
       const llmInfo = res.data;
       res = await axios.post("/user-chats", { receiverId: llmInfo.id });
       await fetchChatList();
-      setAddMode(false);
     } catch (err) {
       console.log(err);
     }
   };
-  setTimeout(() => {
-    setReady(true);
-  }, 500);
 
   const filteredChats = chats.filter((c) =>
     c.user.username.toLowerCase().includes(input.toLowerCase())
@@ -138,7 +147,7 @@ const ChatList = ({ setAddMode }) => {
     )
   </div>
       
-
+  
   return (
     <div className="outer">
       {(filteredChats.length > 0) && ready ? (
@@ -164,7 +173,7 @@ const ChatList = ({ setAddMode }) => {
               >
                 <img
                   src={
-                    `${BACKEND_URL}/profile-image/${chat.receiverId}` ||
+                    `${STATIC_BASE}/SeaCharacters/Small-56px/${LLM_DICT[chat.user.alias].avatar}` ||
                     `${STATIC_BASE}/avatar.png`
                   }
                   alt=""
@@ -201,7 +210,6 @@ const ChatList = ({ setAddMode }) => {
                 )}
               </div>
             ))}
-            {/* {addMode && <AddUser addMode={addMode} setAddMode={setAddMode} />} */}
 
             {contextMenu && (
               <OptionMenu

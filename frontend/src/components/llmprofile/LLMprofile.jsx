@@ -4,6 +4,7 @@ import { useChatStore } from "../../lib/chatStore";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { STATIC_BASE } from "../../lib/config";
+import { useState } from "react";
 
 const LLMprofile = ( ) => {
   const { resetChat } = useChatStore();
@@ -16,10 +17,15 @@ const LLMprofile = ( ) => {
   console.log(current_chat_list)
   // console.log(current_chat_list.includes(LLM_info.id))
   const { currentUser } = useUserStore();
+  const [isSlidingRight, setIsSlidingRight] = useState(false);
+
   const goback = () =>{
-    let path = `/chat`; 
-    // console.log("done");
-    navigate(path);
+    setIsSlidingRight(true);
+    // Wait for the animation to finish before hiding the component
+    setTimeout(() => {
+      navigate("/ChatList");
+    }, 200); // Match the timeout to the animation duration (0.7s)
+        
   }
 
   const addLineBreak = (str) =>
@@ -44,7 +50,11 @@ const LLMprofile = ( ) => {
         updatedAt: Date.now(),
       };
       await axios.post("/user-chats", newUserChat);
-      navigate("/chat")
+      setIsSlidingRight(true);
+      // Wait for the animation to finish before hiding the component
+      setTimeout(() => {
+        navigate("/ChatList");
+      }, 200); // Match the timeout to the animation duration (0.7s)
     } catch (err) {
       console.log(err);
     }
@@ -54,7 +64,7 @@ const LLMprofile = ( ) => {
 
 
   return (
-    <div className="llmProfile" style={{background: LLM_info.color}}>
+    <div className={`llmProfile ${isSlidingRight ? 'slide-right' : ''}`} style={{background: LLM_info.color}}>
       <img className="goback" src={`${STATIC_BASE}/arrowLeft.svg`} onClick={goback}/>     
       <div className="header_text">{LLM_info.username}</div>
       <img className="profile_pic" src={`${STATIC_BASE}/SeaCharacters/Large-150px/${LLM_info.avatar}`}/> 

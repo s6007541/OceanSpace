@@ -1,3 +1,12 @@
+@keyframes slideRight {
+  0% {
+      transform: translateX(0);
+  }
+  100% {
+      transform: translateX(100%);
+  }
+}
+
 .addUser{
   width: max-content;
   height: max-content;
@@ -11,6 +20,10 @@
   right: 0;
   margin: auto;
 
+  &.slide-right {
+    animation: slideRight 0.2s forwards ease-out; /* Apply the slide-right animation */
+  }
+  
   form{
     display: flex;
     gap: 20px;

@@ -9,6 +9,7 @@ const AddUser = () => {
   const [user, setUser] = useState(null);
 
   const { currentUser } = useUserStore();
+  const [isSlidingRight, setIsSlidingRight] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -36,6 +37,8 @@ const AddUser = () => {
   };
 
   const handleAdd = async () => {
+    setIsSlidingRight(true);
+
     try {
       const _ = await axios.post("/user-chats", { receiverId: user.id });
     } catch (err) {
@@ -44,7 +47,7 @@ const AddUser = () => {
   };
 
   return (
-    <div className="addUser">
+    <div className={`addUser ${isSlidingRight ? 'slide-right' : ''}`}>
       <form onSubmit={handleSearch}>
         <input type="text" placeholder="Username" name="username" />
         <button>Search</button>
