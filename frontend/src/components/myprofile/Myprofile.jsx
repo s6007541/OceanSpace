@@ -18,7 +18,7 @@ const Myprofile = ( ) => {
 
   const [user, setUser] = useState(null);
 
-  const { currentUser, updateCurrentUserInfo } = useUserStore();
+  const { currentUser, updateCurrentUserInfo, resetCurrentUser } = useUserStore();
   const [notiOpen, setNotiOpen] = useState(currentUser.notification);
   const [text, setText] = useState(currentUser.emergencyContact ?? "");
 
@@ -29,6 +29,7 @@ const Myprofile = ( ) => {
       await axios.post("/auth/jwt/logout");
       setToken(null);
       resetChat();
+      resetCurrentUser();
       navigate('/login', { replace: true });
     } catch (err) {
       console.log(err);

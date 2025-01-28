@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export const useSocket = create((set) => ({
+export const useSocket = create((set, get) => ({
   socket: null,
   socketConnected: false,
   socketConnect: (url) => {
@@ -23,6 +23,13 @@ export const useSocket = create((set) => ({
       });
     } else {
       console.log("No token found.");
+    }
+  },
+  socketDisconnect: () => {
+    const { socket, socketConnected } = get();
+    if (socketConnected && socket) {
+      socket.close();
+      set({ socket: null, socketConnected: false });
     }
   },
 }));
