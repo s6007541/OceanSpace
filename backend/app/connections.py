@@ -17,7 +17,6 @@ class ChatEvent:
     SEC_DETECTION: str = "sec-detection"
 
 
-
 class ConnectionManager:
     def __init__(self) -> None:
         self.active_connections: Dict[UUID_ID, List[WebSocket]] = {}

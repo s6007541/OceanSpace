@@ -77,7 +77,9 @@ const App = () => {
     }
   }, [error_messages]);
 
-  loadErrorMessages(`${STATIC_BASE}/error_messages.json`);
+  if (!error_messages) {
+    loadErrorMessages(`${STATIC_BASE}/error_messages.json`);
+  }
 
   // if (isLoading) return <div className="loading">Loading...</div>;
 
