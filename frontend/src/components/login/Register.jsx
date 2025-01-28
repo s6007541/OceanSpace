@@ -46,25 +46,18 @@ const Register = () => {
       navigate("/login")
     } catch (err) {
       console.log(err);
-      const default_error_msg = "ไม่สามารถลงทะเบียนได้!";
+      let error_msg = "ไม่สามารถลงทะเบียนได้!";
       if (error_messages) {
         let error_code = err.response?.data?.detail.code;
         if (!error_code) {
           error_code = err.response?.data?.detail;
         }
-        if (error_code) {
-          const error_msg = error_messages[error_code];
-          if (error_msg) {
-            toast.error(error_msg);
-          } else {
-            toast.error(default_error_msg);
-          }
-        } else {
-          toast.error(default_error_msg);
+        const new_error_msg = error_messages[error_code];
+        if (new_error_msg) {
+          error_msg = new_error_msg;
         }
-      } else {
-        toast.error(default_error_msg);
       }
+      toast.error(error_msg);
     } finally {
       setLoading(false);
     }
