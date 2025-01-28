@@ -40,7 +40,8 @@ const AddFriend = ( ) => {
   const { currentUser } = useUserStore();
 
 
-  const handleAddLLM = async (LLMId) => {
+  const handleAddLLM = async (e, LLMId) => {
+    e.stopPropagation();
     try {
       const res = await axios.get(`/user-info/name/${LLMId}`);
       console.log(res)
@@ -56,7 +57,7 @@ const AddFriend = ( ) => {
       setIsSlidingRight(true);
       setTimeout(() => {
         navigate("/ChatList")
-        navigate(0)
+        // navigate(0)
       }, 200); // Match the timeout to the animation duration (0.7s)
       
     } catch (err) {
@@ -86,7 +87,7 @@ const AddFriend = ( ) => {
               <div className="username">{LLM_DICT[llm].username}</div>
               <div className="desc">{LLM_DICT[llm].description}</div>
             </div>
-            <button className="button-add" disabled={current_chat_list.includes(LLM_DICT[llm].id)} id={llm} onClick={() => handleAddLLM(LLM_DICT[llm].id)}>
+            <button className="button-add" disabled={current_chat_list.includes(LLM_DICT[llm].id)} id={llm} onClick={(e) => handleAddLLM(e, LLM_DICT[llm].id)}>
              {current_chat_list.includes(LLM_DICT[llm].id) ? "เพิ่มแล้ว" : "+ เพิ่ม"}
             </button>
           </div>
