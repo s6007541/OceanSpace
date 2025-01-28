@@ -8,7 +8,7 @@ const Custom = ( ) => {
 
   const navigate = useNavigate(); 
   const goback = () =>{ 
-    let path = `/chat`; 
+    let path = `/ChatList`; 
     navigate(path);
   }
   const gonext = () =>{ 
