@@ -6,7 +6,7 @@ import { useChatStore } from "../../lib/chatStore";
 import { useUserStore } from "../../lib/userStore";
 import { useSocket } from "../../lib/socket";
 import { useNavigate } from "react-router-dom";
-import { BACKEND_URL, STATIC_BASE } from "../../lib/config";
+import { STATIC_BASE } from "../../lib/config";
 import axios from "axios";
 import { getTimezone } from "../../lib/timezone";
 import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
@@ -32,7 +32,6 @@ const Chat = () => {
 
   const [checkpoint, setCheckpoint] = useState(20);
   const [emotionMode, setEmotionMode] = useState("");
-  const [numUnreadMessage, setNumUnreadMessage] = useState(0);
   const [choosing, setChoosing] = useState(false);
 
   const { currentUser } = useUserStore();
@@ -43,17 +42,60 @@ const Chat = () => {
     isCurrentUserBlocked,
     isReceiverBlocked,
     resetChat,
-    setDetail,
   } = useChatStore();
   const { socket } = useSocket();
 
   const chatRef = useRef();
-  const socketHandledRef = useRef(false);
+  const socketListenerRef = useRef(false);
   const endRef = useRef(null);
 
   const handleKeyDown = async (event) => {
     if (event.key === 'Enter') {
       await handleSend();
+    }
+  };
+
+  const updateUnreadMessages = async () => {
+    try {
+      const res = await axios.get(`/user-chats/${chatId}`);
+      const userChat = res.data;
+      userChat.unreadMessages = 0;
+      await axios.put("/user-chats", userChat);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  const socketMessageListener = async (event) => {
+    const data = JSON.parse(event.data);
+    if (data.chatId !== chatId) {
+      // ignore messages from other chats
+      return;
+    }
+    if (data.type === "message") {
+      updateUnreadMessages();
+      chatRef.current.push(data.data);
+      setChat([...chatRef.current]);
+    } else if (data.type === "message-done") {
+      console.log("socket");
+      console.log(textReady);
+      if (!newTextArrive) {
+        setTextReady(true); // bubble stop
+      }
+      setLatestRead(chatRef.current.length);
+    } else if (data.type === "checkpoint") {
+      console.log("Topic of interest: ", data.data);
+    } else if (data.type === "sec-detection") {
+      console.log(data.data);
+      if (data?.data?.pred === "self-harm") {
+        // toast.error("self-harm")
+        setShowSelfHarm(true);
+        setIsFloatingDown(false);
+      } else if (data?.data?.pred === "harm others") {
+        // toast.error("harm-others")
+        setHarmOthers(true);
+        setIsFloatingDown(false);
+      }
     }
   };
 
@@ -114,55 +156,28 @@ const Chat = () => {
   }, [chatData]);
 
   useEffect(() => {
-    async function update_unreadMessages() {
-      try {
-        const res = await axios.get(`/user-chats/${chatId}`);
-        const userChat = res.data;
-        userChat.unreadMessages = 0;
-        await axios.put("/user-chats", userChat);
-      } catch (err) {
-        console.log(err);
-      }
-    }
-
-    if (!socket || socketHandledRef.current) {
+    if (!socket || socketListenerRef.current) {
       if (!textReady) {
         setTextReady(true); // bubble stop
       }
       return;
     }
-    socketHandledRef.current = true;
-    socket.addEventListener("message", async (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "message") {
-        update_unreadMessages()
-        chatRef.current.push(data.data);
-        setChat([...chatRef.current]);
-      } else if (data.type === "message-done") {
-        console.log("socket")
-        console.log(textReady)
-        if (!newTextArrive) {
-          setTextReady(true); // bubble stop
-        }
-        setLatestRead(chatRef.current.length);
-      } else if (data.type === "checkpoint") {
-        console.log("Topic of interest: ", data.data)
-      } else if (data.type === "sec-detection") {
-        console.log(data.data)
-        if (data?.data?.pred === "self-harm") {
-          // toast.error("self-harm")
-          setShowSelfHarm(true);
-          setIsFloatingDown(false);
-        }
-        else if (data?.data?.pred === "harm others") {
-          // toast.error("harm-others")
-          setHarmOthers(true);
-          setIsFloatingDown(false);
-        }
-      }
-    });
+    if (chatId !== null) {
+      socketListenerRef.current = true;
+      socket.addEventListener("message", socketMessageListener);
+    }
   }, [socket]);
 
+  useEffect(() => {
+    if (socket) {
+      if (chatId === null) {
+        socket.removeEventListener("message", socketMessageListener);
+      } else if (!socketListenerRef.current) {
+        socketListenerRef.current = true;
+        socket.addEventListener("message", socketMessageListener);
+      }
+    }
+  }, [chatId]);
 
   const handleBack = async (e) => {
     try {

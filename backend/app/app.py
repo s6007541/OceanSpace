@@ -451,6 +451,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
     db.add(user_chat)
     db.add(chat)
     db.add(new_message)
+    await db.commit()
 
     if receiver.is_bot:
         ## sucidal detection
@@ -483,11 +484,13 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
 
                 user_chat.last_message = sentence
                 user_chat.is_seen = False
+                user_chat.unread_messages += 1
                 chat.updated_at = new_message.created_at
 
                 db.add(new_message)
                 db.add(user_chat)
                 db.add(chat)
+                await db.commit()
 
                 await connection_manager.send(
                     user.id,
@@ -524,13 +527,12 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
 
         db.add(receiver_user_chat)
         db.add(receiver_chat)
+        await db.commit()
 
         if connection_manager.is_online(receiver.id):
             await connection_manager.send(
                 receiver.id, ChatEvent.MESSAGE, message_model.model_dump()
             )
-
-    await db.commit()
 
 
 async def send_current_messages_to_llm(
@@ -570,6 +572,7 @@ async def send_current_messages_to_llm(
         db.add(new_message)
         db.add(user_chat)
         db.add(chat)
+        await db.commit()
 
         if connection_manager.is_online(user.id):
             await connection_manager.send(
@@ -586,9 +589,10 @@ async def send_current_messages_to_llm(
         await db.commit()
     await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
 
-    await notification_scheduler.analyze_and_schedule(
-        messages, message_model.timezone, user, llm_user, user_chat, chat, db
-    )
+    if user.notification:
+        await notification_scheduler.analyze_and_schedule(
+            messages, message_model.timezone, user, llm_user, user_chat, chat, db
+        )
 
 
 async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSession):
