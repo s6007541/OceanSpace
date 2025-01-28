@@ -308,7 +308,7 @@ async def create_user_chat(
     receiver = await UserDatabase(db, User).get(UUID(receiver_id))
     if receiver is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    if receiver.is_bot:
+    if not receiver.is_bot:
         new_receiver_chat = UserChat(
             user_id=UUID(receiver_id),
             chat_id=new_chat.id,
