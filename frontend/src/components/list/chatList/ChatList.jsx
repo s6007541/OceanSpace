@@ -30,7 +30,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
   const { currentUser } = useUserStore();
   const { chatId, changeChat } = useChatStore();
   const { socket } = useSocket();
-  const socketListenerRef = useRef(false);
+  const socketListenerRef = useRef(null);
 
   const fetchChatList = async () => {
     // Get chat list.
@@ -64,7 +64,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
       return;
     }
     if (chatId === null) {
-      socketListenerRef.current = true;
+      socketListenerRef.current = socketMessageListener;
       socket.addEventListener("message", socketMessageListener);
     }
   }, [socket]);
@@ -73,11 +73,11 @@ const ChatList = ({ setIsSlidingLeft }) => {
     if (socket) {
       if (chatId === null) {
         if (!socketListenerRef.current) {
-          socketListenerRef.current = true;
+          socketListenerRef.current = socketMessageListener;
           socket.addEventListener("message", socketMessageListener);
         }
       } else {
-        socket.removeEventListener("message", socketMessageListener);
+        socket.removeEventListener("message", socketListenerRef.current);
       }
     }
   }, [chatId]);

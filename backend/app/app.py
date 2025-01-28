@@ -3,7 +3,7 @@ import os
 from PIL import Image
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Union
 from uuid import UUID, uuid4
 
 from fastapi import (
@@ -20,6 +20,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
+from fastapi_users_db_sqlalchemy import UUID_ID
 from httpx_oauth.clients.google import GoogleOAuth2  # type: ignore
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -395,6 +396,66 @@ async def predict_pss(
 
 
 # Web socket handlers
+class SessionHandler:
+    def __init__(
+        self, on_exception: Optional[Callable[[str, Exception], Awaitable]] = None
+    ) -> None:
+        self.on_exception = on_exception
+        self._tasks: Set[asyncio.Task] = set()
+        self._sessions: Dict[str, asyncio.Queue[Optional[Awaitable]]] = {}
+        self._is_dead = False
+        self._clean_up_task: Set[asyncio.Task] = set()
+
+    async def add_task(self, task_id: str, task: Awaitable) -> bool:
+        if self._is_dead:
+            return False
+
+        if task_id not in self._sessions:
+            q = asyncio.Queue()
+            t = asyncio.create_task(self._handling_loop(task_id, q), name=task_id)
+            self._tasks.add(t)
+            t.add_done_callback(self._clean_up)
+            self._sessions[task_id] = q
+
+        await self._sessions[task_id].put(task)
+        return not self._is_dead
+
+    async def _handling_loop(self, task_id: str, q: asyncio.Queue) -> None:
+        try:
+            while True:
+                task = await q.get()
+                if task is None:
+                    break
+                try:
+                    await task
+                except WebSocketDisconnect as e:
+                    raise e
+                except Exception as e:
+                    if self.on_exception is not None:
+                        await self.on_exception(task_id, e)
+        except WebSocketDisconnect:
+            pass
+
+    def _clean_up(self, task: asyncio.Task) -> None:
+        t = asyncio.create_task(self._clean_up_async(task))
+        self._clean_up_task.add(t)
+        t.add_done_callback(self._clean_up_task.discard)
+
+    async def _clean_up_async(self, _) -> None:
+        if self._is_dead:
+            return
+        if self._tasks:
+            for task in self._tasks:
+                await self._sessions[task.get_name()].put(None)
+            _, pending = await asyncio.wait(self._tasks, timeout=60)
+            for task in pending:
+                task.cancel()
+        self._tasks.clear()
+        self._sessions.clear()
+        self._is_dead = True
+
+    async def close(self) -> None:
+        await self._clean_up_async(None)
 
 
 @api_router.websocket("/wss")
@@ -403,40 +464,71 @@ async def websocket_endpoint(
     user: User = Depends(get_ws_current_user),
     db: AsyncSession = Depends(get_async_session),
 ):
+    async def exception_handler(task_id: str, e: Exception) -> None:
+        print("[WebSocker] Exception occurred:", e)
+        await connection_manager.send(
+            user.id, ChatEvent.MESSAGE_DONE, {"chatId": task_id}
+        )
+
     print(f"[WebSocket] {user.email} connected")
     connection_manager.add_connection(user.id, websocket)
-    try:
-        while True:
+    session_handler = SessionHandler(on_exception=exception_handler)
+    success: bool = True
+    while success:
+        try:
             data = await websocket.receive_json()
-            await db.refresh(user)
-            try:
-                if data["type"] == ChatEvent.MESSAGE:
-                    await handle_message(user, data, db)
-                elif data["type"] == ChatEvent.COMMIT_MESSAGES:
-                    await send_current_messages_to_llm(user, data, db)
-                elif data["type"] == ChatEvent.CHECKPOINT:
-                    await handle_checkpoint(user, data, db)
-            except Exception as e:
-                print("[WebSocker] Exception occurred:", e)
-                await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
-    except WebSocketDisconnect:
-        connection_manager.remove_connection(user.id, websocket)
-        print(f"[WebSocket] {user.email} disconnected.")
+        except WebSocketDisconnect:
+            success = False
+            break
+        await db.refresh(user)
+        message = MessageModel.model_validate(data["data"])
+        if data["type"] == ChatEvent.MESSAGE:
+            success = await session_handler.add_task(
+                message.chatId, handle_message(user, data, message, db)
+            )
+        elif data["type"] == ChatEvent.COMMIT_MESSAGES:
+            success = await session_handler.add_task(
+                message.chatId,
+                send_current_messages_to_llm(user, data, message, db),
+            )
+        elif data["type"] == ChatEvent.CHECKPOINT:
+            success = await session_handler.add_task(
+                message.chatId, handle_checkpoint(user, data, message, db)
+            )
+    connection_manager.remove_connection(user.id, websocket)
+    await session_handler.close()
+    print(f"[WebSocket] {user.email} disconnected.")
 
 
-async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
+async def handle_message(
+    user: User, data: Dict[str, Any], message: MessageModel, db: AsyncSession
+):
+    still_connected: bool = True
+
+    async def try_sending(
+        user_id: UUID_ID,
+        event: str,
+        data: Optional[Union[str, Dict[str, Any]]] = None,
+    ) -> None:
+        nonlocal still_connected
+        if not still_connected:
+            return
+        try:
+            await connection_manager.send(user_id, event, data)
+        except WebSocketDisconnect:
+            still_connected = False
+
     # Send message
-    message_model = MessageModel.model_validate(message["data"])
-    chat_info = await get_chat_info(user.id, UUID(message_model.chatId), db)
+    chat_info = await get_chat_info(user.id, UUID(message.chatId), db)
 
     if chat_info is None:
         raise HTTPException(status_code=404, detail="User chat not found.")
 
     user_chat, chat, receiver = chat_info
 
-    created_at = datetime.fromtimestamp(message_model.createdAt / 1000)
+    created_at = datetime.fromtimestamp(message.createdAt / 1000)
 
-    user_chat.last_message = message_model.text
+    user_chat.last_message = message.text
     user_chat.is_seen = True
     chat.updated_at = created_at
 
@@ -445,7 +537,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
         sender_id=user.id,
         chat_id=chat.id,
         created_at=created_at,
-        text=message_model.text,
+        text=message.text,
     )
 
     db.add(user_chat)
@@ -459,16 +551,15 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
         assert llm_name is not None
         prediction = await llm_client.security_detection(new_message)
 
-        if connection_manager.is_online(user.id):
-            await connection_manager.send(
-                user.id,
-                ChatEvent.SEC_DETECTION,
-                {
-                    "pred": prediction,
-                },
-            )
+        await try_sending(
+            user.id,
+            ChatEvent.SEC_DETECTION,
+            {
+                "pred": prediction,
+            },
+        )
 
-        if not message_model.buffer:
+        if not message.buffer:
             llm_name = receiver.username
             assert llm_name is not None
             messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat.id)
@@ -492,7 +583,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
                 db.add(chat)
                 await db.commit()
 
-                await connection_manager.send(
+                await try_sending(
                     user.id,
                     ChatEvent.MESSAGE,
                     {
@@ -503,14 +594,16 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
                         "text": sentence,
                     },
                 )
-            await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
+            await try_sending(
+                user.id, ChatEvent.MESSAGE_DONE, {"chatId": message.chatId}
+            )
     else:
         result = await db.execute(
             select(UserChat, Chat)
             .join(Chat, UserChat.chat_id == Chat.id)
             .where(
                 UserChat.user_id == receiver.id,
-                UserChat.chat_id == message_model.chatId,
+                UserChat.chat_id == message.chatId,
             )
         )
 
@@ -521,7 +614,7 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
             raise HTTPException(status_code=404, detail="Receiver chat not found.")
         receiver_user_chat, receiver_chat = fetched_chat
 
-        receiver_user_chat.last_message = message_model.text
+        receiver_user_chat.last_message = message.text
         receiver_user_chat.is_seen = True
         receiver_chat.updated_at = created_at
 
@@ -529,18 +622,32 @@ async def handle_message(user: User, message: Dict[str, Any], db: AsyncSession):
         db.add(receiver_chat)
         await db.commit()
 
-        if connection_manager.is_online(receiver.id):
-            await connection_manager.send(
-                receiver.id, ChatEvent.MESSAGE, message_model.model_dump()
-            )
+        await try_sending(receiver.id, ChatEvent.MESSAGE, message.model_dump())
+
+    if not still_connected:
+        raise WebSocketDisconnect
 
 
 async def send_current_messages_to_llm(
-    user: User, message: Dict[str, Any], db: AsyncSession
+    user: User, data: Dict[str, Any], message: MessageModel, db: AsyncSession
 ):
-    message_model = MessageModel.model_validate(message["data"])
-    print(message_model.emotionMode)
-    chat_info = await get_chat_info(user.id, UUID(message_model.chatId), db)
+    still_connected: bool = True
+
+    async def try_sending(
+        user_id: UUID_ID,
+        event: str,
+        data: Optional[Union[str, Dict[str, Any]]] = None,
+    ) -> None:
+        nonlocal still_connected
+        if not still_connected:
+            return
+        try:
+            await connection_manager.send(user_id, event, data)
+        except WebSocketDisconnect:
+            still_connected = False
+
+    print(message.emotionMode)
+    chat_info = await get_chat_info(user.id, UUID(message.chatId), db)
 
     if chat_info is None:
         raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
@@ -553,7 +660,7 @@ async def send_current_messages_to_llm(
     print([(m.text, m.sender_id) for m in messages])
 
     async for sentence in llm_client.generate_reply(
-        llm_name, user, user_chat, messages, message_model.emotionMode, stream=True
+        llm_name, user, user_chat, messages, message.emotionMode, stream=True
     ):
         await asyncio.sleep(2)
         new_message = Message(
@@ -575,7 +682,7 @@ async def send_current_messages_to_llm(
         await db.commit()
 
         if connection_manager.is_online(user.id):
-            await connection_manager.send(
+            await try_sending(
                 user.id,
                 ChatEvent.MESSAGE,
                 {
@@ -587,20 +694,24 @@ async def send_current_messages_to_llm(
                 },
             )
         await db.commit()
-    await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
+    await try_sending(user.id, ChatEvent.MESSAGE_DONE, {"chatId": message.chatId})
 
     if user.notification:
         await notification_scheduler.analyze_and_schedule(
-            messages, message_model.timezone, user, llm_user, user_chat, chat, db
+            messages, message.timezone, user, llm_user, user_chat, chat, db
         )
 
+    if not still_connected:
+        raise WebSocketDisconnect
 
-async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSession):
+
+async def handle_checkpoint(
+    user: User, data: Dict[str, Any], message: MessageModel, db: AsyncSession
+):
     topic_list = ["ความรัก", "การเงิน", "การงาน", "ครอบครัว", "การเรียน"]
-    n_messages = message.get("nMessages", 20)
+    n_messages = data.get("nMessages", 20)
 
-    message_model = MessageModel.model_validate(message["data"])
-    chat_id = UUID(message_model.chatId)
+    chat_id = UUID(message.chatId)
     messages = await MessageDatabase(db).get_by_user_chat_id(user.id, chat_id)
 
     topics = await llm_client.predict_topics(
@@ -613,8 +724,8 @@ async def handle_checkpoint(user: User, message: Dict[str, Any], db: AsyncSessio
     user_chat.topics_of_interest = topics
     db.add(user_chat)
 
-    await connection_manager.send(user.id, ChatEvent.CHECKPOINT, {"topics": topics})
     await db.commit()
+    await connection_manager.send(user.id, ChatEvent.CHECKPOINT, {"topics": topics})
 
 
 app.include_router(api_router, prefix="/api")

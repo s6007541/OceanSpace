@@ -46,7 +46,7 @@ const Chat = () => {
   const { socket } = useSocket();
 
   const chatRef = useRef();
-  const socketListenerRef = useRef(false);
+  const socketListenerRef = useRef(null);
   const endRef = useRef(null);
 
   const handleKeyDown = async (event) => {
@@ -68,7 +68,7 @@ const Chat = () => {
 
   const socketMessageListener = async (event) => {
     const data = JSON.parse(event.data);
-    if (data.chatId !== chatId) {
+    if (data.data?.chatId !== chatId) {
       // ignore messages from other chats
       return;
     }
@@ -164,7 +164,7 @@ const Chat = () => {
       return;
     }
     if (chatId !== null) {
-      socketListenerRef.current = true;
+      socketListenerRef.current = socketMessageListener;
       socket.addEventListener("message", socketMessageListener);
     }
   }, [socket]);
@@ -172,9 +172,9 @@ const Chat = () => {
   useEffect(() => {
     if (socket) {
       if (chatId === null) {
-        socket.removeEventListener("message", socketMessageListener);
+        socket.removeEventListener("message", socketListenerRef.current);
       } else if (!socketListenerRef.current) {
-        socketListenerRef.current = true;
+        socketListenerRef.current = socketMessageListener;
         socket.addEventListener("message", socketMessageListener);
       }
     }
