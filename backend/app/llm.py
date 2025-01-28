@@ -240,10 +240,10 @@ class LLMClient:
             return "normal"
 
         generated_text = generated_texts[0].lower()
-        if "self-harm" in generated_text:
+        if "suicidal" in generated_text:
             return "self-harm"
-        if "harm others" in generated_text:
-            return "harm others"
+        # if "harm others" in generated_text:
+        #     return "harm others"
         return "normal"
 
     async def generate_reply(

@@ -154,11 +154,11 @@ const Chat = () => {
           setShowSelfHarm(true);
           setIsFloatingDown(false);
         }
-        else if (data?.data?.pred === "harm others") {
-          // toast.error("harm-others")
-          setHarmOthers(true);
-          setIsFloatingDown(false);
-        }
+        // else if (data?.data?.pred === "harm others") {
+        //   // toast.error("harm-others")
+        //   setHarmOthers(true);
+        //   setIsFloatingDown(false);
+        // }
       }
     });
   }, [socket]);
