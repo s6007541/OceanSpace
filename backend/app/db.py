@@ -231,9 +231,9 @@ class UserChatDatabase(BaseDatabase):
         await self.session.execute(stmt)
 
         if not await self.get_by_chat_id(chat_id):
-            stmt = delete(Chat).where(Chat.id == chat_id)
-            await self.session.execute(stmt)
             stmt = delete(Message).where(Message.chat_id == chat_id)
+            await self.session.execute(stmt)
+            stmt = delete(Chat).where(Chat.id == chat_id)
             await self.session.execute(stmt)
         await self.session.commit()
 
@@ -248,9 +248,9 @@ class UserChatDatabase(BaseDatabase):
         result = await self.session.execute(stmt)
 
         if not await self.get_by_chat_id(chat_id):
-            del_stmt = delete(Chat).where(Chat.id == chat_id)
-            await self.session.execute(del_stmt)
             del_stmt = delete(Message).where(Message.chat_id == chat_id)
+            await self.session.execute(del_stmt)
+            del_stmt = delete(Chat).where(Chat.id == chat_id)
             await self.session.execute(del_stmt)
         await self.session.commit()
 
