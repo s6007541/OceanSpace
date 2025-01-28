@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./chatList.css";
 import OptionMenu from "./optionMenu/optionMenu";
 import { useUserStore } from "../../../lib/userStore";
 import { useChatStore } from "../../../lib/chatStore";
 import { useSocket } from "../../../lib/socket";
-import { BACKEND_URL, STATIC_BASE } from "../../../lib/config";
+import { STATIC_BASE } from "../../../lib/config";
 import { LLM_DICT, LLM_LIST } from "../../../lib/llm_lists";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -28,13 +28,11 @@ const ChatList = ({ setIsSlidingLeft }) => {
   const [contextMenu, setContextMenu] = useState(null);
 
   const { currentUser } = useUserStore();
-  const { changeChat } = useChatStore();
+  const { chatId, changeChat } = useChatStore();
   const { socket } = useSocket();
+  const socketListenerRef = useRef(null);
 
-
-
-
-  async function fetchChatList() {
+  const fetchChatList = async () => {
     // Get chat list.
     try {
       // get chat data
@@ -54,17 +52,35 @@ const ChatList = ({ setIsSlidingLeft }) => {
     }
   }
 
+  const socketMessageListener = async (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "update-chat" || data.type === "message") {
+      await fetchChatList();
+    }
+  };
+
   useEffect(() => {
-    if (!socket) {
+    if (!socket || socketListenerRef.current) {
       return;
     }
-    socket.addEventListener("message", async (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "update-chat" || data.type === "message") {
-        await fetchChatList();
-      }
-    });
+    if (chatId === null) {
+      socketListenerRef.current = socketMessageListener;
+      socket.addEventListener("message", socketMessageListener);
+    }
   }, [socket]);
+
+  useEffect(() => {
+    if (socket) {
+      if (chatId === null) {
+        if (!socketListenerRef.current) {
+          socketListenerRef.current = socketMessageListener;
+          socket.addEventListener("message", socketMessageListener);
+        }
+      } else {
+        socket.removeEventListener("message", socketListenerRef.current);
+      }
+    }
+  }, [chatId]);
 
   useEffect(() => {
     if (currentUser.id === null) {

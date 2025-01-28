@@ -4,33 +4,33 @@
   display: flex;
   flex-direction: column;
   background: #FFF;
-  color : black;
+  color: black;
 
-  
   .main-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding : 20px;
+    padding: 20px;
     
-
     .outer-layer {
-      /* padding : 10px; */
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* Centers all child elements horizontally */
+      justify-content: center;
+      width: 100%; /* Make it responsive to parent width */
+      /* padding: 10px; */
       .latest_chat {
-        margin-left : 20px;
         display: flex;
         width: 350px;
         height: 60px;
         padding: 16px 12px 16px 16px;
-        align-items: center;
-        
         gap: 12px;
         flex-shrink: 0;
         border-radius: 20px;
         background: #F4FCFF;
-        .latest_chat_text{
+        .latest_chat_text {
           color: #000;
-  
+
           /* OceanSpace/Body-400 */
           font-family: Mitr;
           font-size: 16px;
@@ -39,16 +39,19 @@
           line-height: normal;
         }
       }
+
       .diary-outer {
         /* background-color: green; */
         display: flex;
         flex-direction: column;
-        padding : 10px 0px;
-        gap : 10px;
+        padding: 10px 0px;
+        gap: 10px;
         align-items: center;
         .diary-header-wrapper {
-          width : 100vw;
-          padding : 20px;
+          width: 100vw;
+          display: flex;
+          justify-content: center; /* Centers horizontally */
+          padding: 20px;
           .diary-header {
             color: #000;
             font-family: Mitr;
@@ -56,18 +59,21 @@
             font-style: normal;
             font-weight: 500;
             line-height: normal;
-            
           }
         }
-        
-        .diary-list {
-          
-          display: flex;            /* Apply flexbox layout */
 
-          gap : 12px;
-          max-width: 100vw;
-          overflow: hidden;
-          
+        .diary-list {
+          display: flex;
+          gap: 12px;
+          width: calc(2 * 160px + 24px); /* Showing 2 diary items at a time (140px each + gap) */
+          overflow-x: auto; /* Enable horizontal scrolling */
+          padding: 10px;
+          scroll-snap-type: x mandatory;
+        
+          /* Optional: Scrollbar customization */
+          scrollbar-width: thin;
+          scrollbar-color: #888 #f4fcff;
+
           .diary {
             display: flex;
             width: 140px;
@@ -77,6 +83,7 @@
             gap: 12px;
             border-radius: 12px;
             background: #F4FCFF;
+            flex-shrink: 0; /* Prevent shrinking while scrolling */
             .emoji {
               color: #000;
 
@@ -95,16 +102,15 @@
               font-style: normal;
               font-weight: 300;
               line-height: normal;
-
             }
           }
         }
+
         .rank-outer {
           /* background-color: green; */
           display: flex;
           width: 350px;
           flex-direction: column;
-          /* justify-content: center; */
           align-items: center;
           gap: 12px;
 
@@ -114,7 +120,6 @@
             align-items: center;
             align-self: stretch;
             color: #000;
-            /* padding: 16px 20px; */
             .rank-topic {
               text-align: center;
               /* OceanSpace/H2-500 */
@@ -133,33 +138,28 @@
               font-weight: 500;
               line-height: normal;
               text-decoration-line: underline;
-              ดูทั้งหมด
-
             }
           }
+
           .rank-list {
             padding: 0px 12px;
             display: flex;
             flex-direction: column;
             border-radius: 20px;
             background: #F4FCFF;
-            gap : 10px;
+            gap: 10px;
             align-items: center;
-            width : 340px;
-            
+            width: 340px;
+
             .rank-list-elem {
-              
               display: flex;
               height: 56px;
               align-items: center;
               align-self: stretch;
               justify-content: space-between;
-              /* border-top-width : 1px rgba(0, 0, 0, 0.10); */
               .rank-list-first {
-                
                 display: flex;
-                /* padding : 20px; */
-                gap : 20px;
+                gap: 20px;
                 align-items: center;
                 .rank-number {
                   color: #000;
@@ -182,7 +182,6 @@
                   border-radius: 20px;
                   background: #FFF;
                 }
-                
                 .rank-text {
                   color: #000;
                   /* OceanSpace/Body-400 */
@@ -195,7 +194,6 @@
               }
               .rank-percent {
                 color: #000;
-  
                 text-align: center;
                 /* OceanSpace/Caption-L-300 */
                 font-family: Mitr;
@@ -203,17 +201,12 @@
                 font-style: normal;
                 font-weight: 300;
                 line-height: normal;
-                margin-right : 10px;
+                margin-right: 10px;
               }
             }
-            
           }
-
         }
       }
     }
   }
-
-  
-
 }

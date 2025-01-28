@@ -75,19 +75,6 @@ const Home = () => {
       
       </div>
 
-
-     {/* <a href="/">home</a> */}
-     {/* <a href="/ChatList">ChatList</a>
-     <a href="/Chat">Chat</a>
-     <a href="/Monitor">Monitor</a>
-     <a href="/Login">login</a>
-     <a href="/Signup">signup</a>
-     <a href="/AddFriend">AddFriend</a>
-     <a href="/Custom">Custom</a>
-     <a href="/myprofile">myprofile</a>
-     <a href="/llmprofile">llmprofile</a> */}
-
-
     </div>
   );
 };
