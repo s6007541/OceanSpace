@@ -350,14 +350,15 @@ async def delete_user_chat(
     notification_task_db: NotificationTaskDatabase = Depends(get_notification_task_db),
 ):
     chat_uuid = UUID(chat_id)
-    await user_chat_db.delete(user.id, chat_uuid)
+    # Delete notification tasks first as it has a foreign key constraint
     tasks = await notification_task_db.delete_by_chat_id_and_return(chat_uuid)
+    await user_chat_db.delete(user.id, chat_uuid)
     for task in tasks:
         notification_scheduler.remove_task(task.id)
     if connection_manager.is_online(user.id):
         await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
-    await user_chat_db.session.commit()
     await notification_task_db.session.commit()
+    await user_chat_db.session.commit()
 
 
 @api_router.get("/messages/{chat_id}", tags=["messages"])
