@@ -317,11 +317,14 @@ async def create_user_chat(
         )
         db.add(new_receiver_chat)
     await db.commit()
+    if connection_manager.is_online(user.id):
+        await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
 
 
 @api_router.put("/user-chats", tags=["user chats"])
 async def update_user_chat(
     user_chat_model: UserChatModel,
+    user: User = Depends(current_active_user),
     chat_db: ChatDatabase = Depends(get_chat_db),
     user_chat_db: UserChatDatabase = Depends(get_user_chat_db),
 ):
@@ -341,6 +344,10 @@ async def update_user_chat(
 
     await user_chat_db.update(user_chat)
     await chat_db.update(chat)
+    await user_chat_db.session.commit()
+    await chat_db.session.commit()
+    if connection_manager.is_online(user.id):
+        await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
 
 
 @api_router.delete("/user-chats/{chat_id}", tags=["user chats"])
@@ -356,10 +363,10 @@ async def delete_user_chat(
     await user_chat_db.delete(user.id, chat_uuid)
     for task in tasks:
         notification_scheduler.remove_task(task.id)
-    if connection_manager.is_online(user.id):
-        await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
     await notification_task_db.session.commit()
     await user_chat_db.session.commit()
+    if connection_manager.is_online(user.id):
+        await connection_manager.send(user.id, ChatEvent.UPDATE_CHAT)
 
 
 @api_router.get("/messages/{chat_id}", tags=["messages"])
@@ -484,12 +491,12 @@ async def websocket_endpoint(
         message = MessageModel.model_validate(data["data"])
         if data["type"] == ChatEvent.MESSAGE:
             success = await session_handler.add_task(
-                message.chatId, handle_message(user, data, message, db)
+                message.chatId, handle_message(user, message, db)
             )
         elif data["type"] == ChatEvent.COMMIT_MESSAGES:
             success = await session_handler.add_task(
                 message.chatId,
-                send_current_messages_to_llm(user, data, message, db),
+                send_current_messages_to_llm(user, message, db),
             )
         elif data["type"] == ChatEvent.CHECKPOINT:
             success = await session_handler.add_task(
@@ -501,7 +508,7 @@ async def websocket_endpoint(
 
 
 async def handle_message(
-    user: User, data: Dict[str, Any], message: MessageModel, db: AsyncSession
+    user: User, message: MessageModel, db: AsyncSession
 ):
     still_connected: bool = True
 
@@ -544,6 +551,7 @@ async def handle_message(
     db.add(chat)
     db.add(new_message)
     await db.commit()
+    await try_sending(user.id, ChatEvent.UPDATE_CHAT)
 
     if receiver.is_bot:
         ## sucidal detection
@@ -629,7 +637,7 @@ async def handle_message(
 
 
 async def send_current_messages_to_llm(
-    user: User, data: Dict[str, Any], message: MessageModel, db: AsyncSession
+    user: User, message: MessageModel, db: AsyncSession
 ):
     still_connected: bool = True
 

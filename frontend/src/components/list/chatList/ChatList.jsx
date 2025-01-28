@@ -26,6 +26,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
   const [input, setInput] = useState("");
   const [ready, setReady] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
+  const [pressTimer, setPressTimer] = useState(null);
 
   const { currentUser } = useUserStore();
   const { chatId, changeChat } = useChatStore();
@@ -135,6 +136,27 @@ const ChatList = ({ setIsSlidingLeft }) => {
     }
   };
 
+  const handleTouchStart = (e, chat) => {
+    console.log("On touch start");
+    e.preventDefault();
+    const timer = setTimeout(() => {
+      setContextMenu({
+        chat,
+        position: { x: e.pageX, y: e.pageY },
+      });
+    }, 500);
+    setPressTimer(timer);
+  };
+
+  const handleTouchEnd = (e) => {
+    console.log("On touch end");
+    clearTimeout(pressTimer);
+    setPressTimer(null);
+    if (contextMenu) {
+      e.preventDefault();
+    }
+  };
+
   const handleAddLLM = async (LLMId) => {
     try {
       let res = await axios.get(`/user-info/name/${LLMId}`);
@@ -185,6 +207,8 @@ const ChatList = ({ setIsSlidingLeft }) => {
                 className="item"
                 key={chat.chatId}
                 onClick={() => handleSelect(chat)}
+                onTouchStart={(e) => handleTouchStart(e, chat)}
+                onTouchEnd={(e) => handleTouchEnd(e)}
                 onContextMenu={(e) => handleContextMenu(e, chat)}
               >
                 <img
@@ -194,7 +218,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
                   }
                   alt=""
                 />
-                <div className="texts">
+                <div className="texts no-select">
                   <span>{chat.user.username}</span>
                   <p>{chat.lastMessage}</p>
                   {/* <p>{chat.lastMessage.length > 0 ? chat.lastMessage.slice(0, 28) + (chat.lastMessage.length > 28 ? "..." : "") : ""}</p> */}
