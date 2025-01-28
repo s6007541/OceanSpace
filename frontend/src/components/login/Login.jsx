@@ -47,17 +47,18 @@ const Login = () => {
       navigate(0);
     } catch (err) {
       console.log(err);
-      const default_error_msg = "ไม่สามารถเข้าสู่ระบบได้";
+      let error_msg = "ไม่สามารถเข้าสู่ระบบได้";
       if (error_messages) {
-        const error_msg = error_messages[err.response?.data?.detail.code]
-        if (error_msg) {
-          toast.error(error_msg);
-        } else {
-          toast.error(default_error_msg);
+        let error_code = err.response?.data?.detail.code;
+        if (!error_code) {
+          error_code = err.response?.data?.detail;
         }
-      } else {
-        toast.error(default_error_msg);
+        const new_error_msg = error_messages[error_code];
+        if (new_error_msg) {
+          error_msg = new_error_msg;
+        }
       }
+      toast.error(error_msg);
       setLoading(false);
     }
   };
