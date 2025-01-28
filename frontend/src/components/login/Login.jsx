@@ -6,6 +6,7 @@ import { useUserStore } from "../../lib/userStore";
 import axios from "axios";
 import { useAuth } from "../provider/AuthProvider";
 import { STATIC_BASE } from "../../lib/config";
+import { useError } from "../../lib/error";
 
 
 // import upload from "../../lib/upload";
@@ -20,6 +21,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { fetchCurrentUserInfo } = useUserStore();
   const { setToken } = useAuth();
+  const { error_messages } = useError();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -45,10 +47,19 @@ const Login = () => {
       navigate(0);
     } catch (err) {
       console.log(err);
-      toast.error("ไม่สามารถเข้าสู่ระบบได้");
+      const default_error_msg = "ไม่สามารถเข้าสู่ระบบได้";
+      if (error_messages) {
+        const error_msg = error_messages[err.response?.data?.detail.code]
+        if (error_msg) {
+          toast.error(error_msg);
+        } else {
+          toast.error(default_error_msg);
+        }
+      } else {
+        toast.error(default_error_msg);
+      }
       setLoading(false);
     }
-
   };
 
   const handleContinueWithGoogle = async (e) => {

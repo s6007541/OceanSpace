@@ -4,6 +4,7 @@ import "./login.css";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { STATIC_BASE } from "../../lib/config";
+import { useError } from "../../lib/error";
 
 
 const Register = () => {
@@ -14,6 +15,7 @@ const Register = () => {
 
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { error_messages } = useError();
 
   // const handleAvatar = (e) => {
   //   if (e.target.files[0]) {
@@ -44,7 +46,25 @@ const Register = () => {
       navigate("/login")
     } catch (err) {
       console.log(err);
-      toast.error("ไม่สามารถลงทะเบียนได้!");
+      const default_error_msg = "ไม่สามารถลงทะเบียนได้!";
+      if (error_messages) {
+        let error_code = err.response?.data?.detail.code;
+        if (!error_code) {
+          error_code = err.response?.data?.detail;
+        }
+        if (error_code) {
+          const error_msg = error_messages[error_code];
+          if (error_msg) {
+            toast.error(error_msg);
+          } else {
+            toast.error(default_error_msg);
+          }
+        } else {
+          toast.error(default_error_msg);
+        }
+      } else {
+        toast.error(default_error_msg);
+      }
     } finally {
       setLoading(false);
     }

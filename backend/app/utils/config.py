@@ -12,13 +12,15 @@ def get_local_ip_address() -> str:
     local_ip_address = s.getsockname()[0]
     return local_ip_address
 
+# Path to the root directory of the project
+ROOT_DIR = Path(__file__).parent.parent.parent.parent
 
-# Load environment variables
-env_file = Path(__file__).parent.parent.parent.parent / ".env"
+# Environment variables
+env_file = ROOT_DIR / ".env"
 ENV = Config(env_file if env_file.exists() else None)
 
-# Load LLM configuration
-with open(Path(__file__).parent.parent / "llm_config.json") as f:
+# LLM configuration
+with open(Path(__file__).parent.parent.parent / "llm_config.json") as f:
     LLM_CONFIG: Dict[str, Any] = json.load(f)
 
 AUTH_SECRET = "SECRET"

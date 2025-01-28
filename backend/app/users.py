@@ -2,7 +2,7 @@ import json
 import uuid
 from typing import Optional
 
-from fastapi import Depends, Request, Response
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin, exceptions
 from fastapi_users.authentication import (
@@ -20,6 +20,7 @@ from urllib.parse import quote
 
 from .db import AccessToken, User, get_access_token_db, get_user_db
 from .utils.config import AUTH_SECRET, ENV, JWT_ALGORITHM, JWT_AUDIENCE
+from .utils.whitelist import is_whitelisted
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
@@ -46,14 +47,32 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         response: Optional[Response] = None,
     ) -> None:
         if request is not None:
+            whitelisted = is_whitelisted(user.email)
             if request.url.path == "/api/auth/google/callback":
                 assert response is not None
-                if response.status_code == 204 or response.status_code == 200:
-                    response.status_code = 307
-                    access_token = json.loads(response.body)["access_token"]
-                    response.headers["location"] = quote(
-                        ENV.get("FRONTEND_URL") + f"/AuthCallback?token={access_token}",
-                        safe=":/%#?=@[]!$&'()*+,;",
+                error_code: Optional[int] = None
+                frontend_url: str = ENV.get("FRONTEND_URL")
+                if whitelisted:
+                    if response.status_code == 204 or response.status_code == 200:
+                        response.status_code = 307
+                        access_token = json.loads(response.body)["access_token"]
+                        response.headers["location"] = quote(
+                            frontend_url + f"/AuthCallback?token={access_token}",
+                            safe=":/%#?=@[]!$&'()*+,;",
+                        )
+                        return
+                    error_code = 0
+                else:
+                    error_code = 1
+                response.status_code = 307
+                response.headers["location"] = quote(
+                    frontend_url + f"/?error={error_code}", safe=":/%#?=@[]!$&'()*+,;"
+                )
+            else:
+                if not whitelisted:
+                    raise HTTPException(
+                        status.HTTP_401_UNAUTHORIZED,
+                        {"description": "Email not whitelisted", "code": "1"},
                     )
 
     async def authenticate(

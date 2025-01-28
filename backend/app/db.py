@@ -5,7 +5,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Tuple
 from uuid import UUID, uuid4
 
 import jwt
-from fastapi import Depends, WebSocket, WebSocketException, status
+from fastapi import Depends, HTTPException, WebSocket, WebSocketException, status
 from fastapi_users_db_sqlalchemy import (
     SQLAlchemyBaseOAuthAccountTableUUID,
     SQLAlchemyBaseUserTableUUID,
@@ -33,6 +33,7 @@ from sqlalchemy_utils import ScalarListType  # type: ignore
 
 from .connections import ChatEvent
 from .utils.config import AUTH_SECRET, ENV, JWT_ALGORITHM, JWT_AUDIENCE
+from .utils.whitelist import is_whitelisted
 
 
 driver = "postgresql+asyncpg"
@@ -147,6 +148,15 @@ class NotificationTask(Base):
 
 
 class UserDatabase(SQLAlchemyUserDatabase):
+    async def create(self, create_dict: Dict[str, Any]) -> User:
+        email: Optional[str] = create_dict.get("email")
+        if email is None or not is_whitelisted(email):
+            raise HTTPException(
+                status.HTTP_401_UNAUTHORIZED,
+                {"description": "Email not whitelisted", "code": "1"},
+            )
+        return await super().create(create_dict)
+
     async def get(self, id: UUID_ID) -> Optional[User]:
         stmt = select(User).where(User.id == id)  # type: ignore
         result = await self.session.execute(stmt)
