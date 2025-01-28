@@ -40,13 +40,18 @@ const App = () => {
   axios.interceptors.request.use(authInterceptor);
 
   const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore();
-  const { socketConnected, socketConnect } = useSocket();
+  const { socketConnected, socketConnect, socketDisconnect } = useSocket();
 
   const { error_messages, loadErrorMessages } = useError();
 
   useEffect(() => {
     async function initialize() {
       if (currentUser === null || currentUser.id === null) {
+        try {
+          socketDisconnect();
+        } catch (err) {
+          console.log(err);
+        }
         try {
           await fetchCurrentUserInfo();
         } catch {}
