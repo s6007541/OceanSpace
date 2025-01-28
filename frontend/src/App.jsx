@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Home from "./components/home/Home";
 import Chat from "./components/chat/Chat";
 import List from "./components/list/List";
@@ -60,17 +60,20 @@ const App = () => {
     initialize();
   }, [currentUser]);
 
+  const query = new URLSearchParams(window.location.search);
+  const error_code = useRef(query.get("error"));
+
   useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    const error_code = query.get("error");
-    if (error_messages === null || error_code === null) {
+    if (error_messages === null || error_code.current === null) {
       return;
     }
     try {
-      const error_msg = error_messages[error_code];
+      const error_msg = error_messages[error_code.current];
       toast.error(error_msg);
     } catch (err) {
       console.log(err);
+    } finally {
+      error_code.current = null;
     }
   }, [error_messages]);
 
