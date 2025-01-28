@@ -45,8 +45,8 @@ from .db import (
     get_user_chat_db,
     get_ws_current_user,
 )
-# from .llm import GeminiLLMClient
-from .llm import TyphoonLLMClient
+from .llm import GeminiLLMClient
+# from .llm import TyphoonLLMClient
 from .scheduler import NotificationScheduler
 from .schemas import (
     MessageModel,
@@ -64,8 +64,8 @@ from .utils.config import ENV
 origins = []
 
 connection_manager = ConnectionManager()
-# llm_client = GeminiLLMClient()
-llm_client = TyphoonLLMClient()
+llm_client = GeminiLLMClient()
+# llm_client = TyphoonLLMClient()
 notification_scheduler = NotificationScheduler(llm_client, connection_manager)
 
 
