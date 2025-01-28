@@ -73,7 +73,7 @@ const Chat = () => {
       return;
     }
     if (data.type === "message") {
-      updateUnreadMessages();
+      await updateUnreadMessages();
       chatRef.current.push(data.data);
       setChat([...chatRef.current]);
     } else if (data.type === "message-done") {
@@ -91,11 +91,12 @@ const Chat = () => {
         // toast.error("self-harm")
         setShowSelfHarm(true);
         setIsFloatingDown(false);
-      } else if (data?.data?.pred === "harm others") {
-        // toast.error("harm-others")
-        setHarmOthers(true);
-        setIsFloatingDown(false);
       }
+      // else if (data?.data?.pred === "harm others") {
+      //   // toast.error("harm-others")
+      //   setHarmOthers(true);
+      //   setIsFloatingDown(false);
+      // }
     }
   };
 
