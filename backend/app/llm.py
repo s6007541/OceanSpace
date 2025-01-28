@@ -234,13 +234,12 @@ class LLMClient:
                 input_messages, temperature=0, max_tokens=1000
             )
         ]
-        if len(generated_texts) > 1:
-            raise ValueError("Security detection must be used in non-stream mode")
+        generated_texts = "".join(generated_texts).lower()
+        print(generated_texts)
         if len(generated_texts) == 0:
             return "normal"
 
-        generated_text = generated_texts[0].lower()
-        if "suicidal" in generated_text:
+        if "suicidal" in generated_texts:
             return "self-harm"
         # if "harm others" in generated_text:
         #     return "harm others"
@@ -355,9 +354,9 @@ class LLMClient:
             ],
             temperature=0,
         )
-        assert isinstance(generated_text, str), "PSS must be used in non-stream mode"
+        
+        generated_text = "".join([s async for s in generated_text]).strip("\n")
         print(generated_text)
-
         try:
             score = float(generated_text)
         except ValueError:
