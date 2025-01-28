@@ -32,7 +32,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy_utils import ScalarListType  # type: ignore
 
 from .connections import ChatEvent
-from .utils import AUTH_SECRET, ENV, JWT_ALGORITHM, JWT_AUDIENCE
+from .utils.config import AUTH_SECRET, ENV, JWT_ALGORITHM, JWT_AUDIENCE
 
 
 driver = "postgresql+asyncpg"

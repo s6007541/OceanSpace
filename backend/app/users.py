@@ -19,7 +19,7 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from urllib.parse import quote
 
 from .db import AccessToken, User, get_access_token_db, get_user_db
-from .utils import AUTH_SECRET, ENV, JWT_ALGORITHM, JWT_AUDIENCE
+from .utils.config import AUTH_SECRET, ENV, JWT_ALGORITHM, JWT_AUDIENCE
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
