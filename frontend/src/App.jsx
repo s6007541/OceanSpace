@@ -12,9 +12,10 @@ import Register from "./components/login/Register";
 import Notification from "./components/notification/Notification";
 import AuthProvider from "./components/provider/AuthProvider";
 import AuthCallback from "./components/authcallback/AuthCallback";
+import { useError } from "./lib/error";
 import { useUserStore } from "./lib/userStore";
 import { useSocket } from "./lib/socket";
-import { WEBSOCKET_URL } from "./lib/config";
+import { STATIC_BASE, WEBSOCKET_URL } from "./lib/config";
 import { BACKEND_URL } from "./lib/config";
 
 import {
@@ -23,6 +24,7 @@ import {
   Route,
 } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 function authInterceptor(config) {
   const token = localStorage.getItem('token');
@@ -40,6 +42,8 @@ const App = () => {
   const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore();
   const { socketConnected, socketConnect } = useSocket();
 
+  const { error_messages, loadErrorMessages } = useError();
+
   useEffect(() => {
     async function initialize() {
       if (currentUser === null || currentUser.id === null) {
@@ -55,6 +59,22 @@ const App = () => {
     }
     initialize();
   }, [currentUser]);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const error_code = query.get("error");
+    if (error_messages === null || error_code === null) {
+      return;
+    }
+    try {
+      const error_msg = error_messages[error_code];
+      toast.error(error_msg);
+    } catch (err) {
+      console.log(err);
+    }
+  }, [error_messages]);
+
+  loadErrorMessages(`${STATIC_BASE}/error_messages.json`);
 
   // if (isLoading) return <div className="loading">Loading...</div>;
 

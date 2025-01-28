@@ -23,7 +23,8 @@ from pythainlp import sent_tokenize
 
 from .db import Message, User, UserChat
 from .schemas import PSSQuestionModel
-from .utils import ENV, APIKeyManager
+from .utils.config import ENV
+from .utils.key_manager import APIKeyManager
 
 
 PROMPT_TEMPLATE_DIR = Path("./prompt_templates")
