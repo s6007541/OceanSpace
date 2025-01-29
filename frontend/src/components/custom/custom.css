@@ -157,6 +157,10 @@
         font-weight: 400;
         line-height: normal;
       }
+      .tag.clicked {
+        color:white;
+        background-color: rgb(136, 136, 136);
+      }
     }
   }
   .input_area {
