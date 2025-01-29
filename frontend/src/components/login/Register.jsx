@@ -27,7 +27,6 @@ const Register = () => {
   // };
 
   const handleRegister = async (e) => {
-    console.log("register")
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.target);

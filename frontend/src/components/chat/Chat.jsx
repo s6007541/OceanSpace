@@ -78,7 +78,6 @@ const Chat = () => {
       setChat([...chatRef.current]);
     } else if (data.type === "message-done") {
       console.log("socket");
-      console.log(textReady);
       if (!newTextArrive) {
         setTextReady(true); // bubble stop
       }
@@ -86,9 +85,7 @@ const Chat = () => {
     } else if (data.type === "checkpoint") {
       console.log("Topic of interest: ", data.data);
     } else if (data.type === "sec-detection") {
-      console.log(data.data);
       if (data?.data?.pred === "self-harm") {
-        // toast.error("self-harm")
         setShowSelfHarm(true);
         setIsFloatingDown(false);
       }
@@ -279,8 +276,6 @@ const Chat = () => {
       setStartWait(false);
 
       setTimeout(()=>{
-        console.log("time3")
-        console.log(textReady)
         if (!textReady) { // if not first time
           setnewTextArrive(true);
         }
@@ -292,7 +287,6 @@ const Chat = () => {
       }, 2000);
 
       setTimeout(async () => {
-        console.log("time6")
         setStartWait(true); // next message will be save to next chunk
 
         const message = {
@@ -350,7 +344,6 @@ const Chat = () => {
 
   const handleSelectEmotion = (e) => {
     setChoosing(!choosing)
-    console.log(choosing)
   };
 
   const handleCloseHarm = () => {
@@ -361,10 +354,6 @@ const Chat = () => {
       setShowSelfHarm(false);
     }, 700); // Match the timeout to the animation duration (0.7s)
   };
-
-  console.log(user);
-  // console.log(LLM_DICT[user.alias]);
-
 
   return (
     <div className={`chat ${isSlidingRight ? 'slide-right' : ''}`}>

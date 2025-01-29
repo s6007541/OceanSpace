@@ -47,10 +47,7 @@ export const DataProvider = ({children}) => {
   useEffect(() => {
     if (quizs.length > questionIndex) { // if not overflow
       setQuestion(quizs[questionIndex]);
-      console.log(topicOfInterest);
       const chosen_topic = quizs[questionIndex][choose(topicOfInterest)];
-      // console.log(chosen_topic);
-      // console.log(choose(chosen_topic));
       setQuestionText(choose(chosen_topic));
     }
   }, [quizs, questionIndex])
@@ -68,9 +65,6 @@ export const DataProvider = ({children}) => {
 
       const topicsOfInterest = userChats.map((userChat) => userChat.topicsOfInterest)
 
-      // console.log(userChats)
-      // console.log((userChatsData.chats[0].topic_of_interest))
-      // console.log((userChatsData.chats.map((e)=>e.topic_of_interest)))
       setTopicOfInterest((topicsOfInterest).flat().concat(["original"]));
       
     } catch (err) {
@@ -105,8 +99,6 @@ export const DataProvider = ({children}) => {
 
   // Next Quesion
   const nextQuestion = async (text) => {
-    console.log(text)
-    console.log(selectedAnswer)
 
     setShowResult(false);
     setShowStart(false);
@@ -141,8 +133,6 @@ export const DataProvider = ({children}) => {
       score = 4-score
     }
     setMarks(marks + score)
-    console.log(score)
-    console.log(marks)
 
     setShowQuiz(true);
     setShowLoading(false);
@@ -158,9 +148,6 @@ export const DataProvider = ({children}) => {
 
   // Show Result
   const showTheResult = async (text) => {
-    // to do, save text + selectedAnswer
-    console.log(text)
-    console.log(selectedAnswer)
 
     setShowResult(false);
     setShowStart(false);

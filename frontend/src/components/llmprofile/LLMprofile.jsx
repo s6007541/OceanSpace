@@ -11,11 +11,7 @@ const LLMprofile = ( ) => {
 
   const navigate = useNavigate(); 
   const location = useLocation();
-  // console.log(location)
   const [LLM_info, current_chat_list] = location.state;
-  console.log(LLM_info)
-  console.log(current_chat_list)
-  // console.log(current_chat_list.includes(LLM_info.id))
   const { currentUser } = useUserStore();
   const [isSlidingRight, setIsSlidingRight] = useState(false);
 

@@ -44,7 +44,6 @@ const AddFriend = ( ) => {
     e.stopPropagation();
     try {
       const res = await axios.get(`/user-info/name/${LLMId}`);
-      console.log(res)
       const llmUser = res.data;
       const newUserChat = {
         userId: currentUser.id,
@@ -57,13 +56,11 @@ const AddFriend = ( ) => {
       setIsSlidingRight(true);
       setTimeout(() => {
         navigate("/ChatList")
-        // navigate(0)
       }, 200); // Match the timeout to the animation duration (0.7s)
       
     } catch (err) {
       console.log(err);
     }
-    // setAddMode(false);
   };
 
   
