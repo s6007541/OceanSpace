@@ -2,24 +2,31 @@ import "./home.css";
 import Userinfo from "../list/userInfo/Userinfo";
 import Navbar from "../navbar/Navbar";
 import { STATIC_BASE } from "../../lib/config";
-const Home = () => {
+import { useNavigate } from "react-router-dom";
 
+const Home = () => {
+  const navigate = useNavigate(); 
+  const goChatList = () =>{ 
+    let path = `/ChatList`; 
+    navigate(path);
+  }
   return (
     <div className="home">
       <Userinfo />
       <Navbar />
       <div className="main-content">
         <div className="outer-layer">
-          <div className="latest_chat">
-            <img src={`${STATIC_BASE}/dolphin.svg`}></img>
-            <div className="latest_chat_text">แชทล่าสุดกับเพื่อนสาว “สีชมพู”</div>
+          <div className="latest_chat" onClick={goChatList}>
+            <img className="character" src={`${STATIC_BASE}/SeaCharacters/Small-56px/Whale.svg`}></img>
+            <img className="character" src={`${STATIC_BASE}/SeaCharacters/Small-56px/Dolphin.svg`}></img>
+            <div className="latest_chat_text">แชทล่าสุดกับเพื่อนๆ</div>
             <img src={`${STATIC_BASE}/arrow-right.svg`}></img>
           </div>
           <div className="diary-outer">
             <div className="diary-header-wrapper">
-              <div className="diary-header">บันทึก of the day</div>
+              <div className="diary-header">บันทึกประจำวัน</div>
             </div>
-
+      
             <div className="diary-list">
               <div className="diary">
                 <div className="emoji">🙂<br/>หาดร้างทุกข์</div>

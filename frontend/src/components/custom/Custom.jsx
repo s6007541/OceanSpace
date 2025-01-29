@@ -141,7 +141,7 @@ const Custom = ( ) => {
 
       <button className="next_button" onClick={()=>{
         // navigate("/")
-        toast.error("โปรดจ่ายเงินเพื่อ unlock feature")
+        toast.error("This feature is coming soon in a future update. Stay tuned for more!")
 
       }}>ต่อไป</button>
       
