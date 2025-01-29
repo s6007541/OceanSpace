@@ -13,7 +13,7 @@ from pythainlp import util  # type: ignore
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .connections import ChatEvent, ConnectionManager
+from .connections import ChatEvent, ConnectionManager, get_connection_manager
 from .db import (
     Chat,
     Message,
@@ -84,7 +84,7 @@ class NotificationScheduler:
     def remove_task(self, task_id: UUID_ID):
         self.scheduler.remove_job(str(task_id))
 
-    async def should_schedule(self, user: User, context: List[Message]) -> bool:
+    async def should_schedule(self, user_id: UUID_ID, context: List[Message]) -> bool:
         message_list = (
             [
                 {
@@ -98,7 +98,7 @@ class NotificationScheduler:
                     ),
                 }
             ]
-            + self.llm_client._prepare_messages(user, context)
+            + self.llm_client._prepare_messages(user_id, context)
             + [
                 {
                     "role": "user",
@@ -114,11 +114,11 @@ class NotificationScheduler:
         result = True if generated_text.strip() == "ใช่" else False
         return result
 
-    def _get_context(self, user: User, messages: List[Message]) -> List[Message]:
+    def _get_context(self, user_id: UUID_ID, messages: List[Message]) -> List[Message]:
         i = None
         for i in range(1, len(messages) + 1):
             i = -i
-            if messages[i].sender_id != user.id:
+            if messages[i].sender_id != user_id:
                 break
         if i is None or i == -1:
             return []
@@ -139,7 +139,7 @@ class NotificationScheduler:
 
     async def schedule(
         self,
-        user: User,
+        user_id: UUID_ID,
         llm_user: User,
         user_chat: UserChat,
         chat: Chat,
@@ -158,7 +158,7 @@ class NotificationScheduler:
                     "content": "คุณเป็นระบบที่คอยตัดสินว่าควรจะส่งข้อความให้กำลังใจเมื่อไร โดยใช้ข้อความที่ผ่านมาเป็นข้อมูลเพื่อตัดสินใจ",
                 }
             ]
-            + self.llm_client._prepare_messages(user, context)
+            + self.llm_client._prepare_messages(user_id, context)
             + [
                 {
                     "role": "user",
@@ -183,7 +183,7 @@ class NotificationScheduler:
 
         task = NotificationTask(
             id=uuid.uuid4(),
-            user_id=user.id,
+            user_id=user_id,
             chat_id=user_chat.chat_id,
             context=[message.id for message in context],
             scheduled_at=schedule_time.astimezone(tzlocal.get_localzone()),
@@ -198,7 +198,7 @@ class NotificationScheduler:
                 task.id,
                 self.llm_client,
                 self.connection_manager,
-                user,
+                user_id,
                 llm_user,
                 user_chat,
                 chat,
@@ -214,15 +214,17 @@ class NotificationScheduler:
         self,
         messages: List[Message],
         timezone: Union[str, int],
-        user: User,
+        user_id: UUID_ID,
         llm_user: User,
         user_chat: UserChat,
         chat: Chat,
         db: AsyncSession,
     ):
-        context = self._get_context(user, messages)
-        if await self.should_schedule(user, context):
-            await self.schedule(user, llm_user, user_chat, chat, context, timezone, db)
+        context = self._get_context(user_id, messages)
+        if await self.should_schedule(user_id, context):
+            await self.schedule(
+                user_id, llm_user, user_chat, chat, context, timezone, db
+            )
 
 
 def _get_timezone(timezone: Optional[str], timedelta: Optional[int]) -> Union[str, int]:
@@ -255,7 +257,7 @@ async def notification_task(
     task_id: UUID_ID,
     llm_client: LLMClient,
     connection_manager: ConnectionManager,
-    user: User,
+    user_id: UUID_ID,
     llm_user: User,
     user_chat: UserChat,
     chat: Chat,
@@ -263,6 +265,10 @@ async def notification_task(
 ):
     task = await NotificationTaskDatabase(db).delete_and_return(task_id)
     if task is None:
+        return
+
+    user = await UserDatabase(db, User, OAuthAccount).get(user_id)
+    if user is None or not user.notification:
         return
 
     context = await MessageDatabase(db).get_by_id_list(task.context)
@@ -276,7 +282,7 @@ async def notification_task(
     scheduled_time_time_str = scheduled_time.strftime("%H:%M:%S")
     query_message = Message(
         id=uuid4(),
-        sender_id=user.id,
+        sender_id=user_id,
         chat_id=chat.id,
         created_at=datetime.datetime.now(),
         text=(
@@ -293,20 +299,21 @@ async def notification_task(
     )
     generator = llm_client.generate_reply(
         llm_user.username,
-        user,
-        user_chat,
+        user_id,
+        user_chat.whitelist,
+        user_chat.blacklist,
         list(context) + [query_message],
     )
 
     await send_messages_async(
-        connection_manager, generator, user, llm_user, user_chat, chat, db
+        connection_manager, generator, user_id, llm_user, user_chat, chat, db
     )
 
 
 async def send_messages_async(
     connection_manager: ConnectionManager,
     message_generator: AsyncGenerator[str, None],
-    user: User,
+    user_id: UUID_ID,
     llm_user: User,
     user_chat: UserChat,
     chat: Chat,
@@ -332,9 +339,9 @@ async def send_messages_async(
         db.add(user_chat)
         db.add(chat)
 
-        if connection_manager.is_online(user.id):
+        if connection_manager.is_online(user_id):
             await connection_manager.send(
-                user.id,
+                user_id,
                 ChatEvent.MESSAGE,
                 {
                     "messageId": str(new_message.id),
@@ -345,4 +352,16 @@ async def send_messages_async(
                 },
             )
         await db.commit()
-    await connection_manager.send(user.id, ChatEvent.MESSAGE_DONE)
+    await connection_manager.send(user_id, ChatEvent.MESSAGE_DONE)
+
+
+_notification_scheduler: Optional[NotificationScheduler] = None
+
+
+def get_notification_scheduler() -> NotificationScheduler:
+    global _notification_scheduler
+    if _notification_scheduler is None:
+        llm_client = LLMClient()
+        connection_manager = get_connection_manager()
+        _notification_scheduler = NotificationScheduler(llm_client, connection_manager)
+    return _notification_scheduler

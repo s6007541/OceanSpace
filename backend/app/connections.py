@@ -44,3 +44,13 @@ class ConnectionManager:
 
     def is_online(self, user_id: UUID_ID):
         return user_id in self.active_connections
+
+
+_connection_manager: Optional[ConnectionManager] = None
+
+
+def get_connection_manager() -> ConnectionManager:
+    global _connection_manager
+    if _connection_manager is None:
+        _connection_manager = ConnectionManager()
+    return _connection_manager
