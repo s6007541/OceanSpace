@@ -28,17 +28,17 @@ const Home = () => {
             </div>
       
             <div className="diary-list">
-              <div className="diary">
+              <div className="diary" onClick={()=>{navigate("/ReliefBeach")}}>
                 <div className="emoji">🙂<br/>หาดร้างทุกข์</div>
                 <div className="diary-detail">มีเรื่องอะไรอยากให้ ทรายช่วยพัดมั้ย</div>
                 <img src={`${STATIC_BASE}/diary1.svg`}/>
               </div>
-              <div className="diary">
+              <div className="diary" onClick={()=>{navigate("/WishBeach")}}>
                 <div className="emoji">⭐<br/>สุขสมหวัง</div>
                 <div className="diary-detail">มีเรื่องอะไรอยาก ขอพรกันมั้ย</div>
                 <img src={`${STATIC_BASE}/diary2.svg`}/>
               </div>
-              <div className="diary">
+              <div className="diary" onClick={()=>{navigate("/SupportBeach")}}>
                 <div className="emoji">💪🏻<br/>พลังใจ</div>
                 <div className="diary-detail">รับจดหมายลับ ให้กำลังใจจากทะเล</div>
                 <img src={`${STATIC_BASE}/diary3.svg`}/>

@@ -12,6 +12,11 @@ import Register from "./components/login/Register";
 import Notification from "./components/notification/Notification";
 import AuthProvider from "./components/provider/AuthProvider";
 import AuthCallback from "./components/authcallback/AuthCallback";
+import ReliefBeach from "./components/beach/ReliefBeach";
+import WishBeach from "./components/beach/WishBeach";
+import SupportBeach from "./components/beach/SupportBeach";
+
+
 import { useError } from "./lib/error";
 import { useUserStore } from "./lib/userStore";
 import { useSocket } from "./lib/socket";
@@ -217,6 +222,24 @@ const App = () => {
           <Route path="/AuthCallback" element={
             <div className="container">
               <AuthCallback />
+            </div>
+          } />
+
+          <Route path="/ReliefBeach" element={
+            <div className="container">
+              <ReliefBeach />
+            </div>
+          } />
+
+          <Route path="/WishBeach" element={
+            <div className="container">
+              <WishBeach />
+            </div>
+          } />
+
+          <Route path="/SupportBeach" element={
+            <div className="container">
+              <SupportBeach />
             </div>
           } />
 
