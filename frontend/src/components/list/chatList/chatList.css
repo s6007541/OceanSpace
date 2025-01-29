@@ -41,7 +41,7 @@
   }
 
   .outer_chatlist {
-    height :100vh;
+    /* height :100vh; */
     .addbar {
       border-top: none;
       display: flex;
