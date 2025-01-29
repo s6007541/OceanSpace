@@ -128,7 +128,7 @@ const App = () => {
           } />
 
           <Route path="/ChatList" element={
-            <div className="container">
+            <div className="container" style={{backgroundColor:"#F4FCFF"}}>
               {currentUser ? (
                 <List />
               ) : (

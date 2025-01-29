@@ -168,7 +168,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
     c.user.username.toLowerCase().includes(input.toLowerCase())
   );
   if (!ready) return 
-  <div className="outer">
+  <div className="chatlistouter">
     (
       <div className="outer_chatlist">
         <div className="addbar">
@@ -183,7 +183,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
       
   
   return (
-    <div className="outer">
+    <div className="chatlistouter">
       {(filteredChats.length > 0) && ready ? (
         <div className="outer_chatlist">
           <div className="addbar">

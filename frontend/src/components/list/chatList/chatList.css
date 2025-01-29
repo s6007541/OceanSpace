@@ -26,12 +26,12 @@
                                   supported by Chrome, Edge, Opera and Firefox */
 }
 
-.outer {  
+.chatlistouter {  
   flex : 1;
   display : flex;
   justify-content : center;
+  flex-direction: column;
   background: #F4FCFF;
-
   &.slide-right {
     animation: slideRight 0.2s forwards ease-out; /* Apply the slide-right animation */
   }
