@@ -9,7 +9,6 @@
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  color:white;
 
 }
 
@@ -112,7 +111,7 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 50vh;
+  height: 40vh;
 }
 .wishbeach__sand--background {
   z-index: 997;
@@ -140,7 +139,7 @@ body {
 }
 .wishbeach__sand--foreground {
   z-index: 998;
-  background: linear-gradient(200deg, #999b8b 0%, #ff7d66 300%);  /* animation-duration: 8s;
+  background: #a59071;  /* animation-duration: 8s;
   animation-iteration-count: infinite; */
 }
 @keyframes seafoam2 {
