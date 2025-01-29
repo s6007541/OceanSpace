@@ -12,12 +12,26 @@
 
 }
 
+.top-center-text {
+  position: absolute;
+  top: 30vh; /* Position at the top */
+  left: 50%; /* Position at the horizontal center */
+  transform: translateX(-50%); /* Adjust for centering */
+  border: none;
+  background-color: transparent;
+  /* Add any other text styles you want (color, font, etc.) */
+  color: black; /* Example text color */
+  font-size: 20px;
+  text-align: center;
+}
+
 .bottom-input {
   z-index: 1000;
   position: absolute;
-  bottom: 13vh;
-  left: 0; /* or left: 50%; transform: translateX(-50%); for center bottom */
-  width: 100%; /* or a specific width like 200px */
+  bottom: 5vh;
+  left: 10vw; /* or left: 50%; transform: translateX(-50%); for center bottom */
+  height: 15vh;
+  width: 80vw; /* or a specific width like 200px */
   border: none;
   background: transparent;
   outline: none;
@@ -25,8 +39,17 @@
   box-sizing: border-box;
   text-align: center; /* Centers the placeholder text */
   font-family: sans-serif;
-  font-size: 17px;
+  font-size: 20px;
   color: #333; /* Example color */
+  white-space: pre-wrap;
+}
+
+.bottom-input::placeholder {
+  white-space: pre-wrap;
+}
+
+.bottom-input::-webkit-scrollbar {
+  display: none;
 }
 
 .bottom-input.focused {
@@ -50,7 +73,7 @@ body {
 .beach {
   position: relative;
   display: flex;
-  /* width: 100%; */
+  /* width: 100vw; */
   height: 100vh;
   margin: 0;
   padding: 0;

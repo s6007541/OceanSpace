@@ -13,6 +13,7 @@ const ReliefBeach = () => {
   const [isFocused, setIsFocused] = useState(false);
   const [blurLevel, setBlurLevel] = useState(0);
   const [isVisible, setIsVisible] = useState(true); // Track visibility
+  const [showAnswer, setshowAnswer] = useState(false); // Track visibility
   const blurTimerRef = useRef(null); // Ref for the blur timer
   const vanishTimerRef = useRef(null); // Ref for the vanish timer
   const reappearTimerRef = useRef(null); // Ref for the reappear timer
@@ -31,6 +32,9 @@ const ReliefBeach = () => {
   };
 
   const handleBlur = () => {
+    if (text === ''){
+      return;
+    }
     setIsFocused(false);
 
     blurTimerRef.current = setInterval(() => {
@@ -40,11 +44,13 @@ const ReliefBeach = () => {
           clearInterval(blurTimerRef.current);
           vanishTimerRef.current = setTimeout(() => {
             setIsVisible(false); // Hide the text
+            setshowAnswer(true)
             reappearTimerRef.current = setTimeout(() => {
               setIsVisible(true); // Show placeholder again
               setBlurLevel(0); // Reset blur
               setText("")
-            }, 3000); // 3 seconds delay
+              setshowAnswer(false)
+            }, 15000); // 3 seconds delay
           }, 0); // Immediately vanish after max blur
           return 3; // Keep blur at max
         }
@@ -75,16 +81,20 @@ const ReliefBeach = () => {
   
   return (
     <div className="beach">
+      {showAnswer  ?
+      <div className="top-center-text">
+        ทะเลได้ยินเสียง<br/>ของเธอแล้ว<br/>วันนี้เธอเก่งมากแล้วนะ
+      </div> : <></>}
       <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
       <div className="beach__waves" />
       <div className="beach__sand beach__sand--background" style={getAnimation1()}/>
       <div className="beach__sand beach__sand--foreground" style={getAnimation2()}/>
 
-      <input
+      <textarea
         type="text"
         value={text}
         onChange={handleChange}
-        placeholder={isVisible ? "มีอะไรอยากระบาย เขียนที่ชายหาดนี้ได้เลยนะ" : ""} // Show placeholder when visible
+        placeholder={isVisible ? "มีอะไรอยากระบาย\nเขียนที่ชายหาดนี้ได้เลยนะ" : ""} // Show placeholder when visible
         className={`bottom-input ${isFocused ? 'focused' : ''} ${!isVisible ? 'hidden' : ''}`}
         style={getOpacityStyle()}
         onFocus={handleFocus}
