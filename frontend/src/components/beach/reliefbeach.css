@@ -12,6 +12,34 @@
 
 }
 
+.bottom-input {
+  z-index: 1000;
+  position: absolute;
+  bottom: 13vh;
+  left: 0; /* or left: 50%; transform: translateX(-50%); for center bottom */
+  width: 100%; /* or a specific width like 200px */
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 10px;
+  box-sizing: border-box;
+  text-align: center; /* Centers the placeholder text */
+  font-family: sans-serif;
+  font-size: 17px;
+  color: #333; /* Example color */
+}
+
+.bottom-input.focused {
+  /* ... focused styles ... */
+  filter: blur(0px); /* Ensure no blur when focused */
+}
+
+.bottom-input.hidden {
+  display: none; /* Hide the input */
+}
+
+
+
 body {
   display: flex;
   width: 100%;
@@ -64,31 +92,49 @@ body {
 .beach__sand--background {
   z-index: 997;
   background-color: #F3F2F1;
-  animation: seafoam1;
-  animation-duration: 10s;
-  animation-iteration-count: infinite;
+  /* animation: seafoam1; */
+  /* animation-duration: 10s;
+  animation-iteration-count: infinite; */
 }
 @keyframes seafoam1 {
   0%, 100% {
-    clip-path: path("M 0 300 L 0 30 C 450 120 500 30 650 130 C 750 230 850 130 1200 300");
+    clip-path: path("M 0 500 L 0 30 C 450 120 500 30 650 130 C 750 230 850 130 1200 500");
   }
   50% {
-    clip-path: path("M 0 300 L 0 180 C 450 200 500 60 650 220 C 750 240 850 120 1300 300");
+    clip-path: path("M 0 500 L 0 180 C 450 200 500 60 650 220 C 750 240 850 120 1300 500");
+  }
+}
+
+@keyframes seafoam11 {
+  0%, 100% {
+    clip-path: path("M 0 500 L 0 30 C 450 120 500 30 650 130 C 750 230 850 130 1200 500");
+  }
+  50% {
+    clip-path: path("M 0 500 L 0 550 C 450 350 500 220 650 220 C 750 240 850 120 1300 500");
   }
 }
 .beach__sand--foreground {
   z-index: 998;
   background: linear-gradient(200deg, #F5FCCD 0%, #ff7d66 300%);
-  animation: seafoam2;
-  animation-duration: 10s;
-  animation-iteration-count: infinite;
+  /* animation: seafoam2; */
+  /* animation-duration: 8s;
+  animation-iteration-count: infinite; */
 }
 @keyframes seafoam2 {
   0%, 100% {
-    clip-path: path("M 0 400 L 0 50 C 450 125 500 50 650 150 C 750 250 850 150 1200 400");
+    clip-path: path("M 0 500 L 0 50 C 450 125 500 50 650 150 C 750 250 850 150 1200 500");
   }
   50% {
-    clip-path: path("M 0 400 L 0 220 C 450 220 500 140 650 280 C 750 260 850 110 1200 400");
+    clip-path: path("M 0 500 L 0 220 C 450 220 500 140 650 280 C 750 260 850 110 1200 500");
+  }
+}
+
+@keyframes seafoam22 {
+  0%, 100% {
+    clip-path: path("M 0 500 L 0 50 C 450 125 500 50 650 150 C 750 250 850 150 1200 500");
+  }
+  50% {
+    clip-path: path("M 0 500 L 0 600 C 450 400 500 250 650 280 C 750 260 850 110 1200 500");
   }
 }
 

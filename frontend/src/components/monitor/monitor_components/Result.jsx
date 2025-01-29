@@ -7,10 +7,14 @@ import { STATIC_BASE } from "../../../lib/config";
 
 const Result = () => {
     const navigate = useNavigate();
+    const { showResult, quizs, marks, startOver }  = useContext(DataContext);
     const goback = () =>{ 
         let path = `/`; 
         navigate(path);
       }
+    if (!showResult) {
+        return <></>
+    }
     return (
         
         <div className="results">
