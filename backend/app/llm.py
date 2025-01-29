@@ -15,13 +15,14 @@ from pathlib import Path
 import backoff
 import requests  # type: ignore
 import google.generativeai as genai  # type: ignore
+from fastapi_users_db_sqlalchemy import UUID_ID
 from google.api_core.exceptions import ResourceExhausted as GoogleRateLimitError
 from google.generativeai.types import content_types  # type: ignore
 from openai import AsyncOpenAI, RateLimitError as OpenAIRateLimitError
 from openai.types.chat import ChatCompletion
 from pythainlp import sent_tokenize
 
-from .db import Message, User, UserChat
+from .db import Message
 from .schemas import PSSQuestionModel
 from .utils.config import ENV
 from .utils.key_manager import APIKeyManager
@@ -79,11 +80,11 @@ class LLMClient:
         return [sent for sent in sentences if sent]
 
     def _prepare_messages(
-        self, user: User, messages: List[Message]
+        self, user_id: UUID_ID, messages: List[Message]
     ) -> List[Dict[str, Any]]:
         message_list = [
             {
-                "role": "user" if message.sender_id == user.id else "assistant",
+                "role": "user" if message.sender_id == user_id else "assistant",
                 "content": message.text,
             }
             for message in messages
@@ -91,7 +92,11 @@ class LLMClient:
         return message_list
 
     def _get_system_prompt(
-        self, llm_name: str, user_chat: UserChat, emotionMode: str = ""
+        self,
+        llm_name: str,
+        user_chat_whitelist: List[str],
+        user_chat_blacklist: List[str],
+        emotionMode: str = "",
     ) -> str:
 
         if emotionMode == "":
@@ -133,13 +138,13 @@ class LLMClient:
         prompt += (
             "\n"
             + (
-                f"These are good examples of responses : {user_chat.whitelist}\n"
-                if user_chat.whitelist
+                f"These are good examples of responses : {user_chat_whitelist}\n"
+                if user_chat_whitelist
                 else ""
             )
             + (
-                f"These are bad examples of responses : {user_chat.blacklist}"
-                if user_chat.blacklist
+                f"These are bad examples of responses : {user_chat_blacklist}"
+                if user_chat_blacklist
                 else ""
             )
         )
@@ -248,18 +253,21 @@ class LLMClient:
     async def generate_reply(
         self,
         llm_name: str,
-        user: User,
-        user_chat: UserChat,
+        user_id: UUID_ID,
+        user_chat_whitelist: List[str],
+        user_chat_blacklist: List[str],
         messages: List[Message],
         emotionMode: str = "",
         stream: bool = False,
     ) -> AsyncGenerator[str, None]:
         system_message = {
             "role": "system",
-            "content": self._get_system_prompt(llm_name, user_chat, emotionMode),
+            "content": self._get_system_prompt(
+                llm_name, user_chat_whitelist, user_chat_blacklist, emotionMode
+            ),
         }
 
-        message_list = self._prepare_messages(user, messages)
+        message_list = self._prepare_messages(user_id, messages)
         old_messages, new_messages = self._split_message_list(message_list)
 
         augmented_message = {
@@ -299,7 +307,7 @@ class LLMClient:
 
     async def predict_topics(
         self,
-        user: User,
+        user_id: UUID_ID,
         messages: List[Message],
         topic_list: List[str],
         n_messages: int,
@@ -313,7 +321,7 @@ class LLMClient:
             ]
             + [
                 {
-                    "role": "user" if message.sender_id == user.id else "assistant",
+                    "role": "user" if message.sender_id == user_id else "assistant",
                     "content": message.text,
                 }
                 for message in messages[:-n_messages]
@@ -354,7 +362,7 @@ class LLMClient:
             ],
             temperature=0,
         )
-        
+
         generated_text = "".join([s async for s in generated_text]).strip("\n")
         print(generated_text)
         try:
@@ -514,3 +522,13 @@ class GeminiLLMClient(LLMClient):
 
             async for message in response:
                 yield message.candidates[0].content.parts[0].text
+
+
+_llm_client: Optional[LLMClient] = None
+
+
+def get_llm_client() -> LLMClient:
+    global _llm_client
+    if _llm_client is None:
+        _llm_client = GeminiLLMClient()
+    return _llm_client

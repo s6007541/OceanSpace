@@ -22,9 +22,19 @@ const Custom = ( ) => {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [page, setPage] = useState(1);
+  const [personalities, setPersonalities] = useState([]);
 
   const { currentUser } = useUserStore();
-  console.log(image)
+
+  const addremovePersonality = (p) => {
+    if (!personalities.includes(p)) {
+      setPersonalities([...personalities, p]); // Add new item to the list
+    }
+    else {
+      setPersonalities(personalities.filter((item) => item !== p)); // Remove the item by its value
+    }
+    
+  };
 
   return (
     <div className="customPage">
@@ -33,10 +43,15 @@ const Custom = ( ) => {
       ตั้งชื่อและโปรไฟล์
       </div>
       {page === 1 ? 
-      <svg className="profile_pic" xmlns="http://www.w3.org/2000/svg" width="152" height="152" viewBox="0 0 152 152" fill="none">
-        <circle cx="76" cy="76" r="75" fill="#F4FCFF" stroke="#9CD3FC" stroke-width="2" stroke-dasharray="8 8"/>
-        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">ภาพโปรไฟล์</text>    
-      </svg> : <></>}
+      
+      (!image ? 
+        <svg className="profile_pic" xmlns="http://www.w3.org/2000/svg" width="152" height="152" viewBox="0 0 152 152" fill="none">
+        //   <circle cx="76" cy="76" r="75" fill="#F4FCFF" stroke="#9CD3FC" stroke-width="2" stroke-dasharray="8 8"/>
+        //   <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">ภาพโปรไฟล์</text>    
+        // </svg> :  
+      <img className="profile_pic" src={`${STATIC_BASE}/SeaCharacters/Large-150px/${image}.svg`}/>)
+      : <></>}
+
       {page === 2 || page === 3 ? 
       <div className="profile_pic_wrapper">
         <img className="profile_pic" src={`${STATIC_BASE}/SeaCharacters/Large-150px/${image}.svg`}/> 
@@ -69,18 +84,18 @@ const Custom = ( ) => {
 
       <div className="tag_outer">
         <div className="tag_inner">
-          <button className="tag" onClick={()=>setCharacter("พี่สาว")}>พี่สาว</button>
-          <button className="tag" onClick={()=>setCharacter("พี่ชาย")}>พี่ชาย</button>
-          <button className="tag" onClick={()=>setCharacter("พี่กะเทย")}>พี่กะเทย</button>
+          <button className={(personalities.includes("พี่สาว")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("พี่สาว")}>พี่สาว</button>
+          <button className={(personalities.includes("พี่ชาย")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("พี่ชาย")}>พี่ชาย</button>
+          <button className={(personalities.includes("พี่กะเทย")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("พี่กะเทย")}>พี่กะเทย</button>
         </div>
         <div className="tag_inner">
-          <button className="tag" onClick={()=>setCharacter("เพื่อนหญิงพลังหญิง")}>เพื่อนหญิงพลังหญิง</button>
-          <button className="tag" onClick={()=>setCharacter("เพื่อนชายแท้")}>เพื่อนชายแท้</button>
+          <button className={(personalities.includes("เพื่อนหญิงพลังหญิง")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("เพื่อนหญิงพลังหญิง")}>เพื่อนหญิงพลังหญิง</button>
+          <button className={(personalities.includes("เพื่อนชายแท้")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("เพื่อนชายแท้")}>เพื่อนชายแท้</button>
         </div>
         <div className="tag_inner">
-          <button className="tag" onClick={()=>setCharacter("น้องสาว")}>น้องสาว</button>
-          <button className="tag" onClick={()=>setCharacter("น้องชาย")}>น้องชาย</button>
-          <button className="tag" onClick={()=>setCharacter("ผู้ใหญ่")}>ผู้ใหญ่</button>
+          <button className={(personalities.includes("น้องสาว")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("น้องสาว")}>น้องสาว</button>
+          <button className={(personalities.includes("น้องชาย")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("น้องชาย")}>น้องชาย</button>
+          <button className={(personalities.includes("ผู้ใหญ่")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("ผู้ใหญ่")}>ผู้ใหญ่</button>
         </div>
       </div>
       : <></>}
@@ -125,7 +140,7 @@ const Custom = ( ) => {
       : <></>}
 
       <button className="next_button" onClick={()=>{
-        navigate("/")
+        // navigate("/")
         toast.error("โปรดจ่ายเงินเพื่อ unlock feature")
 
       }}>ต่อไป</button>
