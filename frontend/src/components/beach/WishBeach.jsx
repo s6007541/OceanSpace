@@ -114,7 +114,7 @@ const WishBeach = () => {
   };
   
   return (
-    <div className="wishbeach">
+    <div className="wishbeach" onClick={enterFullscreen}>
       {showAnswer  ?
       <div className="wishtop-center-text">
         ทะเลได้ยินความปรารถนา<br/>ของเธอแล้ว<br/>ทะเลเอาใจช่วยนะ
@@ -127,6 +127,7 @@ const WishBeach = () => {
       <textarea
         type="text"
         value={text}
+        onClick={exitFullscreen}
         onChange={handleChange}
         placeholder={isVisible ? "มีอะไรที่อยากให้เป็นจริงมั้ย\nลองเขียนที่ชายหาดนี้ดูนะ" : ""} // Show placeholder when visible
         className={`wishbottom-input ${isFocused ? 'focused' : ''} ${!isVisible ? 'hidden' : ''}`}

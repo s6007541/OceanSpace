@@ -113,7 +113,7 @@ const ReliefBeach = () => {
   };
   
   return (
-    <div className="beach">
+    <div className="beach" onClick={enterFullscreen}>
       {showAnswer  ?
       <div className="top-center-text">
         ทะเลได้ยินเสียง<br/>ของเธอแล้ว<br/>วันนี้เธอเก่งมากแล้วนะ
@@ -126,6 +126,7 @@ const ReliefBeach = () => {
       <textarea
         type="text"
         value={text}
+        onClick={exitFullscreen}
         onChange={handleChange}
         placeholder={isVisible ? "มีอะไรอยากระบาย\nเขียนที่ชายหาดนี้ได้เลยนะ" : ""} // Show placeholder when visible
         className={`bottom-input ${isFocused ? 'focused' : ''} ${!isVisible ? 'hidden' : ''}`}
