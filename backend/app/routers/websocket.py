@@ -1,7 +1,7 @@
 import asyncio
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, Dict, Optional, Set, Tuple, Union
+from typing import Any, Awaitable, Callable, Dict, Optional, Set
 from uuid import UUID, uuid4
 
 from fastapi import (
@@ -26,12 +26,12 @@ from ..db import (
     UserChat,
     UserChatDatabase,
     get_async_session,
-    get_chat_info,
     get_ws_current_user,
 )
 from ..llm import get_llm_client
 from ..scheduler import get_notification_scheduler
 from ..schemas import MessageModel
+from ..utils import messaging as msg
 
 
 llm_client = get_llm_client()
@@ -145,17 +145,12 @@ async def websocket_endpoint(
     print(f"[WebSocket] {user.email} disconnected.")
 
 
-async def handle_message(
-    # user: User, message: MessageModel, db: AsyncSession
-    user_id: UUID_ID,
-    message: MessageModel,
-    db: AsyncSession,
-):
+async def handle_message(user_id: UUID_ID, message: MessageModel, db: AsyncSession):
     still_connected: bool = True
     chat_id = UUID(message.chatId)
 
     # Get static info
-    user_chat, chat, receiver = await _fetch_chat_info(user_id, chat_id, db)
+    user_chat, chat, receiver = await msg.fetch_chat_info(user_id, chat_id, db)
     receiver_is_bot = receiver.is_bot
     receiver_id = receiver.id
     receiver_name = receiver.username
@@ -171,8 +166,8 @@ async def handle_message(
         created_at=created_at,
         text=message.text,
     )
-    await _commit_message(new_message, user_chat, chat, True, db)
-    still_connected = await _try_sending(
+    await msg.commit_message(new_message, user_chat, chat, True, db)
+    still_connected = await msg.try_sending(
         still_connected, user_id, ChatEvent.UPDATE_CHAT
     )
 
@@ -182,7 +177,7 @@ async def handle_message(
         llm_name = receiver_name
         prediction = await llm_client.security_detection(new_message)
 
-        still_connected = await _try_sending(
+        still_connected = await msg.try_sending(
             still_connected,
             user_id,
             ChatEvent.SEC_DETECTION,
@@ -194,45 +189,16 @@ async def handle_message(
 
         if not message.buffer:
             messages = await MessageDatabase(db).get_by_user_chat_id(user_id, chat_id)
-            still_connected = await _try_sending(
-                still_connected,
-                user_id,
-                ChatEvent.MESSAGE_BEGIN,
-                {"chatId": message.chatId},
-            )
-            async for sentence in llm_client.generate_reply(
+            generator = llm_client.generate_reply(
                 llm_name,
                 user_id,
                 user_chat_whitelist,
                 user_chat_blacklist,
                 list(messages),
                 stream=True,
-            ):
-                user_chat, chat, receiver = await _fetch_chat_info(user_id, chat_id, db)
-                new_message = Message(
-                    sender_id=receiver.id,
-                    chat_id=chat_id,
-                    created_at=datetime.now(),
-                    text=sentence,
-                )
-                await _commit_message(new_message, user_chat, chat, False, db)
-                still_connected = await _try_sending(
-                    still_connected,
-                    user_id,
-                    ChatEvent.MESSAGE,
-                    {
-                        "messageId": str(new_message.id),
-                        "chatId": str(new_message.chat_id),
-                        "senderId": str(new_message.sender_id),
-                        "createdAt": int(new_message.created_at.timestamp() * 1000),
-                        "text": sentence,
-                    },
-                )
-            still_connected = await _try_sending(
-                still_connected,
-                user_id,
-                ChatEvent.MESSAGE_DONE,
-                {"chatId": message.chatId},
+            )
+            still_connected = await msg.send_messages_async(
+                connection_manager, generator, user_id, chat_id, db, still_connected
             )
     else:
         result = await db.execute(
@@ -251,15 +217,17 @@ async def handle_message(
             raise HTTPException(status_code=404, detail="Receiver chat not found.")
         receiver_user_chat, receiver_chat = fetched_chat
 
-        receiver_user_chat.last_message = message.text
+        created_at = new_message.created_at.astimezone(timezone.utc)
+        if created_at > chat.updated_at:
+            receiver_chat.updated_at = created_at
+            receiver_user_chat.last_message = new_message.text
         receiver_user_chat.is_seen = True
-        receiver_chat.updated_at = created_at
 
         db.add(receiver_user_chat)
         db.add(receiver_chat)
         await db.commit()
 
-        still_connected = await _try_sending(
+        still_connected = await msg.try_sending(
             still_connected, receiver_id, ChatEvent.MESSAGE, message.model_dump()
         )
 
@@ -268,19 +236,14 @@ async def handle_message(
 
 
 async def send_current_messages_to_llm(
-    # user: User, message: MessageModel, db: AsyncSession
-    user_id: UUID_ID,
-    user: User,
-    message: MessageModel,
-    db: AsyncSession,
+    user_id: UUID_ID, user: User, message: MessageModel, db: AsyncSession
 ):
     still_connected: bool = True
     chat_id = UUID(message.chatId)
     print(message.emotionMode)
 
-    user_chat, _, llm_user = await _fetch_chat_info(user_id, chat_id, db)
+    user_chat, _, llm_user = await msg.fetch_chat_info(user_id, chat_id, db)
 
-    llm_user_id = llm_user.id
     llm_name = llm_user.username
     user_chat_whitelist = user_chat.whitelist
     user_chat_blacklist = user_chat.blacklist
@@ -288,10 +251,7 @@ async def send_current_messages_to_llm(
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user_id, chat_id))
     print([(m.text, m.sender_id) for m in messages])
 
-    still_connected = await _try_sending(
-        still_connected, user_id, ChatEvent.MESSAGE_BEGIN, {"chatId": message.chatId}
-    )
-    async for sentence in llm_client.generate_reply(
+    generator = llm_client.generate_reply(
         llm_name,
         user_id,
         user_chat_whitelist,
@@ -299,53 +259,23 @@ async def send_current_messages_to_llm(
         messages,
         message.emotionMode,
         stream=True,
-    ):
-        await asyncio.sleep(2)
-        user_chat, chat, llm_user = await _fetch_chat_info(user_id, chat_id, db)
-        new_message = Message(
-            id=uuid4(),
-            sender_id=llm_user_id,
-            chat_id=chat_id,
-            created_at=datetime.now(),
-            text=sentence,
-        )
-        await _commit_message(new_message, user_chat, chat, False, db)
-        if connection_manager.is_online(user_id):
-            still_connected = await _try_sending(
-                still_connected,
-                user_id,
-                ChatEvent.MESSAGE,
-                {
-                    "messageId": str(new_message.id),
-                    "chatId": str(new_message.chat_id),
-                    "senderId": str(new_message.sender_id),
-                    "createdAt": int(new_message.created_at.timestamp() * 1000),
-                    "text": sentence,
-                },
-            )
-        await db.commit()
-    still_connected = await _try_sending(
-        still_connected, user_id, ChatEvent.MESSAGE_DONE, {"chatId": message.chatId}
+    )
+    still_connected = await msg.send_messages_async(
+        connection_manager, generator, user_id, chat_id, db, still_connected
     )
 
-    # TODO: Enable notification
-    # await db.refresh(user)
-    # if user.notification:
-    #     user_chat, chat, llm_user = await _fetch_chat_info(user_id, chat_id, db)
-    #     await notification_scheduler.analyze_and_schedule(
-    #         messages, message.timezone, user_id, llm_user, user_chat, chat, db
-    #     )
+    await db.refresh(user)
+    if user.notification:
+        await notification_scheduler.analyze_and_schedule(
+            messages, message.timezone, user_id, chat_id, db
+        )
 
     if not still_connected:
         raise WebSocketDisconnect
 
 
 async def handle_checkpoint(
-    # user: User, data: Dict[str, Any], message: MessageModel, db: AsyncSession
-    user_id: UUID_ID,
-    data: Dict[str, Any],
-    message: MessageModel,
-    db: AsyncSession,
+    user_id: UUID_ID, data: Dict[str, Any], message: MessageModel, db: AsyncSession
 ):
     topic_list = ["ความรัก", "การเงิน", "การงาน", "ครอบครัว", "การเรียน"]
     n_messages = data.get("nMessages", 20)
@@ -365,63 +295,3 @@ async def handle_checkpoint(
 
     await db.commit()
     await connection_manager.send(user_id, ChatEvent.CHECKPOINT, {"topics": topics})
-
-
-# ----------------------------- Helper functions -------------------------------#
-
-
-async def _try_sending(
-    still_connected: bool,
-    user_id: UUID_ID,
-    event: str,
-    data: Optional[Union[str, Dict[str, Any]]] = None,
-) -> bool:
-    if not still_connected:
-        return False
-    try:
-        await connection_manager.send(user_id, event, data)
-        return True
-    except WebSocketDisconnect:
-        return False
-
-
-async def _fetch_chat_info(
-    user_id: UUID, chat_id: UUID, db: AsyncSession
-) -> Tuple[UserChat, Chat, User]:
-    """
-    Returns
-    -------
-    UserChat
-        User chat information
-    Chat
-        Chat information
-    User
-        Receiver information
-    """
-    chat_info = await get_chat_info(user_id, chat_id, db)
-    if chat_info is None:
-        raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
-    return chat_info
-
-
-async def _commit_message(
-    message: Message, user_chat: UserChat, chat: Chat, is_seen: bool, db: AsyncSession
-) -> None:
-    await db.refresh(user_chat)
-    await db.refresh(chat)
-    
-    created_at = message.created_at.astimezone(timezone.utc)
-    if created_at > chat.updated_at:
-        chat.updated_at = created_at
-        user_chat.last_message = message.text
-    user_chat.is_seen = is_seen
-    if not is_seen:
-        user_chat.unread_messages += 1
-
-    db.add(message)
-    db.add(user_chat)
-    db.add(chat)
-    await db.commit()
-
-
-# ------------------------------------------------------------------------------#
