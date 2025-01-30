@@ -10,6 +10,7 @@ import { STATIC_BASE } from "../../lib/config";
 import axios from "axios";
 import { getTimezone } from "../../lib/timezone";
 import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
+import { WEBSOCKET_URL } from "../../lib/config";
 
 const Chat = () => {
   const navigate = useNavigate(); 
@@ -43,11 +44,19 @@ const Chat = () => {
     isReceiverBlocked,
     resetChat,
   } = useChatStore();
-  const { socket } = useSocket();
+  const {
+    socket,
+    doneMessageIds,
+    socketConnect,
+    addPendingMessages,
+    setDoneMessageIds,
+  } = useSocket();
 
   const chatRef = useRef();
   const socketListenerRef = useRef(null);
   const endRef = useRef(null);
+
+  const pendingMessagesRef = useRef(new Map());
 
   const handleKeyDown = async (event) => {
     if (event.key === 'Enter') {
@@ -67,6 +76,40 @@ const Chat = () => {
         navigate("/Login");
       }
     }
+  }
+
+  // Try sending a message. If the message is not sent, add it to the pending messages.
+  const trySendingMessage = (message, messagePacket) => {
+    const pendingId = addPendingMessages(messagePacket);
+    if (pendingId === null) {
+      return message;
+    }
+    const newMessage = { ...message };
+    newMessage.failed = true;
+    pendingMessagesRef.current.set(pendingId, newMessage);
+    socketConnect(WEBSOCKET_URL);
+    return newMessage;
+  };
+
+  // Send a special message, e.g. "commit-messages" and "checkpoint".
+  const sendSpecialMessage = (msgType) => {
+    const message = {
+      chatId: chatId,
+      senderId: user.id,
+      createdAt: Date.now(),
+      timezone: getTimezone(),
+      text: "",
+      buffer: false,
+      emotionMode: emotionMode,
+      persuasive: false,
+      // persuasive : harmOthers || setEmotionMode
+    }
+    const messagePacket = {
+      type: msgType,
+      senderId: user.id,
+      data: message,
+    };
+    addPendingMessages(messagePacket);
   }
 
   const socketMessageListener = async (event) => {
@@ -160,10 +203,14 @@ const Chat = () => {
   }, [chatData]);
 
   useEffect(() => {
-    if (!socket || socketListenerRef.current) {
+    if (!socket) {
+      socketListenerRef.current = null;
       if (!textReady) {
         setTextReady(true); // bubble stop
       }
+      return;
+    }
+    if (socketListenerRef.current) {
       return;
     }
     if (chatId !== null) {
@@ -182,6 +229,37 @@ const Chat = () => {
       }
     }
   }, [chatId]);
+
+  useEffect(() => {
+    if (doneMessageIds.length === 0) {
+      return;
+    }
+    
+    let hasSent = false;
+    const pending = [];
+
+    for (const id of doneMessageIds) {
+      if (pendingMessagesRef.current.has(id)) {
+        const message = pendingMessagesRef.current.get(id);
+        message.failed = false;
+        pendingMessagesRef.current.delete(id);
+        hasSent = true;
+      } else {
+        pending.push(id);
+      }
+    }
+    if (hasSent) {
+      if (socket) {
+        try {
+          sendSpecialMessage("commit-messages");
+        } catch (err) {
+          console.log(err);
+        }
+      }
+      setChat([...chatRef.current]);
+      setDoneMessageIds(pending);
+    }
+  }, [doneMessageIds]);
 
   const handleBack = async (e) => {
     try {
@@ -234,52 +312,48 @@ const Chat = () => {
   };
 
   const handleSend = async () => {
-    enterFullscreen();
+    try{
+      enterFullscreen();
+    } catch (err) {
+      console.log(err);
+    }
+
     if (latestRead === -3) {
       setLatestRead(chatRef.current.length);
     }
     
     if (text === "") return;
+    
+    const message = {
+      chatId: chatId,
+      senderId: currentUser.id,
+      createdAt: Date.now(),
+      timezone: getTimezone(),
+      text: text,
+      buffer: true,
+      emotionMode: "",
+      persuasive: false,
+    };
+    const messagePacket = {
+      type: "message",
+      senderId: currentUser.id,
+      data: message,
+    };
 
-    if (socket === null) {
-      const message = {
-        chatId: chatId,
-        senderId: currentUser.id,
-        createdAt: Date.now(),
-        timezone: getTimezone(),
-        text: text,
-        failed: true,
-      };
-      chatRef.current.push(message);
+    try {
+      const newMessage = trySendingMessage(message, messagePacket);
+      chatRef.current.push(newMessage);
       setChat([...chatRef.current]);
       setText("");
+    } catch (err) {
+      console.log(err);
+    }
+
+    if (pendingMessagesRef.current.size > 0) {
+      // There are pending messages. Commit later.
       return;
     }
 
-    try {
-      const message = {
-        chatId: chatId,
-        senderId: currentUser.id,
-        createdAt: Date.now(),
-        timezone: getTimezone(),
-        text: text,
-        buffer: true,
-        emotionMode: "",
-        persuasive: false,
-      };
-      const message_packet = {
-        type: "message",
-        senderId: currentUser.id,
-        data: message,
-      };
-      socket.send(JSON.stringify(message_packet));
-      chatRef.current.push(message);
-      setChat([...chatRef.current]);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setText("");
-    }
     if (LLM_LIST.includes(user.alias)) {
       if (startWait === false){
         return;
@@ -301,25 +375,8 @@ const Chat = () => {
       setTimeout(async () => {
         setStartWait(true); // next message will be save to next chunk
 
-        const message = {
-          chatId: chatId,
-          senderId: user.id,
-          createdAt: Date.now(),
-          timezone: getTimezone(),
-          text: "",
-          buffer: false,
-          emotionMode : emotionMode,
-          persuasive: false,
-          // persuasive : harmOthers || setEmotionMode
-        }
-        const message_packet = {
-          type: "commit-messages",
-          senderId: user.id,
-          data: message,
-        };
-
         try {
-          socket.send(JSON.stringify(message_packet));
+          sendSpecialMessage("commit-messages");
           // setTextReady(true); // bubble stop
           // setLatestRead(chatRef.current.length);
         } catch (err) {
@@ -328,22 +385,7 @@ const Chat = () => {
 
         if (chatRef.current.length > checkpoint) {
           setCheckpoint(chatRef.current.length + 20);
-          const message = {
-            chatId: chatId,
-            senderId: user.id,
-            createdAt: Date.now(),
-            timezone: getTimezone(),
-            text: "",
-            buffer: false,
-            emotionMode: "",
-            persuasive: false,
-          }
-          const message_packet = {
-            type: "checkpoint",
-            senderId: user.id,
-            data: message,
-          }
-          socket.send(JSON.stringify(message_packet));
+          sendSpecialMessage("checkpoint");
         }
       }, 6000);
     }
@@ -442,7 +484,7 @@ const Chat = () => {
           <div
             className={
               message.senderId === currentUser?.id
-                ? Object.prototype.hasOwnProperty.call(message, "failed")
+                ? message.failed
                   ? "message failed"
                   : "message own"
                 : "message"
