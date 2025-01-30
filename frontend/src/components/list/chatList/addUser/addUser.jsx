@@ -4,8 +4,11 @@ import { useState } from "react";
 import { useUserStore } from "../../../../lib/userStore";
 import axios from "axios";
 import { STATIC_BASE } from "../../../../lib/config";
+import { useNavigate } from "react-router-dom";
 
 const AddUser = () => {
+  const navigate = useNavigate();
+  
   const [user, setUser] = useState(null);
 
   const { currentUser } = useUserStore();
@@ -43,6 +46,9 @@ const AddUser = () => {
       const _ = await axios.post("/user-chats", { receiverId: user.id });
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
   };
 

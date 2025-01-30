@@ -42,7 +42,7 @@ const Register = () => {
     try {
       await axios.post("/auth/register", { email, password });
       toast.success("ลงทะเบียนสำเร็จ คุณสามารถเข้าสู่ระบบได้แล้ว");
-      navigate("/login")
+      navigate("/Login")
     } catch (err) {
       console.log(err);
       let error_msg = "ไม่สามารถลงทะเบียนได้!";

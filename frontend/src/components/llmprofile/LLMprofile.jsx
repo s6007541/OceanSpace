@@ -53,6 +53,9 @@ const LLMprofile = ( ) => {
       }, 200); // Match the timeout to the animation duration (0.7s)
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
     // setAddMode(false);
   };
