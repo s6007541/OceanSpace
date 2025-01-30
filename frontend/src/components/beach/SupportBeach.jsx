@@ -109,8 +109,8 @@ const SupportBeach = () => {
   
   const [selectedid, setselectedid] = useState([]);
   const [isShowingScroll, setIsShowingScroll] = useState(false);
-  const [idxs, setIdxs] = useState(null);
-  const [idx, setIdx] = useState([]);
+  const [idxs, setIdxs] = useState([]);
+  const [idx, setIdx] = useState(null);
   const handleUnrollFromChild = (x) => {
     setselectedid([...selectedid, x]);
     setIsShowingScroll(true);
