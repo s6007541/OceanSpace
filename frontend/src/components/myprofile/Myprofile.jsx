@@ -12,7 +12,7 @@ const Myprofile = ( ) => {
 
   const navigate = useNavigate(); 
   const goback = () =>{
-    let path = `/ChatList`; 
+    let path = `/`; 
     navigate(path);
   }
 
@@ -57,7 +57,7 @@ const Myprofile = ( ) => {
 
   return (
     <div className="myProfile">
-      <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
+      <img className="myprofilegoback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
       <div className="header_text">หน้าของฉัน</div>
       <div className="profile_pic_wrapper">
         <img className="profile_pic" src={`${BACKEND_URL}/profile-image/${currentUser.id}`}/> 
