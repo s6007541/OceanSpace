@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+const retryPeriod = 5000;
+
 export const useSocket = create((set, get) => ({
   socket: null,
   socketConnected: false,
@@ -14,7 +16,17 @@ export const useSocket = create((set, get) => ({
     // Connect the socket.
     const token = localStorage.getItem("token");
     if (token) {
-      const ws = new WebSocket(url);
+      let ws = null;
+      try {
+        ws = new WebSocket(url);
+      } catch (err) {
+        console.log(err);
+        // Periodic retry
+        setTimeout(() => {
+          get().socketConnect(url);
+        }, retryPeriod);
+        return;
+      }
       set({ socketConnected: true });
       ws.addEventListener("open", (_) => {
         set({ socket: ws });
@@ -39,6 +51,10 @@ export const useSocket = create((set, get) => ({
       });
       ws.addEventListener("close", (_) => {
         set({ socket: null, socketConnected: false });
+        // Periodic retry
+        setTimeout(() => {
+          get().socketConnect(url);
+        }, retryPeriod);
       });
     } else {
       console.log("No token found.");

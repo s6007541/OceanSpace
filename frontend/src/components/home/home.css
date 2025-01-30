@@ -1,10 +1,10 @@
 .home {
-  border-left: 1px solid #dddddd35;
-  border-right: 1px solid #dddddd35;
+
+  flex: 1;
   display: flex;
   flex-direction: column;
-  background: #FFF;
-  color: black;
+  background-color: #FFF;
+  color : black;
 
   .main-content {
     display: flex;

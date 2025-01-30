@@ -1,7 +1,6 @@
-import asyncio
 import datetime
 import uuid
-from typing import AsyncGenerator, List, Optional, Union
+from typing import List, Optional, Union
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -13,21 +12,20 @@ from pythainlp import util  # type: ignore
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .connections import ChatEvent, ConnectionManager, get_connection_manager
+from .connections import ConnectionManager, get_connection_manager
 from .db import (
-    Chat,
     Message,
     MessageDatabase,
     NotificationTask,
     NotificationTaskDatabase,
     OAuthAccount,
     User,
-    UserChat,
     UserDatabase,
     async_session_maker,
     get_chat_info,
 )
 from .llm import LLMClient, get_llm_client
+from .utils import messaging as msg
 
 
 class NotificationScheduler:
@@ -59,11 +57,9 @@ class NotificationScheduler:
                     await db.delete(task)
                     continue
                 trigger = DateTrigger(run_date=task.scheduled_at)
-                user = await UserDatabase(db, User, OAuthAccount).get(task.user_id)
                 chat_info = await get_chat_info(task.user_id, task.chat_id, db)
                 if chat_info is None:
                     continue
-                user_chat, chat, llm_user = chat_info
                 self.scheduler.add_job(
                     notification_task,
                     trigger,
@@ -71,10 +67,8 @@ class NotificationScheduler:
                         task.id,
                         self.llm_client,
                         self.connection_manager,
-                        user,
-                        llm_user,
-                        user_chat,
-                        chat,
+                        task.user_id,
+                        task.chat_id,
                         db,
                     ],
                     id=str(task.id),
@@ -140,9 +134,7 @@ class NotificationScheduler:
     async def schedule(
         self,
         user_id: UUID_ID,
-        llm_user: User,
-        user_chat: UserChat,
-        chat: Chat,
+        chat_id: UUID_ID,
         context: List[Message],
         timezone: Union[str, int],
         db: AsyncSession,
@@ -184,7 +176,7 @@ class NotificationScheduler:
         task = NotificationTask(
             id=uuid.uuid4(),
             user_id=user_id,
-            chat_id=user_chat.chat_id,
+            chat_id=chat_id,
             context=[message.id for message in context],
             scheduled_at=schedule_time.astimezone(tzlocal.get_localzone()),
             timezone=timezone if isinstance(timezone, str) else None,
@@ -199,9 +191,7 @@ class NotificationScheduler:
                 self.llm_client,
                 self.connection_manager,
                 user_id,
-                llm_user,
-                user_chat,
-                chat,
+                chat_id,
                 db,
             ],
             id=str(task.id),
@@ -209,22 +199,19 @@ class NotificationScheduler:
         db.add(task)
         await db.commit()
         await db.refresh(task)
+        print(f"[Scheduler] schedule task for user {user_id} at {schedule_time}")
 
     async def analyze_and_schedule(
         self,
         messages: List[Message],
         timezone: Union[str, int],
         user_id: UUID_ID,
-        llm_user: User,
-        user_chat: UserChat,
-        chat: Chat,
+        chat_id: UUID_ID,
         db: AsyncSession,
     ):
         context = self._get_context(user_id, messages)
         if await self.should_schedule(user_id, context):
-            await self.schedule(
-                user_id, llm_user, user_chat, chat, context, timezone, db
-            )
+            await self.schedule(user_id, chat_id, context, timezone, db)
 
 
 def _get_timezone(timezone: Optional[str], timedelta: Optional[int]) -> Union[str, int]:
@@ -258,11 +245,9 @@ async def notification_task(
     llm_client: LLMClient,
     connection_manager: ConnectionManager,
     user_id: UUID_ID,
-    llm_user: User,
-    user_chat: UserChat,
-    chat: Chat,
+    chat_id: UUID_ID,
     db: AsyncSession,
-):
+) -> None:
     task = await NotificationTaskDatabase(db).delete_and_return(task_id)
     if task is None:
         return
@@ -271,9 +256,17 @@ async def notification_task(
     if user is None or not user.notification:
         return
 
-    context = await MessageDatabase(db).get_by_id_list(task.context)
+    chat_info = await get_chat_info(user_id, chat_id, db)
+    if chat_info is None:
+        return
 
-    assert llm_user.username is not None
+    user_chat, _, llm_user = chat_info
+    user_chat_whitelist = user_chat.whitelist
+    user_chat_blacklist = user_chat.blacklist
+    llm_user_name = llm_user.username
+    assert llm_user_name is not None
+
+    context = await MessageDatabase(db).get_by_id_list(task.context)
 
     tz = _get_timezone(task.timezone, task.timedelta)
     context_time = _astimezone(context[-1].created_at, tz) if context else None
@@ -283,7 +276,7 @@ async def notification_task(
     query_message = Message(
         id=uuid4(),
         sender_id=user_id,
-        chat_id=chat.id,
+        chat_id=chat_id,
         created_at=datetime.datetime.now(),
         text=(
             (
@@ -298,61 +291,13 @@ async def notification_task(
         ),
     )
     generator = llm_client.generate_reply(
-        llm_user.username,
+        llm_user_name,
         user_id,
-        user_chat.whitelist,
-        user_chat.blacklist,
+        user_chat_whitelist,
+        user_chat_blacklist,
         list(context) + [query_message],
     )
-
-    await send_messages_async(
-        connection_manager, generator, user_id, llm_user, user_chat, chat, db
-    )
-
-
-async def send_messages_async(
-    connection_manager: ConnectionManager,
-    message_generator: AsyncGenerator[str, None],
-    user_id: UUID_ID,
-    llm_user: User,
-    user_chat: UserChat,
-    chat: Chat,
-    db: AsyncSession,
-):
-    async for message in message_generator:
-        await asyncio.sleep(2)
-
-        new_message = Message(
-            id=uuid.uuid4(),
-            chat_id=chat.id,
-            sender_id=llm_user.id,
-            created_at=datetime.datetime.now(),
-            text=message,
-        )
-
-        user_chat.last_message = message
-        user_chat.is_seen = False
-        user_chat.unread_messages += 1
-        chat.updated_at = new_message.created_at
-
-        db.add(new_message)
-        db.add(user_chat)
-        db.add(chat)
-
-        if connection_manager.is_online(user_id):
-            await connection_manager.send(
-                user_id,
-                ChatEvent.MESSAGE,
-                {
-                    "messageId": str(new_message.id),
-                    "chatId": str(new_message.chat_id),
-                    "senderId": str(new_message.sender_id),
-                    "createdAt": int(new_message.created_at.timestamp() * 1000),
-                    "text": message,
-                },
-            )
-        await db.commit()
-    await connection_manager.send(user_id, ChatEvent.MESSAGE_DONE)
+    await msg.send_messages_async(connection_manager, generator, user_id, chat_id, db)
 
 
 _notification_scheduler: Optional[NotificationScheduler] = None
