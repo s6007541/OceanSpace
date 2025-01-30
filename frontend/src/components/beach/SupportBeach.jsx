@@ -194,7 +194,9 @@ const SupportBeach = () => {
 
       <div className={`paper-scroll-text ${(isShowingScroll) ? "visible" : ""}`}>{supportive_text[idx]}</div>
 
-
+      <p className="support-bottom-text">
+        ทะเลเขียนจดหมายมาให้<br/>ลองหยิบมาอ่านดูนะ
+      </p>
     </div>
 
   );
