@@ -12,7 +12,7 @@ const Myprofile = ( ) => {
 
   const navigate = useNavigate(); 
   const goback = () =>{
-    let path = `/ChatList`; 
+    let path = `/`; 
     navigate(path);
   }
 
