@@ -125,7 +125,7 @@ const SupportBeach = () => {
   // }, []);
   return (
     <div className="supportbeach">
-      <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
+      <img className="supportgoback" src={`${STATIC_BASE}/cross_white.svg`} onClick={goback}/>
       <div className="supportbeach__waves" />
       <div className="supportbeach__sand supportbeach__sand--background" />
       <div className="supportbeach__sand supportbeach__sand--foreground" />

@@ -78,12 +78,12 @@ body {
   height: 100vh;
   margin: 0;
   padding: 0;
-  background: linear-gradient(180deg, #00133b 0%, #89fbff 70%);
+  background: linear-gradient(180deg, #00133b 0%, #89fbff 100%);
   overflow: hidden;
 }
 .wishbeach:after {
   content: "";
-  background: linear-gradient(180deg, #00133b 0%, #89fbff 70%);
+  background: linear-gradient(180deg, #00133b 0%, #89fbff 100%);
 }
 .wishbeach__waves {
   position: absolute;

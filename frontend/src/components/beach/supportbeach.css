@@ -48,10 +48,10 @@
   
 }
 
-.goback {
-   
+.supportgoback {
+  fill: white;
   position: absolute;
-  z-index: 999;
+  z-index: 3000;
   right:0;
   top : 30px;
   right : 24px;
