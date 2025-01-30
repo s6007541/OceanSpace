@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from datetime import datetime
 from typing import Any, Awaitable, Callable, Dict, Optional, Set, Tuple, Union
 from uuid import UUID, uuid4
@@ -108,8 +109,8 @@ async def websocket_endpoint(
     user: User = Depends(get_ws_current_user),
     db: AsyncSession = Depends(get_async_session),
 ):
-    async def exception_handler(task_id: str, e: Exception) -> None:
-        print("[WebSocker] Exception occurred:", e)
+    async def exception_handler(task_id: str, _: Exception) -> None:
+        print("[WebSocket] Exception occurred:", traceback.format_exc())
         await connection_manager.send(
             user.id, ChatEvent.MESSAGE_DONE, {"chatId": task_id}
         )
