@@ -3,6 +3,7 @@ import Userinfo from "../list/userInfo/Userinfo";
 import Navbar from "../navbar/Navbar";
 import { STATIC_BASE } from "../../lib/config";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Home = () => {
   const navigate = useNavigate(); 
@@ -38,7 +39,9 @@ const Home = () => {
                 <div className="diary-detail">มีเรื่องอะไรอยาก ขอพรกันมั้ย</div>
                 <img src={`${STATIC_BASE}/diary2.svg`}/>
               </div>
-              <div className="diary" onClick={()=>{navigate("/SupportBeach")}}>
+              {/* <div className="diary" onClick={()=>{navigate("/SupportBeach")}}> */}
+              <div className="diary" onClick={()=>{toast.error("This feature is coming soon in a future update. Stay tuned for more!")
+}}>
                 <div className="emoji">💪🏻<br/>พลังใจ</div>
                 <div className="diary-detail">รับจดหมายลับ ให้กำลังใจจากทะเล</div>
                 <img src={`${STATIC_BASE}/diary3.svg`}/>

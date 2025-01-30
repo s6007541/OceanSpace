@@ -26,12 +26,12 @@ body {
   height: 100vh;
   margin: 0;
   padding: 0;
-  background: linear-gradient(180deg, #3e40cb 0%, #ffa574 100%);
+  background: linear-gradient(180deg, #3e40cb 0%, #efb88b 100%);
   overflow: hidden;
 }
 .supportbeach:after {
   content: "";
-  background: linear-gradient(40deg, #3e40cb 0%,  #ffa574 100%);
+  background: linear-gradient(40deg, #3e40cb 0%,  #efb88b 100%);
 }
 .supportbeach__waves {
   position: absolute;
@@ -59,7 +59,7 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 50vh;
+  height: 40vh;
 }
 .supportbeach__sand--background {
   z-index: 997;
@@ -78,7 +78,7 @@ body {
 }
 .supportbeach__sand--foreground {
   z-index: 998;
-  background: linear-gradient(200deg, #e5cb9b 0%, #ff7d66 300%);
+  background: #efcc8b;
   animation: seafoam2;
   animation-duration: 10s;
   animation-iteration-count: infinite;
