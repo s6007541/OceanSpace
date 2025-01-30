@@ -3,6 +3,7 @@ import { STATIC_BASE } from "../../lib/config";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useEffect, useRef, useState } from "react";
+import { supportive_text } from "./supportive_text"; // Import the list here
 
 const FloatingImage = ({ sendUnrolling, id, show}) => {
   const [x, setX] = useState(-1);
@@ -72,7 +73,7 @@ const FloatingImage = ({ sendUnrolling, id, show}) => {
     setIsVisible(false); // Hide the bottle
 
   };
-  
+
   return (
       <div className="floating-object-outer" style={{opacity: show ? 1 : 0}}>
         {isVisible ? 
@@ -106,13 +107,28 @@ const FloatingImage = ({ sendUnrolling, id, show}) => {
 const SupportBeach = () => {
   const navigate = useNavigate(); 
   
-  const [selectedid, setselectedid] = useState([]); // State for GIF visibility
-  const [isShowingScroll, setIsShowingScroll] = useState(false); // State for GIF visibility
-  const [idx, setIdx] = useState(null); // State for GIF visibility
+  const [selectedid, setselectedid] = useState([]);
+  const [isShowingScroll, setIsShowingScroll] = useState(false);
+  const [idxs, setIdxs] = useState(null);
+  const [idx, setIdx] = useState([]);
   const handleUnrollFromChild = (x) => {
-    setIdx(Math.floor(Math.random() * supportive_text.length));
     setselectedid([...selectedid, x]);
     setIsShowingScroll(true);
+    if (idxs.length === 0) {
+      let numbers = new Set();
+
+      while (numbers.size < 5) {
+        let randomNumber = Math.floor(Math.random() * supportive_text.length);
+        numbers.add(randomNumber);
+      }
+      let arr = Array.from(numbers)
+      setIdxs(arr);
+      setIdx(arr[x])
+    }
+    else {
+      setIdx(idxs[x])
+    }
+    
      // Update parent state with the data from child
   };
   const goback = () =>{ 
@@ -120,27 +136,43 @@ const SupportBeach = () => {
       setIsShowingScroll(false);
     }
     else {
+      exitFullscreen()
       let path = `/`; 
       navigate(path);
     }
-    
   }
+  // Function to request fullscreen
+  const enterFullscreen = () => {
+    const elem = document.documentElement; // Get the entire document (html)
 
-  const supportive_text = ["ทุกความพยายามมีคุณค่า ไม่มีความล้มเหลวที่ไม่สอนอะไรเราเลย สู้ต่อไปนะ!" 
-    ,"แม้วันนี้จะยาก แต่พรุ่งนี้อาจเป็นวันที่สดใสที่สุด รักษาความหวังและมุ่งมั่นไว้!" 
-    ,"ทุกครั้งที่เธอก้าวข้ามอุปสรรค เธอเติบโตขึ้น และนั่นทำให้เธอแข็งแกร่งขึ้นกว่าที่เคย" 
-    ,"ความสำเร็จไม่ได้เกิดจากการไม่เคยล้มเหลว แต่เกิดจากการลุกขึ้นสู้ทุกครั้งที่ล้ม" 
-    ,"อย่าลืมว่าการพยายามในวันนี้ จะนำพาเธอไปสู่ความสำเร็จในวันหน้า มุ่งมั่นต่อไป!" 
-    ,"ช่วงเวลาที่ยากที่สุดมักจะนำไปสู่ช่วงเวลาที่ดีที่สุดของชีวิต" 
-    ,"ไม่ว่าจะยากแค่ไหน ถ้าใจเธอยังไม่ถอดใจ เธอจะผ่านมันไปได้" 
-    ,"ทุกก้าวเล็กๆ ที่เดินไปข้างหน้า นำเธอไปใกล้ความฝันมากขึ้นเรื่อยๆ" 
-    ,"ความสำเร็จไม่ใช่เรื่องของความเร็ว แต่เป็นเรื่องของความตั้งใจและความพยายาม" 
-    ,"จำไว้เสมอว่าเธอมีพลังในตัวเองมากกว่าที่เธอคิด อย่ายอมแพ้นะ!"]
-  
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.mozRequestFullScreen) { // Firefox
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) { // Chrome, Safari
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { // IE/Edge
+      elem.msRequestFullscreen();
+    }
+  };
+
+  // Function to exit fullscreen
+  const exitFullscreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.mozCancelFullScreen) { // Firefox
+      document.mozCancelFullScreen();
+    } else if (document.webkitExitFullscreen) { // Chrome, Safari
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { // IE/Edge
+      document.msExitFullscreen();
+    }
+  };
     
-  // useEffect(() => {
-    
-  // }, []);
+  useEffect(() => {
+    enterFullscreen();
+  }, []);
+  console.log(idx);
   return (
     <div className="supportbeach">
       <img className="supportgoback" src={`${STATIC_BASE}/cross_white.svg`} onClick={goback}/>
