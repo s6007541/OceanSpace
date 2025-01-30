@@ -1,5 +1,6 @@
 import asyncio
-from datetime import datetime
+import traceback
+from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Dict, Optional, Set, Tuple, Union
 from uuid import UUID, uuid4
 
@@ -108,8 +109,8 @@ async def websocket_endpoint(
     user: User = Depends(get_ws_current_user),
     db: AsyncSession = Depends(get_async_session),
 ):
-    async def exception_handler(task_id: str, e: Exception) -> None:
-        print("[WebSocker] Exception occurred:", e)
+    async def exception_handler(task_id: str, _: Exception) -> None:
+        print("[WebSocket] Exception occurred:", traceback.format_exc())
         await connection_manager.send(
             user.id, ChatEvent.MESSAGE_DONE, {"chatId": task_id}
         )
@@ -153,13 +154,20 @@ async def handle_message(
     still_connected: bool = True
     chat_id = UUID(message.chatId)
 
-    # Commit user message
+    # Get static info
     user_chat, chat, receiver = await _fetch_chat_info(user_id, chat_id, db)
+    receiver_is_bot = receiver.is_bot
+    receiver_id = receiver.id
+    receiver_name = receiver.username
+    user_chat_whitelist = user_chat.whitelist
+    user_chat_blacklist = user_chat.blacklist
+
+    # Commit user message
     created_at = datetime.fromtimestamp(message.createdAt / 1000)
     new_message = Message(
         id=uuid4(),
         sender_id=user_id,
-        chat_id=chat.id,
+        chat_id=chat_id,
         created_at=created_at,
         text=message.text,
     )
@@ -168,10 +176,10 @@ async def handle_message(
         still_connected, user_id, ChatEvent.UPDATE_CHAT
     )
 
-    if receiver.is_bot:
+    if receiver_is_bot:
         ## sucidal detection
-        llm_name = receiver.username
-        assert llm_name is not None
+        assert receiver_name is not None
+        llm_name = receiver_name
         prediction = await llm_client.security_detection(new_message)
 
         still_connected = await _try_sending(
@@ -179,27 +187,31 @@ async def handle_message(
             user_id,
             ChatEvent.SEC_DETECTION,
             {
-                "chatId": str(chat.id),
+                "chatId": str(chat_id),
                 "pred": prediction,
             },
         )
 
         if not message.buffer:
-            llm_name = receiver.username
-            assert llm_name is not None
-            messages = await MessageDatabase(db).get_by_user_chat_id(user_id, chat.id)
+            messages = await MessageDatabase(db).get_by_user_chat_id(user_id, chat_id)
+            still_connected = await _try_sending(
+                still_connected,
+                user_id,
+                ChatEvent.MESSAGE_BEGIN,
+                {"chatId": message.chatId},
+            )
             async for sentence in llm_client.generate_reply(
                 llm_name,
                 user_id,
-                user_chat.whitelist,
-                user_chat.blacklist,
+                user_chat_whitelist,
+                user_chat_blacklist,
                 list(messages),
                 stream=True,
             ):
                 user_chat, chat, receiver = await _fetch_chat_info(user_id, chat_id, db)
                 new_message = Message(
                     sender_id=receiver.id,
-                    chat_id=chat.id,
+                    chat_id=chat_id,
                     created_at=datetime.now(),
                     text=sentence,
                 )
@@ -227,7 +239,7 @@ async def handle_message(
             select(UserChat, Chat)
             .join(Chat, UserChat.chat_id == Chat.id)
             .where(
-                UserChat.user_id == receiver.id,
+                UserChat.user_id == receiver_id,
                 UserChat.chat_id == message.chatId,
             )
         )
@@ -248,7 +260,7 @@ async def handle_message(
         await db.commit()
 
         still_connected = await _try_sending(
-            still_connected, receiver.id, ChatEvent.MESSAGE, message.model_dump()
+            still_connected, receiver_id, ChatEvent.MESSAGE, message.model_dump()
         )
 
     if not still_connected:
@@ -266,18 +278,24 @@ async def send_current_messages_to_llm(
     chat_id = UUID(message.chatId)
     print(message.emotionMode)
 
-    user_chat, chat, llm_user = await _fetch_chat_info(user_id, chat_id, db)
+    user_chat, _, llm_user = await _fetch_chat_info(user_id, chat_id, db)
 
+    llm_user_id = llm_user.id
     llm_name = llm_user.username
+    user_chat_whitelist = user_chat.whitelist
+    user_chat_blacklist = user_chat.blacklist
     assert llm_name is not None
-    messages = list(await MessageDatabase(db).get_by_user_chat_id(user_id, chat.id))
+    messages = list(await MessageDatabase(db).get_by_user_chat_id(user_id, chat_id))
     print([(m.text, m.sender_id) for m in messages])
 
+    still_connected = await _try_sending(
+        still_connected, user_id, ChatEvent.MESSAGE_BEGIN, {"chatId": message.chatId}
+    )
     async for sentence in llm_client.generate_reply(
         llm_name,
         user_id,
-        user_chat.whitelist,
-        user_chat.blacklist,
+        user_chat_whitelist,
+        user_chat_blacklist,
         messages,
         message.emotionMode,
         stream=True,
@@ -286,8 +304,8 @@ async def send_current_messages_to_llm(
         user_chat, chat, llm_user = await _fetch_chat_info(user_id, chat_id, db)
         new_message = Message(
             id=uuid4(),
-            sender_id=llm_user.id,
-            chat_id=chat.id,
+            sender_id=llm_user_id,
+            chat_id=chat_id,
             created_at=datetime.now(),
             text=sentence,
         )
@@ -310,11 +328,13 @@ async def send_current_messages_to_llm(
         still_connected, user_id, ChatEvent.MESSAGE_DONE, {"chatId": message.chatId}
     )
 
-    await db.refresh(user)
-    if user.notification:
-        await notification_scheduler.analyze_and_schedule(
-            messages, message.timezone, user_id, llm_user, user_chat, chat, db
-        )
+    # TODO: Enable notification
+    # await db.refresh(user)
+    # if user.notification:
+    #     user_chat, chat, llm_user = await _fetch_chat_info(user_id, chat_id, db)
+    #     await notification_scheduler.analyze_and_schedule(
+    #         messages, message.timezone, user_id, llm_user, user_chat, chat, db
+    #     )
 
     if not still_connected:
         raise WebSocketDisconnect
@@ -368,6 +388,16 @@ async def _try_sending(
 async def _fetch_chat_info(
     user_id: UUID, chat_id: UUID, db: AsyncSession
 ) -> Tuple[UserChat, Chat, User]:
+    """
+    Returns
+    -------
+    UserChat
+        User chat information
+    Chat
+        Chat information
+    User
+        Receiver information
+    """
     chat_info = await get_chat_info(user_id, chat_id, db)
     if chat_info is None:
         raise WebSocketException(code=status.WS_1002_PROTOCOL_ERROR)
@@ -377,11 +407,16 @@ async def _fetch_chat_info(
 async def _commit_message(
     message: Message, user_chat: UserChat, chat: Chat, is_seen: bool, db: AsyncSession
 ) -> None:
-    user_chat.last_message = message.text
+    await db.refresh(user_chat)
+    await db.refresh(chat)
+    
+    created_at = message.created_at.astimezone(timezone.utc)
+    if created_at > chat.updated_at:
+        chat.updated_at = created_at
+        user_chat.last_message = message.text
     user_chat.is_seen = is_seen
     if not is_seen:
         user_chat.unread_messages += 1
-    chat.updated_at = message.created_at
 
     db.add(message)
     db.add(user_chat)

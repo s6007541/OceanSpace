@@ -63,9 +63,7 @@ const App = () => {
         return;
       }
 
-      if (!socketConnected) {
-        socketConnect(WEBSOCKET_URL + "/wss");
-      }
+      socketConnect(WEBSOCKET_URL);
     }
     initialize();
   }, [currentUser]);

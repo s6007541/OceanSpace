@@ -27,7 +27,7 @@ from .db import (
     async_session_maker,
     get_chat_info,
 )
-from .llm import LLMClient
+from .llm import LLMClient, get_llm_client
 
 
 class NotificationScheduler:
@@ -361,7 +361,7 @@ _notification_scheduler: Optional[NotificationScheduler] = None
 def get_notification_scheduler() -> NotificationScheduler:
     global _notification_scheduler
     if _notification_scheduler is None:
-        llm_client = LLMClient()
+        llm_client = get_llm_client()
         connection_manager = get_connection_manager()
         _notification_scheduler = NotificationScheduler(llm_client, connection_manager)
     return _notification_scheduler

@@ -40,7 +40,7 @@ const ReliefBeach = () => {
     blurTimerRef.current = setInterval(() => {
       setBlurLevel((prevBlur) => {
         const newBlur = prevBlur + 1;
-        if (newBlur > 3) { // 3 blur steps * 5 seconds = 15 seconds
+        if (newBlur > 2) { // 3 blur steps * 5 seconds = 15 seconds
           clearInterval(blurTimerRef.current);
           vanishTimerRef.current = setTimeout(() => {
             setIsVisible(false); // Hide the text
@@ -51,7 +51,7 @@ const ReliefBeach = () => {
               setText("")
               setshowAnswer(false)
             }, 15000); // 3 seconds delay
-          }, 0); // Immediately vanish after max blur
+          }, 5000); // Immediately vanish after max blur
           return 3; // Keep blur at max
         }
         return newBlur;

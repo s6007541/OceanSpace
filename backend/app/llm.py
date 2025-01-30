@@ -200,7 +200,9 @@ class LLMClient:
                     cur_str = ""
             else:
                 splitted = cur_token.split(" ")
-                if len(splitted[0]) == 0 and cur_str[-1] in ["ๆ", ",", '"', "'"]:
+                if len(splitted[0]) == 0 and (
+                    len(cur_str) > 0 and cur_str[-1] in ["ๆ", ",", '"', "'"]
+                ):
                     cur_str += " ".join(splitted[1:])
                 elif len(splitted[0]) > 0 and splitted[0][-1] in ["ๆ", ",", '"', "'"]:
                     cur_str += " ".join(splitted)
