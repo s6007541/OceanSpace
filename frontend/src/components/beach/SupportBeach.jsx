@@ -172,7 +172,6 @@ const SupportBeach = () => {
   useEffect(() => {
     enterFullscreen();
   }, []);
-  console.log(idx);
   return (
     <div className="supportbeach">
       <img className="supportgoback" src={`${STATIC_BASE}/cross_white.svg`} onClick={goback}/>
