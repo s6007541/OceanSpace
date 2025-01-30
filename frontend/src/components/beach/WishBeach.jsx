@@ -40,7 +40,7 @@ const WishBeach = () => {
     blurTimerRef.current = setInterval(() => {
       setBlurLevel((prevBlur) => {
         const newBlur = prevBlur + 1;
-        if (newBlur > 3) { // 3 blur steps * 5 seconds = 15 seconds
+        if (newBlur > 2) { // 3 blur steps * 5 seconds = 15 seconds
           clearInterval(blurTimerRef.current);
           vanishTimerRef.current = setTimeout(() => {
             setIsVisible(false); // Hide the text
@@ -52,7 +52,7 @@ const WishBeach = () => {
               setshowAnswer(false)
               
             }, 15000); // 3 seconds delay
-          }, 0); // Immediately vanish after max blur
+          }, 5000); // Immediately vanish after max blur
           return 3; // Keep blur at max
         }
         return newBlur;
@@ -86,7 +86,7 @@ const WishBeach = () => {
       <div className="wishtop-center-text">
         ทะเลได้ยินความปรารถนา<br/>ของเธอแล้ว<br/>ทะเลเอาใจช่วยนะ
       </div> : <></>}
-      <img className="wishgoback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
+      <img className="wishgoback" src={`${STATIC_BASE}/cross_white.svg`} onClick={goback}/>
       <div className="wishbeach__waves" />
       <div className="wishbeach__sand wishbeach__sand--background" style={getAnimation1()}/>
       <div className="wishbeach__sand wishbeach__sand--foreground" style={getAnimation2()}/>
