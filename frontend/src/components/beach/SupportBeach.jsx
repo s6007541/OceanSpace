@@ -70,7 +70,7 @@ const FloatingImage = ({ imageSrc, sendUnrolling, id}) => {
   }, []);
 
   const handleClick = () => {
-    sendUnrolling(true);
+    sendUnrolling(id);
     setIsVisible(false); // Hide the bottle
 
   };
@@ -107,19 +107,27 @@ const FloatingImage = ({ imageSrc, sendUnrolling, id}) => {
 
 const SupportBeach = () => {
   const navigate = useNavigate(); 
-  const goback = () =>{ 
-    let path = `/`; 
-    navigate(path);
-  }
-  const [showUnrollingFromChild, setShowUnrollingFromChild] = useState(false); // State for GIF visibility
+  
+  const [selectedid, setselectedid] = useState([]); // State for GIF visibility
+  const [isShowingScroll, setIsShowingScroll] = useState(false); // State for GIF visibility
   const [idx, setIdx] = useState(null); // State for GIF visibility
   const handleUnrollFromChild = (x) => {
-    if (x) {
-      setIdx(Math.floor(Math.random() * supportive_text.length));
-      setShowUnrollingFromChild(x);
-    }
+    setIdx(Math.floor(Math.random() * supportive_text.length));
+    setselectedid([...selectedid, x]);
+    setIsShowingScroll(true);
      // Update parent state with the data from child
   };
+  const goback = () =>{ 
+    if (isShowingScroll) {
+      setIsShowingScroll(false);
+    }
+    else {
+      let path = `/`; 
+      navigate(path);
+    }
+    
+  }
+
   const supportive_text = ["ทุกความพยายามมีคุณค่า ไม่มีความล้มเหลวที่ไม่สอนอะไรเราเลย สู้ต่อไปนะ!" 
     ,"แม้วันนี้จะยาก แต่พรุ่งนี้อาจเป็นวันที่สดใสที่สุด รักษาความหวังและมุ่งมั่นไว้!" 
     ,"ทุกครั้งที่เธอก้าวข้ามอุปสรรค เธอเติบโตขึ้น และนั่นทำให้เธอแข็งแกร่งขึ้นกว่าที่เคย" 
@@ -141,17 +149,22 @@ const SupportBeach = () => {
       <div className="supportbeach__waves" />
       <div className="supportbeach__sand supportbeach__sand--background" />
       <div className="supportbeach__sand supportbeach__sand--foreground" />
-      {!showUnrollingFromChild ? <FloatingImage key={0} id={0} imageSrc={`${STATIC_BASE}/bottle1.webp`} sendUnrolling={handleUnrollFromChild} /> : <></>}
-      {!showUnrollingFromChild ? <FloatingImage key={1} id={1} imageSrc={`${STATIC_BASE}/bottle1.webp`} sendUnrolling={handleUnrollFromChild} /> : <></>}
-      {!showUnrollingFromChild ? <FloatingImage key={2} id={2} imageSrc={`${STATIC_BASE}/bottle1.webp`} sendUnrolling={handleUnrollFromChild} /> : <></>}
-      {!showUnrollingFromChild ? <FloatingImage key={3} id={3} imageSrc={`${STATIC_BASE}/bottle1.webp`} sendUnrolling={handleUnrollFromChild} /> : <></>}
-      {!showUnrollingFromChild ? <FloatingImage key={4} id={4} imageSrc={`${STATIC_BASE}/bottle1.webp`} sendUnrolling={handleUnrollFromChild} /> : <></>}
+      {[0, 1, 2, 3, 4].map((id) => (
+        !isShowingScroll && !(selectedid.includes(id)) ? (
+          <FloatingImage 
+            key={id} 
+            id={id} 
+            imageSrc={`${STATIC_BASE}/bottle1.webp`} 
+            sendUnrolling={handleUnrollFromChild} 
+          />
+        ) : null
+      ))}
 
       <img
         src={`${STATIC_BASE}/paper-scroll.png`}
-        className={`magic-scroll ${showUnrollingFromChild ? "visible" : ""}`}/>
+        className={`magic-scroll ${(isShowingScroll) ? "visible" : ""}`}/>
 
-      <div className={`paper-scroll-text ${showUnrollingFromChild ? "visible" : ""}`}>{supportive_text[idx]}</div>
+      <div className={`paper-scroll-text ${(isShowingScroll) ? "visible" : ""}`}>{supportive_text[idx]}</div>
 
 
     </div>
