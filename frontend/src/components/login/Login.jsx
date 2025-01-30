@@ -42,7 +42,7 @@ const Login = () => {
       setToken(res.data.access_token);
       await fetchCurrentUserInfo();
       setLoading(false);
-      navigate("/ChatList");
+      navigate("/");
       navigate(0);
     } catch (err) {
       console.log(err);
