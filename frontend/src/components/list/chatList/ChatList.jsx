@@ -49,6 +49,9 @@ const ChatList = ({ setIsSlidingLeft }) => {
       setReady(true);
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
   }
 
@@ -104,6 +107,9 @@ const ChatList = ({ setIsSlidingLeft }) => {
       
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
 
   };
@@ -131,6 +137,9 @@ const ChatList = ({ setIsSlidingLeft }) => {
       await fetchChatList();
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
   };
 
@@ -161,6 +170,9 @@ const ChatList = ({ setIsSlidingLeft }) => {
       await fetchChatList();
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
   };
 

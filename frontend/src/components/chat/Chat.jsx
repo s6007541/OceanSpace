@@ -63,6 +63,9 @@ const Chat = () => {
       await axios.put("/user-chats", userChat);
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
   }
 
@@ -147,6 +150,9 @@ const Chat = () => {
         setChat([...chatRef.current]);
       } catch (err) {
         console.log(err);
+        if (err.response.status === 401) {
+          navigate("/Login");
+        }
       }
     }
 
@@ -185,6 +191,9 @@ const Chat = () => {
       await axios.put("/user-chats", userChat);
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
     // Trigger the floating down animation
     setIsSlidingRight(true);
@@ -218,6 +227,9 @@ const Chat = () => {
       toast.success(`Feedback has been received! "${user.username}" will enhance the response according to your suggestions.`);
     } catch (err){
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
   };
 

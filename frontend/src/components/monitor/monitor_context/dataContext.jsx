@@ -3,10 +3,13 @@ import { useUserStore } from "../../../lib/userStore";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { STATIC_BASE } from "../../../lib/config";
+import { useNavigate } from "react-router-dom";
 
 const DataContext = createContext({});
 
 export const DataProvider = ({children}) => {
+  const navigate = useNavigate();
+
   // All Quizs, Current Question, Index of Current Question, Answer, Selected Answer, Total Marks
   const [quizs, setQuizs] = useState([]);
   // const quizs = data;
@@ -69,6 +72,9 @@ export const DataProvider = ({children}) => {
       
     } catch (err) {
       console.log(err);
+      if (err.response.status === 401) {
+        navigate("/Login");
+      }
     }
       
   }
@@ -124,7 +130,10 @@ export const DataProvider = ({children}) => {
           return
         }
       } catch (err) {
-        console.log(err)
+        console.log(err);
+        if (err.response.status === 401) {
+          navigate("/Login");
+        }
       }
     } else {
       score = selectedAnswer;
@@ -173,7 +182,10 @@ export const DataProvider = ({children}) => {
           return
         }
       } catch (err) {
-        console.log(err)
+        console.log(err);
+        if (err.response.status === 401) {
+          navigate("/Login");
+        }
       }
     }
     else{
