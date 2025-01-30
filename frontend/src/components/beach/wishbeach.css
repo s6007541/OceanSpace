@@ -40,13 +40,13 @@
   text-align: center; /* Centers the placeholder text */
   font-family: sans-serif;
   font-size: 20px;
-  color: #141414; /* Example color */
+  color: #000000; /* Example color */
   white-space: pre-wrap;
 }
 
 .wishbottom-input::placeholder {
   white-space: pre-wrap;
-  color: #3a3a3a;
+  color: #2f2f2f;
 }
 
 .wishbottom-input::-webkit-scrollbar {
@@ -115,7 +115,7 @@ body {
 }
 .wishbeach__sand--background {
   z-index: 997;
-  background-color: #b9b9b9;
+  background-color: #dcdcdc;
   /* animation: seafoam1; */
   /* animation-duration: 10s;
   animation-iteration-count: infinite; */
@@ -139,7 +139,7 @@ body {
 }
 .wishbeach__sand--foreground {
   z-index: 998;
-  background: #a59071;  /* animation-duration: 8s;
+  background: #c9b290;  /* animation-duration: 8s;
   animation-iteration-count: infinite; */
 }
 @keyframes seafoam2 {
