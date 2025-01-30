@@ -78,7 +78,6 @@ const Chat = () => {
       setChat([...chatRef.current]);
     } else if (data.type === "message-done") {
       console.log("socket");
-      console.log(textReady);
       if (!newTextArrive) {
         setTextReady(true); // bubble stop
       }
@@ -86,9 +85,7 @@ const Chat = () => {
     } else if (data.type === "checkpoint") {
       console.log("Topic of interest: ", data.data);
     } else if (data.type === "sec-detection") {
-      console.log(data.data);
       if (data?.data?.pred === "self-harm") {
-        // toast.error("self-harm")
         setShowSelfHarm(true);
         setIsFloatingDown(false);
       }
@@ -279,8 +276,6 @@ const Chat = () => {
       setStartWait(false);
 
       setTimeout(()=>{
-        console.log("time3")
-        console.log(textReady)
         if (!textReady) { // if not first time
           setnewTextArrive(true);
         }
@@ -292,7 +287,6 @@ const Chat = () => {
       }, 2000);
 
       setTimeout(async () => {
-        console.log("time6")
         setStartWait(true); // next message will be save to next chunk
 
         const message = {
@@ -350,7 +344,6 @@ const Chat = () => {
 
   const handleSelectEmotion = (e) => {
     setChoosing(!choosing)
-    console.log(choosing)
   };
 
   const handleCloseHarm = () => {
@@ -362,16 +355,12 @@ const Chat = () => {
     }, 700); // Match the timeout to the animation duration (0.7s)
   };
 
-  console.log(user);
-  // console.log(LLM_DICT[user.alias]);
-
-
   return (
     <div className={`chat ${isSlidingRight ? 'slide-right' : ''}`}>
       {showSelfHarm ? 
       <div className={`self-harm ${isFloatingDown ? 'float-down' : ''}`}>
         <div className="img-wrap">
-          <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={handleCloseHarm}/>
+          <img className="shgoback" src={`${STATIC_BASE}/cross.svg`} onClick={handleCloseHarm}/>
         </div>
         <div className="divout">
           <img className="harm_logo" src={`${STATIC_BASE}/harm_logo.svg`}/>
@@ -400,7 +389,7 @@ const Chat = () => {
       <></>}
       <div className="top">
         <div className="user">
-          <svg className="goback" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" onClick={handleBack}>
+          <svg className="usergoback" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" onClick={handleBack}>
             <path d="M12.7071 19.7071C12.3166 20.0976 11.6834 20.0976 11.2929 19.7071L4.29289 12.7071C3.90237 12.3166 3.90237 11.6834 4.29289 11.2929L11.2929 4.29289C11.6834 3.90237 12.3166 3.90237 12.7071 4.29289C13.0976 4.68342 13.0976 5.31658 12.7071 5.70711L7.41421 11L19 11C19.5523 11 20 11.4477 20 12C20 12.5523 19.5523 13 19 13L7.41421 13L12.7071 18.2929C13.0976 18.6834 13.0976 19.3166 12.7071 19.7071Z" fill="black"/>
           </svg>
           <div className="texts">

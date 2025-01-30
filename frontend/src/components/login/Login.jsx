@@ -26,7 +26,6 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    console.log("login")
 
     const formData = new FormData(e.target);
     const { username, password } = Object.fromEntries(formData);

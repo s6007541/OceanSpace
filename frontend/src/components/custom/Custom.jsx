@@ -21,6 +21,7 @@ const Custom = ( ) => {
   const [character, setCharacter] = useState(null);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [deschar, setDeschar] = useState("");
   const [page, setPage] = useState(1);
   const [personalities, setPersonalities] = useState([]);
 
@@ -84,18 +85,18 @@ const Custom = ( ) => {
 
       <div className="tag_outer">
         <div className="tag_inner">
-          <button className={(personalities.includes("พี่สาว")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("พี่สาว")}>พี่สาว</button>
-          <button className={(personalities.includes("พี่ชาย")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("พี่ชาย")}>พี่ชาย</button>
-          <button className={(personalities.includes("พี่กะเทย")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("พี่กะเทย")}>พี่กะเทย</button>
+          <button className={character === "พี่สาว" ? 'tag clicked' : 'tag'} onClick={()=>setCharacter("พี่สาว")}>พี่สาว</button>
+          <button className={character === "พี่ชาย" ? 'tag clicked' : 'tag'} onClick={()=>setCharacter("พี่ชาย")}>พี่ชาย</button>
+          <button className={character === "พี่กะเทย" ? 'tag clicked' : 'tag'} onClick={()=>setCharacter("พี่กะเทย")}>พี่กะเทย</button>
         </div>
         <div className="tag_inner">
-          <button className={(personalities.includes("เพื่อนหญิงพลังหญิง")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("เพื่อนหญิงพลังหญิง")}>เพื่อนหญิงพลังหญิง</button>
-          <button className={(personalities.includes("เพื่อนชายแท้")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("เพื่อนชายแท้")}>เพื่อนชายแท้</button>
+          <button className={character === "เพื่อนหญิงพลังหญิง" ? 'tag clicked' : 'tag'} onClick={()=>setCharacter("เพื่อนหญิงพลังหญิง")}>เพื่อนหญิงพลังหญิง</button>
+          <button className={character === "เพื่อนชายแท้" ? 'tag clicked' : 'tag'} onClick={()=>setCharacter("เพื่อนชายแท้")}>เพื่อนชายแท้</button>
         </div>
         <div className="tag_inner">
-          <button className={(personalities.includes("น้องสาว")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("น้องสาว")}>น้องสาว</button>
-          <button className={(personalities.includes("น้องชาย")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("น้องชาย")}>น้องชาย</button>
-          <button className={(personalities.includes("ผู้ใหญ่")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("ผู้ใหญ่")}>ผู้ใหญ่</button>
+          <button className={character === "น้องสาว" ? 'tag clicked' : 'tag'} onClick={()=>setCharacter("น้องสาว")}>น้องสาว</button>
+          <button className={character === "น้องชาย" ? 'tag clicked' : 'tag'} onClick={()=>setCharacter("น้องชาย")}>น้องชาย</button>
+          <button className={character === "ผู้ใหญ่" ? 'tag clicked' : 'tag'} onClick={()=>setCharacter("ผู้ใหญ่")}>ผู้ใหญ่</button>
         </div>
       </div>
       : <></>}
@@ -121,28 +122,48 @@ const Custom = ( ) => {
 
       <div className="tag_outer">
         <div className="tag_inner">
-          <button className="tag" onClick={()=>setCharacter("สนับสนุน")}>สนับสนุน</button>
-          <button className="tag" onClick={()=>setCharacter("มูเตลู")}>มูเตลู</button>
-          <button className="tag" onClick={()=>setCharacter("ซัพพอร์ต")}>ซัพพอร์ต</button>
+          <button className={(personalities.includes("สนับสนุน")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("สนับสนุน")}>สนับสนุน</button>
+          <button className={(personalities.includes("มูเตลู")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("มูเตลู")}>มูเตลู</button>
+          <button className={(personalities.includes("ซัพพอร์ต")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("ซัพพอร์ต")}>ซัพพอร์ต</button>
         </div>
         <div className="tag_inner">
-          <button className="tag" onClick={()=>setCharacter("ติดแกลม")}>ติดแกลม</button>
-          <button className="tag" onClick={()=>setCharacter("มั่นใจในตัวเอง")}>มั่นใจในตัวเอง</button>
-          <button className="tag" onClick={()=>setCharacter("ขี้เล่น")}>ขี้เล่น</button>
+          <button className={(personalities.includes("ติดแกลม")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("ติดแกลม")}>ติดแกลม</button>
+          <button className={(personalities.includes("มั่นใจในตัวเอง")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("มั่นใจในตัวเอง")}>มั่นใจในตัวเอง</button>
+          <button className={(personalities.includes("ขี้เล่น")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("ขี้เล่น")}>ขี้เล่น</button>
         </div>
         <div className="tag_inner">
-          <button className="tag" onClick={()=>setCharacter("สุภาพ")}>สุภาพ</button>
-          <button className="tag" onClick={()=>setCharacter("ใจเย็น")}>ใจเย็น</button>
-          <button className="tag" onClick={()=>setCharacter("อบอุ่น")}>อบอุ่น</button>
-          <button className="tag" onClick={()=>setCharacter("มีเหตุผล")}>มีเหตุผล</button>
+          <button className={(personalities.includes("สุภาพ")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("สุภาพ")}>สุภาพ</button>
+          <button className={(personalities.includes("ใจเย็น")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("ใจเย็น")}>ใจเย็น</button>
+          <button className={(personalities.includes("อบอุ่น")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("อบอุ่น")}>อบอุ่น</button>
+          <button className={(personalities.includes("มีเหตุผล")) ? 'tag clicked' : 'tag'} onClick={()=>addremovePersonality("มีเหตุผล")}>มีเหตุผล</button>
+        </div>
+        <div className="input_area page2">
+          <input
+              type="text"
+              placeholder='Description (Optional)'
+              value={deschar}
+              onChange={(e) => setDeschar(e.target.value)}
+            />
         </div>
       </div>
       : <></>}
 
       <button className="next_button" onClick={()=>{
-        // navigate("/")
-        toast.error("โปรดจ่ายเงินเพื่อ unlock feature")
-
+        if (image === null) {
+          toast.error("กรุณาเลือกภาพสัตว์น้ำที่คุณชอบ!")
+        }
+        else if (character === null) {
+          toast.error("กรุณาเลือกบทบาทให้สัตว์น้ำ!")
+        }
+        else if (name === "") {
+          toast.error("กรุณาตั้งชื่อให้สัตว์น้ำ!")
+        }
+        else if (page === 2) {
+          toast.error("This feature is coming soon in a future update. Stay tuned for more!")
+        }
+        else{
+          setPage(page + 1)
+        }
       }}>ต่อไป</button>
       
 

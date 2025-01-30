@@ -16,7 +16,6 @@ const Quiz = () => {
     //         selectedAnswer,questionIndex, nextQuestion, showTheResult }  = useContext(DataContext);
     const goback = () =>{ 
         let path = `/`; 
-        // console.log("done");
         navigate(path);
       }
     return (

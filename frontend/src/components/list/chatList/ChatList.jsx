@@ -14,7 +14,6 @@ const ChatList = ({ setIsSlidingLeft }) => {
 
   const goSeeAll = (current_chat_list) => {
     const chat_alias_list = filteredChats.map((e) => e.user.alias);
-    console.log(chat_alias_list);
     setIsSlidingLeft(true);
       setTimeout(() => {
         navigate("/AddFriend", { state: chat_alias_list });
@@ -111,7 +110,6 @@ const ChatList = ({ setIsSlidingLeft }) => {
 
   const handleContextMenu = (e, chat) => {
     e.preventDefault();
-    console.log(e);
     setContextMenu({
       chat,
       position: { x: e.pageX, y: e.pageY },
@@ -137,7 +135,6 @@ const ChatList = ({ setIsSlidingLeft }) => {
   };
 
   const handleTouchStart = (e, chat) => {
-    console.log("On touch start");
     e.preventDefault();
     const timer = setTimeout(() => {
       setContextMenu({
@@ -149,7 +146,6 @@ const ChatList = ({ setIsSlidingLeft }) => {
   };
 
   const handleTouchEnd = (e) => {
-    console.log("On touch end");
     clearTimeout(pressTimer);
     setPressTimer(null);
     if (contextMenu) {
@@ -172,7 +168,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
     c.user.username.toLowerCase().includes(input.toLowerCase())
   );
   if (!ready) return 
-  <div className="outer">
+  <div className="chatlistouter">
     (
       <div className="outer_chatlist">
         <div className="addbar">
@@ -187,7 +183,7 @@ const ChatList = ({ setIsSlidingLeft }) => {
       
   
   return (
-    <div className="outer">
+    <div className="chatlistouter">
       {(filteredChats.length > 0) && ready ? (
         <div className="outer_chatlist">
           <div className="addbar">

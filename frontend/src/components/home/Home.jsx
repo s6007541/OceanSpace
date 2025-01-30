@@ -2,36 +2,46 @@ import "./home.css";
 import Userinfo from "../list/userInfo/Userinfo";
 import Navbar from "../navbar/Navbar";
 import { STATIC_BASE } from "../../lib/config";
-const Home = () => {
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
+const Home = () => {
+  const navigate = useNavigate(); 
+  const goChatList = () =>{ 
+    let path = `/ChatList`; 
+    navigate(path);
+  }
   return (
     <div className="home">
       <Userinfo />
       <Navbar />
       <div className="main-content">
         <div className="outer-layer">
-          <div className="latest_chat">
-            <img src={`${STATIC_BASE}/dolphin.svg`}></img>
-            <div className="latest_chat_text">แชทล่าสุดกับเพื่อนสาว “สีชมพู”</div>
+          <div className="latest_chat" onClick={goChatList}>
+            <img className="character" src={`${STATIC_BASE}/SeaCharacters/Small-56px/Whale.svg`}></img>
+            <img className="character" src={`${STATIC_BASE}/SeaCharacters/Small-56px/Dolphin.svg`}></img>
+            <div className="latest_chat_text">แชทล่าสุดกับเพื่อนๆ</div>
             <img src={`${STATIC_BASE}/arrow-right.svg`}></img>
           </div>
           <div className="diary-outer">
             <div className="diary-header-wrapper">
-              <div className="diary-header">บันทึก of the day</div>
+              <div className="diary-header">บันทึกประจำวัน</div>
             </div>
-
+      
             <div className="diary-list">
-              <div className="diary">
+              <div className="diary" onClick={()=>{navigate("/ReliefBeach")}}>
                 <div className="emoji">🙂<br/>หาดร้างทุกข์</div>
                 <div className="diary-detail">มีเรื่องอะไรอยากให้ ทรายช่วยพัดมั้ย</div>
                 <img src={`${STATIC_BASE}/diary1.svg`}/>
               </div>
-              <div className="diary">
+              <div className="diary" onClick={()=>{navigate("/WishBeach")}}>
                 <div className="emoji">⭐<br/>สุขสมหวัง</div>
                 <div className="diary-detail">มีเรื่องอะไรอยาก ขอพรกันมั้ย</div>
                 <img src={`${STATIC_BASE}/diary2.svg`}/>
               </div>
-              <div className="diary">
+              {/* <div className="diary" onClick={()=>{navigate("/SupportBeach")}}> */}
+              <div className="diary" onClick={()=>{toast.error("This feature is coming soon in a future update. Stay tuned for more!")
+}}>
                 <div className="emoji">💪🏻<br/>พลังใจ</div>
                 <div className="diary-detail">รับจดหมายลับ ให้กำลังใจจากทะเล</div>
                 <img src={`${STATIC_BASE}/diary3.svg`}/>

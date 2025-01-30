@@ -31,7 +31,8 @@
 
       
   }
-  .container {
+  .resultscontainer {
+    width : 100vw;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -125,8 +126,8 @@
     } 
     
     .background-img {
-      width: 350px;
-      height: 313px;
+      width: 320px;
+      height: 290px;
     }
     
   }

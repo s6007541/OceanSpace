@@ -20,7 +20,7 @@ const Result = () => {
         <div className="results">
             <img className="goback" src={`${STATIC_BASE}/cross.svg`} onClick={goback}/>
             <div className="header_text">ผลแบบทดสอบ</div>
-            <div className="container">
+            <div className="resultscontainer">
                 <div className="outer-main-result">
                     <div className="score-outer">
                         <svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 140 140" fill="none">

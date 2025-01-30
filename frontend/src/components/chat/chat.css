@@ -59,11 +59,11 @@
           animation: floatDown 0.7s ease-in forwards; /* Float Down animation when Go Back is clicked */
       }
 
-      .goback {
+      .shgoback {
           position: absolute;
           margin: 20px;
           top: 0;
-          right: 0;
+          left: 0;
           width: 24px;
           height: 24px;
           cursor: pointer;
@@ -136,7 +136,7 @@
       align-items: center;
       gap: 20px;
 
-      .goback {
+      .usergoback {
         width: 24px;
         height: 24px;
         flex-shrink: 0;
