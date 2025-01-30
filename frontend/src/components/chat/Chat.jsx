@@ -25,11 +25,11 @@ const Chat = () => {
   const [isFloatingDown, setIsFloatingDown] = useState(false);
 
   const [openFeedback, setOpenFeedback] = useState(-1);
-  const [startWait, setStartWait] = useState(true);
+  const [waitTimeoutId, setWaitTimeoutId] = useState(null);
   const [latestRead, setLatestRead] = useState(-3);
 
   const [textReady, setTextReady] = useState(true);
-  const [newTextArrive, setnewTextArrive] = useState(false);
+  const [newTextArrive, setNewTextArrive] = useState(false);
 
   const [checkpoint, setCheckpoint] = useState(20);
   const [emotionMode, setEmotionMode] = useState("");
@@ -122,8 +122,16 @@ const Chat = () => {
       await updateUnreadMessages();
       chatRef.current.push(data.data);
       setChat([...chatRef.current]);
+    } else if (data.type === "message-begin") {
+      if (!textReady) {
+        // if not first time
+        setNewTextArrive(true);
+      } else {
+        setNewTextArrive(false);
+      }
+      setTextReady(false); // bubble start
+      setLatestRead(-2); // read all
     } else if (data.type === "message-done") {
-      console.log("socket");
       if (!newTextArrive) {
         setTextReady(true); // bubble stop
       }
@@ -355,26 +363,9 @@ const Chat = () => {
     }
 
     if (LLM_LIST.includes(user.alias)) {
-      if (startWait === false){
-        return;
-      }
-
-      setStartWait(false);
-
-      setTimeout(()=>{
-        if (!textReady) { // if not first time
-          setnewTextArrive(true);
-        }
-        else {
-          setnewTextArrive(false);
-        }
-        setTextReady(false); //bubble start
-        setLatestRead(-2); //read all
-      }, 2000);
-
-      setTimeout(async () => {
-        setStartWait(true); // next message will be save to next chunk
-
+      const commitMessageFunc = async () => {
+        setWaitTimeoutId(null);
+        setLatestRead(-2);
         try {
           sendSpecialMessage("commit-messages");
           // setTextReady(true); // bubble stop
@@ -387,7 +378,21 @@ const Chat = () => {
           setCheckpoint(chatRef.current.length + 20);
           sendSpecialMessage("checkpoint");
         }
-      }, 6000);
+      }
+
+      const waitTime = 3000;
+
+      if (waitTimeoutId === null) {
+        if (!textReady) {
+          setLatestRead(-2);  // read now as llm is typing
+        }
+        const timeoutId = setTimeout(commitMessageFunc, waitTime);
+        setWaitTimeoutId(timeoutId);
+      } else {
+        clearTimeout(waitTimeoutId);
+        const timeoutId = setTimeout(commitMessageFunc, waitTime);
+        setWaitTimeoutId(timeoutId);
+      }
     }
   };
 

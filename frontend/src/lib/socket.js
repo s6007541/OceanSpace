@@ -35,7 +35,6 @@ export const useSocket = create((set, get) => ({
         } catch (err) {
           console.log(err);
         }
-        console.log("done2", done);
         set({ pendingMessages: [...pending], doneMessageIds: [...done] });
       });
       ws.addEventListener("close", (_) => {
