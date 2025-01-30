@@ -4,16 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useEffect, useRef, useState } from "react";
 
-const FloatingImage = ({ imageSrc, sendUnrolling, id}) => {
-  const [randidx, setRandidx] = useState(0);
-  const [x, setX] = useState(0);
-  const [y, setY] = useState(0);
+const FloatingImage = ({ sendUnrolling, id, show}) => {
+  const [x, setX] = useState(-1);
+  const [y, setY] = useState(null);
   const [rotation, setRotation] = useState(0);
   const [cropHeight, setCropHeight] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const imageRef = useRef(null);
   const [bottlesize, setBottlesize] = useState(0);
-  
+  const [bottleid, setBottleid] = useState(0);
+
   useEffect(() => {
     const maxX = window.innerWidth - (imageRef.current?.width || 50);
     const maxY = window.innerHeight;
@@ -22,31 +22,29 @@ const FloatingImage = ({ imageSrc, sendUnrolling, id}) => {
     const y_ = (Math.random() * maxY * 0.05) + (maxY * 0.1 * (id + 1))
     setY(y_);
 
-    // setX((Math.random() * maxX * 0.8) + (0.1 * maxX));
-    // const y_ = (Math.random() * maxY * 0.5) + 30
-    // setY(y_);
+    setRotation(Math.random() * 60 - 30);
 
-    setRotation(Math.random() * 100 - 50);
-
+    const bottle_id = Math.floor(Math.random() * 2) + 1;
+    setBottleid(bottle_id);
 
     const img = new Image();
     img.onload = () => {
       const bottlesize_ = Math.random() * 75 + 50
       setBottlesize(bottlesize_)
       const originalHeight = bottlesize_;
-
+      
+      
       // Calculate rotated height (approximation)
       const radians = Math.abs(rotation) * Math.PI / 180;
       const rotatedHeight = originalHeight * Math.cos(radians) + img.width * Math.sin(radians);
 
-      const minCropHeight = rotatedHeight * 0.3; // 40% of rotated height
-      const maxCropHeight = rotatedHeight * 0.9; // 60% of rotated height
-
+      const minCropHeight = rotatedHeight * 0.3; // 30% of rotated height
+      const maxCropHeight = rotatedHeight * 0.9; // 90% of rotated height
+      
       setCropHeight(Math.random() * (maxCropHeight - minCropHeight) + minCropHeight);
     };
-    img.src = imageSrc;
-
-
+    img.src = `${STATIC_BASE}/bottle${bottle_id}.png`;
+    
     const float = () => {
       const amplitude = Math.random() * 20 + 10;
       const frequency = 1/6;
@@ -76,7 +74,7 @@ const FloatingImage = ({ imageSrc, sendUnrolling, id}) => {
   };
   
   return (
-      <div className="floating-object-outer">
+      <div className="floating-object-outer" style={{opacity: show ? 1 : 0}}>
         {isVisible ? 
         <div
           className="floating-bottle"
@@ -91,7 +89,7 @@ const FloatingImage = ({ imageSrc, sendUnrolling, id}) => {
           }}>
           <img
             ref={imageRef}
-            src={imageSrc}
+            src={`${STATIC_BASE}/bottle${bottleid}.png`}
             alt="Floating Image"
             onClick={handleClick}
             style={{
@@ -150,14 +148,12 @@ const SupportBeach = () => {
       <div className="supportbeach__sand supportbeach__sand--background" />
       <div className="supportbeach__sand supportbeach__sand--foreground" />
       {[0, 1, 2, 3, 4].map((id) => (
-        !isShowingScroll && !(selectedid.includes(id)) ? (
           <FloatingImage 
             key={id} 
             id={id} 
-            imageSrc={`${STATIC_BASE}/bottle1.webp`} 
             sendUnrolling={handleUnrollFromChild} 
+            show={!isShowingScroll && !(selectedid.includes(id))}
           />
-        ) : null
       ))}
 
       <img
