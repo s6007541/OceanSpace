@@ -2,6 +2,7 @@ import "./wishbeach.css";
 import { STATIC_BASE } from "../../lib/config";
 import { useNavigate } from "react-router-dom";
 import React, { useState, useEffect, useRef } from 'react';
+import {isMobile} from 'react-device-detect';
 
 const WishBeach = () => {
   const navigate = useNavigate(); 
@@ -21,6 +22,9 @@ const WishBeach = () => {
 
   // Function to request fullscreen
   const enterFullscreen = () => {
+    if (!isMobile) {
+      return ;
+    }
     const elem = document.documentElement; // Get the entire document (html)
 
     if (elem.requestFullscreen) {
@@ -36,6 +40,9 @@ const WishBeach = () => {
 
   // Function to exit fullscreen
   const exitFullscreen = () => {
+    if (!isMobile) {
+      return ;
+    }
     if (document.exitFullscreen) {
       document.exitFullscreen();
     } else if (document.mozCancelFullScreen) { // Firefox
