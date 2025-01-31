@@ -82,7 +82,7 @@ const Chat = () => {
   const trySendingMessage = (message, messagePacket) => {
     const pendingId = addPendingMessages(messagePacket);
     if (pendingId === null) {
-      return message;
+      return null;
     }
     const newMessage = { ...message };
     newMessage.failed = true;
@@ -119,6 +119,19 @@ const Chat = () => {
       return;
     }
     if (data.type === "message") {
+      const clientId = data.data.clientId
+      if (pendingMessagesRef.current.has(clientId)) {
+        const message = pendingMessagesRef.current.get(clientId);
+        pendingMessagesRef.current.delete(clientId);
+        chatRef.current = chatRef.current.filter((msg) => msg !== message);
+        if (pendingMessagesRef.current.size === 0 && socket) {
+          try {
+            sendSpecialMessage("commit-messages");
+          } catch (err) {
+            console.log(err);
+          }
+        }
+      }
       await updateUnreadMessages();
       chatRef.current.push(data.data);
       setChat([...chatRef.current]);
@@ -238,33 +251,23 @@ const Chat = () => {
     }
   }, [chatId]);
 
+  // TODO: remove this
   useEffect(() => {
     if (doneMessageIds.length === 0) {
       return;
     }
-    
-    let hasSent = false;
+
     const pending = [];
+    const done = [];
 
     for (const id of doneMessageIds) {
       if (pendingMessagesRef.current.has(id)) {
-        const message = pendingMessagesRef.current.get(id);
-        message.failed = false;
-        pendingMessagesRef.current.delete(id);
-        hasSent = true;
+        done.push(id);
       } else {
         pending.push(id);
       }
     }
-    if (hasSent) {
-      if (socket) {
-        try {
-          sendSpecialMessage("commit-messages");
-        } catch (err) {
-          console.log(err);
-        }
-      }
-      setChat([...chatRef.current]);
+    if (done.length > 0) {
       setDoneMessageIds(pending);
     }
   }, [doneMessageIds]);
@@ -350,8 +353,10 @@ const Chat = () => {
 
     try {
       const newMessage = trySendingMessage(message, messagePacket);
-      chatRef.current.push(newMessage);
-      setChat([...chatRef.current]);
+      if (newMessage !== null) {
+        chatRef.current.push(newMessage);
+        setChat([...chatRef.current]);
+      }
       setText("");
     } catch (err) {
       console.log(err);

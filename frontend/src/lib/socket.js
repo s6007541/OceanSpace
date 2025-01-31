@@ -40,9 +40,9 @@ export const useSocket = create((set, get) => ({
         const done = get().doneMessageIds;
         try {
           while (pending.length > 0) {
-            const { id, message } = pending.shift();
+            const message = pending.shift();
             ws.send(JSON.stringify(message));
-            done.push(id);
+            done.push(message.id);
           }
         } catch (err) {
           console.log(err);
@@ -79,9 +79,11 @@ export const useSocket = create((set, get) => ({
     }
     const count = get().pendingMessageCount;
     const pending = get().pendingMessages;
-    pending.push({ id: count, message: message });
+    const id = count.toString()
+    message = { ...message, id };
+    pending.push(message);
     set({ pendingMessages: [...pending], pendingMessageCount: count + 1 });
-    return count;
+    return id;
   },
   setDoneMessageIds: (messages) => {
     set({ doneMessageIds: messages });
