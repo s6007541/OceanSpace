@@ -1,6 +1,7 @@
 import asyncio
 import traceback
 from datetime import datetime, timezone
+from functools import partial
 from typing import Any, Awaitable, Callable, Dict, Optional, Set
 from uuid import UUID, uuid4
 
@@ -25,8 +26,9 @@ from ..db import (
     User,
     UserChat,
     UserChatDatabase,
-    get_async_session,
+    async_session_maker,
     get_ws_current_user,
+    make_user_db,
 )
 from ..llm import get_llm_client
 from ..scheduler import get_notification_scheduler
@@ -42,16 +44,19 @@ router = APIRouter()
 
 
 class SessionHandler:
+    TASK_TYPE = Callable[[AsyncSession], Awaitable]
+    TASK_QUEUE_TYPE = asyncio.Queue[Optional[TASK_TYPE]]
+
     def __init__(
         self, on_exception: Optional[Callable[[str, Exception], Awaitable]] = None
     ) -> None:
         self.on_exception = on_exception
         self._tasks: Set[asyncio.Task] = set()
-        self._sessions: Dict[str, asyncio.Queue[Optional[Awaitable]]] = {}
+        self._sessions: Dict[str, SessionHandler.TASK_QUEUE_TYPE] = {}
         self._is_dead = False
         self._clean_up_task: Set[asyncio.Task] = set()
 
-    async def add_task(self, task_id: str, task: Awaitable) -> bool:
+    async def add_task(self, task_id: str, task: "SessionHandler.TASK_TYPE") -> bool:
         if self._is_dead:
             return False
 
@@ -65,19 +70,20 @@ class SessionHandler:
         await self._sessions[task_id].put(task)
         return not self._is_dead
 
-    async def _handling_loop(self, task_id: str, q: asyncio.Queue) -> None:
+    async def _handling_loop(self, task_id: str, q: TASK_QUEUE_TYPE) -> None:
         try:
-            while True:
-                task = await q.get()
-                if task is None:
-                    break
-                try:
-                    await task
-                except WebSocketDisconnect as e:
-                    raise e
-                except Exception as e:
-                    if self.on_exception is not None:
-                        await self.on_exception(task_id, e)
+            async with async_session_maker() as session:
+                while True:
+                    task = await q.get()
+                    if task is None:
+                        break
+                    try:
+                        await task(session)
+                    except WebSocketDisconnect as e:
+                        raise e
+                    except Exception as e:
+                        if self.on_exception is not None:
+                            await self.on_exception(task_id, e)
         except WebSocketDisconnect:
             pass
 
@@ -105,18 +111,19 @@ class SessionHandler:
 
 @router.websocket("/wss")
 async def websocket_endpoint(
-    websocket: WebSocket,
-    user: User = Depends(get_ws_current_user),
-    db: AsyncSession = Depends(get_async_session),
+    websocket: WebSocket, user: User = Depends(get_ws_current_user)
 ):
+    user_id = user.id
+    user_email = user.email
+
     async def exception_handler(task_id: str, _: Exception) -> None:
         print("[WebSocket] Exception occurred:", traceback.format_exc())
         await connection_manager.send(
-            user.id, ChatEvent.MESSAGE_DONE, {"chatId": task_id}
+            user_id, ChatEvent.MESSAGE_DONE, {"chatId": task_id}
         )
 
-    print(f"[WebSocket] {user.email} connected")
-    connection_manager.add_connection(user.id, websocket)
+    print(f"[WebSocket] {user_email} connected")
+    connection_manager.add_connection(user_id, websocket)
     session_handler = SessionHandler(on_exception=exception_handler)
     success: bool = True
     while success:
@@ -125,24 +132,27 @@ async def websocket_endpoint(
         except WebSocketDisconnect:
             success = False
             break
-        await db.refresh(user)
         message = MessageModel.model_validate(data["data"])
+        chat_id = message.chatId
         if data["type"] == ChatEvent.MESSAGE:
+            if "id" in data:
+                message.clientId = data["id"]
             success = await session_handler.add_task(
-                message.chatId, handle_message(user.id, message, db)
+                f"msg-{chat_id}", partial(handle_message, user_id, message)
             )
         elif data["type"] == ChatEvent.COMMIT_MESSAGES:
             success = await session_handler.add_task(
-                message.chatId,
-                send_current_messages_to_llm(user.id, user, message, db),
+                f"cmmt-{chat_id}",
+                partial(send_current_messages_to_llm, user_id, message),
             )
         elif data["type"] == ChatEvent.CHECKPOINT:
             success = await session_handler.add_task(
-                message.chatId, handle_checkpoint(user.id, data, message, db)
+                f"ckpt-{chat_id}",
+                partial(handle_checkpoint, user_id, data, message),
             )
-    connection_manager.remove_connection(user.id, websocket)
+    await connection_manager.remove_connection(user_id, websocket)
     await session_handler.close()
-    print(f"[WebSocket] {user.email} disconnected.")
+    print(f"[WebSocket] {user_email} disconnected.")
 
 
 async def handle_message(user_id: UUID_ID, message: MessageModel, db: AsyncSession):
@@ -168,7 +178,7 @@ async def handle_message(user_id: UUID_ID, message: MessageModel, db: AsyncSessi
     )
     await msg.commit_message(new_message, user_chat, chat, True, db)
     still_connected = await msg.try_sending(
-        still_connected, user_id, ChatEvent.UPDATE_CHAT
+        still_connected, user_id, ChatEvent.MESSAGE, message.model_dump()
     )
 
     if receiver_is_bot:
@@ -236,7 +246,7 @@ async def handle_message(user_id: UUID_ID, message: MessageModel, db: AsyncSessi
 
 
 async def send_current_messages_to_llm(
-    user_id: UUID_ID, user: User, message: MessageModel, db: AsyncSession
+    user_id: UUID_ID, message: MessageModel, db: AsyncSession
 ):
     still_connected: bool = True
     chat_id = UUID(message.chatId)
@@ -264,8 +274,8 @@ async def send_current_messages_to_llm(
         connection_manager, generator, user_id, chat_id, db, still_connected
     )
 
-    await db.refresh(user)
-    if user.notification:
+    user = await make_user_db(db).get(user_id)
+    if user is not None and user.notification:
         await notification_scheduler.analyze_and_schedule(
             messages, message.timezone, user_id, chat_id, db
         )

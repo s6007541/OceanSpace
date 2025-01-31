@@ -44,6 +44,7 @@ class UserChatModel(BaseModel):
 
 class MessageModel(BaseModel):
     id: Optional[str] = None
+    clientId: Optional[str] = None
     chatId: str
     senderId: str
     createdAt: int

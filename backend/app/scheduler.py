@@ -18,11 +18,9 @@ from .db import (
     MessageDatabase,
     NotificationTask,
     NotificationTaskDatabase,
-    OAuthAccount,
-    User,
-    UserDatabase,
     async_session_maker,
     get_chat_info,
+    make_user_db,
 )
 from .llm import LLMClient, get_llm_client
 from .utils import messaging as msg
@@ -252,7 +250,7 @@ async def notification_task(
     if task is None:
         return
 
-    user = await UserDatabase(db, User, OAuthAccount).get(user_id)
+    user = await make_user_db(db).get(user_id)
     if user is None or not user.notification:
         return
 

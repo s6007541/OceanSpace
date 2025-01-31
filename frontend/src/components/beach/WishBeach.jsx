@@ -101,20 +101,18 @@ const WishBeach = () => {
 
   const getAnimation1 = () => {
     // if (blurLevel === 0) return {};
-    console.log(blurLevel);
     const animation = (blurLevel > 0) ? "seafoam11 6s infinite" : "seafoam1 6s infinite";
     return { animation };
   };
 
   const getAnimation2 = () => {
     // if (blurLevel === 0) return {};
-    console.log(blurLevel);
     const animation = (blurLevel > 0) ? "seafoam22 6s infinite" : "seafoam2 6s infinite";
     return { animation };
   };
   
   return (
-    <div className="wishbeach">
+    <div className="wishbeach" onClick={enterFullscreen}>
       {showAnswer  ?
       <div className="wishtop-center-text">
         ทะเลได้ยินความปรารถนา<br/>ของเธอแล้ว<br/>ทะเลเอาใจช่วยนะ
@@ -127,6 +125,7 @@ const WishBeach = () => {
       <textarea
         type="text"
         value={text}
+        onClick={exitFullscreen}
         onChange={handleChange}
         placeholder={isVisible ? "มีอะไรที่อยากให้เป็นจริงมั้ย\nลองเขียนที่ชายหาดนี้ดูนะ" : ""} // Show placeholder when visible
         className={`wishbottom-input ${isFocused ? 'focused' : ''} ${!isVisible ? 'hidden' : ''}`}

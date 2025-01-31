@@ -100,20 +100,18 @@ const ReliefBeach = () => {
 
   const getAnimation1 = () => {
     // if (blurLevel === 0) return {};
-    console.log(blurLevel);
     const animation = (blurLevel > 0) ? "seafoam11 6s infinite" : "seafoam1 6s infinite";
     return { animation };
   };
 
   const getAnimation2 = () => {
     // if (blurLevel === 0) return {};
-    console.log(blurLevel);
     const animation = (blurLevel > 0) ? "seafoam22 6s infinite" : "seafoam2 6s infinite";
     return { animation };
   };
   
   return (
-    <div className="beach">
+    <div className="beach" onClick={enterFullscreen}>
       {showAnswer  ?
       <div className="top-center-text">
         ทะเลได้ยินเสียง<br/>ของเธอแล้ว<br/>วันนี้เธอเก่งมากแล้วนะ
@@ -126,6 +124,7 @@ const ReliefBeach = () => {
       <textarea
         type="text"
         value={text}
+        onClick={exitFullscreen}
         onChange={handleChange}
         placeholder={isVisible ? "มีอะไรอยากระบาย\nเขียนที่ชายหาดนี้ได้เลยนะ" : ""} // Show placeholder when visible
         className={`bottom-input ${isFocused ? 'focused' : ''} ${!isVisible ? 'hidden' : ''}`}

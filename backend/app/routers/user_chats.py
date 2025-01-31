@@ -13,11 +13,11 @@ from ..db import (
     User,
     UserChat,
     UserChatDatabase,
-    UserDatabase,
     get_async_session,
     get_chat_db,
     get_notification_task_db,
     get_user_chat_db,
+    make_user_db,
 )
 from ..scheduler import get_notification_scheduler
 from ..schemas import UserChatModel
@@ -99,7 +99,7 @@ async def create_user_chat(
     )
     db.add(new_user_chat)
 
-    receiver = await UserDatabase(db, User).get(UUID(receiver_id))
+    receiver = await make_user_db(db).get(UUID(receiver_id))
     if receiver is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     if not receiver.is_bot:

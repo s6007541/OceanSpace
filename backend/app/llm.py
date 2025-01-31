@@ -9,6 +9,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 from pathlib import Path
 
@@ -18,8 +19,8 @@ import google.generativeai as genai  # type: ignore
 from fastapi_users_db_sqlalchemy import UUID_ID
 from google.api_core.exceptions import ResourceExhausted as GoogleRateLimitError
 from google.generativeai.types import content_types  # type: ignore
-from openai import AsyncOpenAI, RateLimitError as OpenAIRateLimitError
-from openai.types.chat import ChatCompletion
+from openai import AsyncOpenAI, AsyncStream, RateLimitError as OpenAIRateLimitError
+from openai.types.chat import ChatCompletion, ChatCompletionChunk
 from pythainlp import sent_tokenize
 
 from .db import Message
@@ -384,13 +385,12 @@ class OpenAILLMClient(LLMClient):
         self.client = AsyncOpenAI(api_key="EMPTY", base_url="https://api.openai.com/v1")
         self.key_manager = APIKeyManager.from_str(ENV.get("OPENAI_API_KEYS"))
 
-    @backoff.on_exception(backoff.expo, exception=OpenAIRateLimitError)
     async def generate_text(
         self, messages: Any, stream: bool = False, **kwargs
     ) -> AsyncGenerator[str, None]:
         with self.key_manager.context() as api_key:
             self.client.api_key = api_key
-            stream_or_resp = await self.client.chat.completions.create(
+            stream_or_resp = await self._try_generate(
                 messages=messages,
                 stream=stream,
                 **(self.DEFAULT_GENERATION_KWARGS | kwargs),
@@ -406,6 +406,15 @@ class OpenAILLMClient(LLMClient):
                     if content is None:
                         return
                     yield content
+
+    @backoff.on_exception(backoff.expo, exception=OpenAIRateLimitError)
+    async def _try_generate(
+        self, messages: Any, stream: bool, **kwargs
+    ) -> Union[ChatCompletion, AsyncStream[ChatCompletionChunk]]:
+        stream_or_resp = await self.client.chat.completions.create(
+            messages=messages, stream=stream, **kwargs
+        )
+        return stream_or_resp
 
 
 class TyphoonLLMClient(OpenAILLMClient):
@@ -499,7 +508,6 @@ class GeminiLLMClient(LLMClient):
 
         return "\n".join(system_instructions), ret
 
-    @backoff.on_exception(backoff.expo, exception=GoogleRateLimitError)
     async def generate_text(
         self, messages: Any, stream: bool = False, **kwargs
     ) -> AsyncGenerator[str, None]:
@@ -518,12 +526,23 @@ class GeminiLLMClient(LLMClient):
 
             chat = self.client.start_chat(history=messages[:-1])
             config = genai.GenerationConfig(**(self.DEFAULT_GENERATION_KWARGS | kwargs))
-            response = await chat.send_message_async(
-                messages[-1]["parts"], generation_config=config, stream=stream
-            )
+            response = await self._try_generate(chat, messages, config, stream)
 
             async for message in response:
                 yield message.candidates[0].content.parts[0].text
+
+    @backoff.on_exception(backoff.expo, exception=GoogleRateLimitError)
+    async def _try_generate(
+        self,
+        chat: genai.ChatSession,
+        messages: Any,
+        config: genai.GenerationConfig,
+        stream: bool,
+    ) -> genai.types.AsyncGenerateContentResponse:
+        response = await chat.send_message_async(
+            messages[-1]["parts"], generation_config=config, stream=stream
+        )
+        return response
 
 
 _llm_client: Optional[LLMClient] = None

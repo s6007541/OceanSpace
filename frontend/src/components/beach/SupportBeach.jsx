@@ -172,7 +172,6 @@ const SupportBeach = () => {
   useEffect(() => {
     enterFullscreen();
   }, []);
-  console.log(idx);
   return (
     <div className="supportbeach">
       <img className="supportgoback" src={`${STATIC_BASE}/cross_white.svg`} onClick={goback}/>
@@ -194,7 +193,9 @@ const SupportBeach = () => {
 
       <div className={`paper-scroll-text ${(isShowingScroll) ? "visible" : ""}`}>{supportive_text[idx]}</div>
 
-
+      <p className="support-bottom-text">
+        ทะเลเขียนจดหมายมาให้<br/>ลองหยิบมาอ่านดูนะ
+      </p>
     </div>
 
   );

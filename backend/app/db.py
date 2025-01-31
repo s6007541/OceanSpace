@@ -367,6 +367,10 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+def make_user_db(session: AsyncSession) -> UserDatabase:
+    return UserDatabase(session, User, OAuthAccount)
+
+
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
     yield UserDatabase(session, User, OAuthAccount)
 

@@ -42,8 +42,9 @@ const Login = () => {
       setToken(res.data.access_token);
       await fetchCurrentUserInfo();
       setLoading(false);
+      toast.success("ยินดีต้อนรับสู่ Ocean Space!");
       navigate("/");
-      navigate(0);
+      // navigate(0);
     } catch (err) {
       console.log(err);
       let error_msg = "ไม่สามารถเข้าสู่ระบบได้";
