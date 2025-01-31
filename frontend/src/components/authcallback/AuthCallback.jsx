@@ -16,7 +16,7 @@ const AuthCallback = () => {
       setToken(token);
       toast.success("ยินดีต้อนรับสู่ Ocean Space!");
       navigate("/");
-      navigate("0")
+      navigate(0)
     } else {
       navigate("/Login");
     }
