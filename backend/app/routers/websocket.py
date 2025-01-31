@@ -135,8 +135,6 @@ async def websocket_endpoint(
         message = MessageModel.model_validate(data["data"])
         chat_id = message.chatId
         if data["type"] == ChatEvent.MESSAGE:
-            if "id" in data:
-                message.clientId = data["id"]
             success = await session_handler.add_task(
                 f"msg-{chat_id}", partial(handle_message, user_id, message)
             )

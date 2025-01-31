@@ -20,7 +20,7 @@ import SupportBeach from "./components/beach/SupportBeach";
 import { useError } from "./lib/error";
 import { useUserStore } from "./lib/userStore";
 import { useSocket } from "./lib/socket";
-import { STATIC_BASE, WEBSOCKET_URL } from "./lib/config";
+import { STATIC_BASE } from "./lib/config";
 import { BACKEND_URL } from "./lib/config";
 
 import {
@@ -44,8 +44,8 @@ const App = () => {
   axios.defaults.headers.post['Content-Type'] = 'application/json';
   axios.interceptors.request.use(authInterceptor);
 
-  const { currentUser, isLoading, fetchCurrentUserInfo } = useUserStore();
-  const { socketConnected, socketConnect, socketDisconnect } = useSocket();
+  const { currentUser, fetchCurrentUserInfo } = useUserStore();
+  const { socketConnect, socketDisconnect } = useSocket();
 
   const { error_messages, loadErrorMessages } = useError();
 
@@ -63,7 +63,7 @@ const App = () => {
         return;
       }
 
-      socketConnect(WEBSOCKET_URL);
+      socketConnect();
     }
     initialize();
   }, [currentUser]);
