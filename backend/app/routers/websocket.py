@@ -2,7 +2,7 @@ import asyncio
 import traceback
 from datetime import datetime, timezone
 from functools import partial
-from typing import Any, Awaitable, Callable, Dict, Optional, Set
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
 from uuid import UUID, uuid4
 
 from fastapi import (
@@ -173,6 +173,7 @@ async def handle_message(user_id: UUID_ID, message: MessageModel, db: AsyncSessi
         chat_id=chat_id,
         created_at=created_at,
         text=message.text,
+        is_seen=False,
     )
     await msg.commit_message(new_message, user_chat, chat, True, db)
     still_connected = await msg.try_sending(
@@ -258,6 +259,21 @@ async def send_current_messages_to_llm(
     assert llm_name is not None
     messages = list(await MessageDatabase(db).get_by_user_chat_id(user_id, chat_id))
     print([(m.text, m.sender_id) for m in messages])
+
+    seen_messages: List[Message] = []
+    unseen_messages: List[Message] = []
+    for m in messages:
+        if m.is_seen:
+            seen_messages.append(m)
+        else:
+            m.is_seen = True
+            unseen_messages.append(m)
+    messages = seen_messages + unseen_messages
+
+    if len(unseen_messages) == 0:
+        # No unseen_messages, don't generate reply
+        return
+    await db.commit()  # Commit changes to the messages.
 
     generator = llm_client.generate_reply(
         llm_name,

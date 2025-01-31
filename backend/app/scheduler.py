@@ -164,9 +164,13 @@ class NotificationScheduler:
             message_list, temperature=0
         )
         answer_text = generated_text.rsplit("คำตอบ: ", 1)[1]
-        schedule_time = _replace_timezone(
-            datetime.datetime.strptime(answer_text.strip(), "%d/%m/%Y, %H:%M"), timezone
-        )
+        try:
+            schedule_time = datetime.datetime.strptime(
+                answer_text.strip(), "%d/%m/%Y, %H:%M"
+            )
+        except ValueError:
+            return
+        schedule_time = _replace_timezone(schedule_time, timezone)
 
         if not self._validate_scheduled_time(now, schedule_time):
             return
@@ -287,6 +291,7 @@ async def notification_task(
             "คุณต้องพิจารณาเวลาที่ได้รับข้อความ และเวลา ณ ขณะนี้อย่างรอบคอบก่อน แล้วตอบว่า"
             "ฉันควรจะได้รับข้อความให้กำลังใจว่าอย่างไรดี"
         ),
+        is_seen=True,
     )
     generator = llm_client.generate_reply(
         llm_user_name,

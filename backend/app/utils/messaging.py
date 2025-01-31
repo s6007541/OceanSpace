@@ -90,6 +90,7 @@ async def send_messages_async(
             sender_id=llm_user.id,
             created_at=datetime.datetime.now(),
             text=message,
+            is_seen=True,
         )
         await commit_message(new_message, user_chat, chat, False, db)
         if connection_manager.is_online(user_id):

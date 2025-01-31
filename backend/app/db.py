@@ -129,6 +129,7 @@ class Message(Base):
         DateTime(timezone=True), nullable=False, default=func.now()
     )
     text: Mapped[str] = mapped_column(String(), nullable=False)
+    is_seen: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
 
 
 class NotificationTask(Base):

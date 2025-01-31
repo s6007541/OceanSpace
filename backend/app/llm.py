@@ -152,7 +152,14 @@ class LLMClient:
         return prompt
 
     def _get_augmented_prompt(self) -> str:
-        return "พยายามตอบให้หลากหลาย 2-3 ประโยค ถ้าผู้ใช้พูดคุยนอกเรื่อง คุณจะไม่ให้คำตอบ และที่สำคัญ พยายามอย่าพูดซ้ำกับข้อความล่าสุด"
+        return (
+            "# Remark:\n"
+            "You must respond creatively in 2-3 sentences, but no more than 5. If "
+            "the user goes off-topic, do not provide a direct answer. Avoid repeating "
+            "yourself, and ensure your responses remain fresh and engaging. Lastly, "
+            "always reply exclusively in Thai and try to keep an uplifting and "
+            "empathetic tone."
+        )
 
     def _get_security_prompt(self) -> str:
 
@@ -172,6 +179,20 @@ class LLMClient:
         if i > 1:
             return message_list[: -i + 1], message_list[-i + 1 :]
         return message_list, []
+
+    def _merge_messages_same_roles(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
+        merged_messages = []
+        for message in messages:
+            if (
+                len(merged_messages) == 0
+                or merged_messages[-1]["role"] != message["role"]
+            ):
+                merged_messages.append(message)
+            else:
+                merged_messages[-1]["content"] += " " + message["content"]
+        return merged_messages
 
     def detect_end_of_stream(
         self, cur_str: str, cur_token: Optional[str]
@@ -284,6 +305,7 @@ class LLMClient:
             + new_messages
             + [augmented_message]
         )
+        input_messages = self._merge_messages_same_roles(input_messages)
 
         generator = self.generate_text(
             input_messages, stream=stream, temperature=1, max_tokens=1000
