@@ -10,13 +10,13 @@ import { STATIC_BASE } from "../../lib/config";
 import axios from "axios";
 import { getTimezone } from "../../lib/timezone";
 import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
-import { WEBSOCKET_URL } from "../../lib/config";
 import {isMobile} from 'react-device-detect';
 
 const Chat = () => {
   const navigate = useNavigate(); 
   
-  const [chat, setChat] = useState();
+  const [chat, setChat] = useState([]);
+  const [pendingChat, setPendingChat] = useState([]);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [isSlidingRight, setIsSlidingRight] = useState(false);
@@ -26,7 +26,6 @@ const Chat = () => {
   const [isFloatingDown, setIsFloatingDown] = useState(false);
 
   const [openFeedback, setOpenFeedback] = useState(-1);
-  const [waitTimeoutId, setWaitTimeoutId] = useState(null);
   const [latestRead, setLatestRead] = useState(-3);
 
   const [textReady, setTextReady] = useState(true);
@@ -45,15 +44,11 @@ const Chat = () => {
     isReceiverBlocked,
     resetChat,
   } = useChatStore();
-  const {
-    socket,
-    doneMessageIds,
-    socketConnect,
-    addPendingMessages,
-    setDoneMessageIds,
-  } = useSocket();
+  const { socket, sendMessage } = useSocket();
 
-  const chatRef = useRef();
+  const chatRef = useRef([]);
+  const pendingChatRef = useRef([]);
+  const waitTimeoutIdRef = useRef(null);
   const socketListenerRef = useRef(null);
   const endRef = useRef(null);
 
@@ -79,19 +74,6 @@ const Chat = () => {
     }
   }
 
-  // Try sending a message. If the message is not sent, add it to the pending messages.
-  const trySendingMessage = (message, messagePacket) => {
-    const pendingId = addPendingMessages(messagePacket);
-    if (pendingId === null) {
-      return null;
-    }
-    const newMessage = { ...message };
-    newMessage.failed = true;
-    pendingMessagesRef.current.set(pendingId, newMessage);
-    socketConnect(WEBSOCKET_URL);
-    return newMessage;
-  };
-
   // Send a special message, e.g. "commit-messages" and "checkpoint".
   const sendSpecialMessage = (msgType) => {
     const message = {
@@ -105,12 +87,7 @@ const Chat = () => {
       persuasive: false,
       // persuasive : harmOthers || setEmotionMode
     }
-    const messagePacket = {
-      type: msgType,
-      senderId: user.id,
-      data: message,
-    };
-    addPendingMessages(messagePacket);
+    sendMessage(msgType, user.id, message);
   }
 
   const socketMessageListener = async (event) => {
@@ -124,18 +101,24 @@ const Chat = () => {
       if (pendingMessagesRef.current.has(clientId)) {
         const message = pendingMessagesRef.current.get(clientId);
         pendingMessagesRef.current.delete(clientId);
-        chatRef.current = chatRef.current.filter((msg) => msg !== message);
+        pendingChatRef.current = pendingChatRef.current.filter(
+          (msg) => msg !== message
+        );
         if (pendingMessagesRef.current.size === 0 && socket) {
-          try {
-            sendSpecialMessage("commit-messages");
-          } catch (err) {
-            console.log(err);
-          }
+          if (waitTimeoutIdRef.current === null) {
+            // No scheduled commit. Commit now.
+            try {
+              sendSpecialMessage("commit-messages");
+            } catch (err) {
+              console.log(err);
+            }
+          } // Else, wait for the scheduled commit.
         }
       }
       await updateUnreadMessages();
       chatRef.current.push(data.data);
       setChat([...chatRef.current]);
+      setPendingChat(pendingChatRef.current);
     } else if (data.type === "message-begin") {
       if (!textReady) {
         // if not first time
@@ -258,27 +241,6 @@ const Chat = () => {
     }
   }, [chatId]);
 
-  // TODO: remove this
-  useEffect(() => {
-    if (doneMessageIds.length === 0) {
-      return;
-    }
-
-    const pending = [];
-    const done = [];
-
-    for (const id of doneMessageIds) {
-      if (pendingMessagesRef.current.has(id)) {
-        done.push(id);
-      } else {
-        pending.push(id);
-      }
-    }
-    if (done.length > 0) {
-      setDoneMessageIds(pending);
-    }
-  }, [doneMessageIds]);
-
   const handleBack = async (e) => {
     try {
       const res = await axios.get(`/user-chats/${chatId}`);
@@ -352,59 +314,45 @@ const Chat = () => {
       emotionMode: "",
       persuasive: false,
     };
-    const messagePacket = {
-      type: "message",
-      senderId: currentUser.id,
-      data: message,
-    };
 
     try {
-      const newMessage = trySendingMessage(message, messagePacket);
-      if (newMessage !== null) {
-        chatRef.current.push(newMessage);
-        setChat([...chatRef.current]);
-      }
+      const pendingId = sendMessage("message", currentUser.id, message);
+      const newMessage = { ...message, pending: true };
+      pendingMessagesRef.current.set(pendingId, newMessage);
+      pendingChatRef.current.push(newMessage);
+      setPendingChat([...pendingChatRef.current]);
       setText("");
     } catch (err) {
       console.log(err);
     }
 
-    if (pendingMessagesRef.current.size > 0) {
-      // There are pending messages. Commit later.
-      return;
-    }
-
     if (LLM_LIST.includes(user.alias)) {
       const commitMessageFunc = async () => {
-        setWaitTimeoutId(null);
+        waitTimeoutIdRef.current = null;
+        if (pendingChatRef.current.length > 0) {
+          // There are pending messages. Commit later.
+          return;
+        }
         setLatestRead(-2);
         try {
           sendSpecialMessage("commit-messages");
-          // setTextReady(true); // bubble stop
-          // setLatestRead(chatRef.current.length);
+          if (chatRef.current.length > checkpoint) {
+            sendSpecialMessage("checkpoint");
+            setCheckpoint(chatRef.current.length + 20);
+          }
         } catch (err) {
           console.log(err);
         }
+      };
 
-        if (chatRef.current.length > checkpoint) {
-          setCheckpoint(chatRef.current.length + 20);
-          sendSpecialMessage("checkpoint");
-        }
-      }
-
-      const waitTime = 3000;
-
-      if (waitTimeoutId === null) {
+      if (waitTimeoutIdRef.current === null) {
         if (!textReady) {
           setLatestRead(-2);  // read now as llm is typing
         }
-        const timeoutId = setTimeout(commitMessageFunc, waitTime);
-        setWaitTimeoutId(timeoutId);
       } else {
-        clearTimeout(waitTimeoutId);
-        const timeoutId = setTimeout(commitMessageFunc, waitTime);
-        setWaitTimeoutId(timeoutId);
+        clearTimeout(waitTimeoutIdRef.current);
       }
+      waitTimeoutIdRef.current = setTimeout(commitMessageFunc, 3000);
     }
   };
 
@@ -477,7 +425,7 @@ const Chat = () => {
 
       
       <div className="center" onClick={enterFullscreen} ref={endRef}> 
-        {chat?.length === 0 ? 
+        {(chat.length + pendingChat.length) === 0 ? 
         <div className="chat-greeting">
           <div className="img-topic">
             {/* <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : `${STATIC_BASE}/avatar.png`}></img> */}
@@ -497,12 +445,12 @@ const Chat = () => {
         :
         <></>
         }
-        {chat?.map((message, index) => (
+        {chat.concat(pendingChat).map((message, index) => (
           <div
             className={
               message.senderId === currentUser?.id
-                ? message.failed
-                  ? "message failed"
+                ? message.pending
+                  ? "message pending"
                   : "message own"
                 : "message"
             }

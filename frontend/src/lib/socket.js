@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { WEBSOCKET_URL } from "./config";
 
 const retryPeriod = 5000;
 
@@ -7,8 +8,7 @@ export const useSocket = create((set, get) => ({
   socketConnected: false,
   pendingMessages: [],
   pendingMessageCount: 0,
-  doneMessageIds: [],
-  socketConnect: (url) => {
+  socketConnect: () => {
     if (get().socketConnected) {
       return;
     }
@@ -18,12 +18,12 @@ export const useSocket = create((set, get) => ({
     if (token) {
       let ws = null;
       try {
-        ws = new WebSocket(url);
+        ws = new WebSocket(WEBSOCKET_URL);
       } catch (err) {
         console.log(err);
         // Periodic retry
         setTimeout(() => {
-          get().socketConnect(url);
+          get().socketConnect();
         }, retryPeriod);
         return;
       }
@@ -37,23 +37,21 @@ export const useSocket = create((set, get) => ({
           })
         );
         const pending = get().pendingMessages;
-        const done = get().doneMessageIds;
         try {
           while (pending.length > 0) {
             const message = pending.shift();
             ws.send(JSON.stringify(message));
-            done.push(message.id);
           }
         } catch (err) {
           console.log(err);
         }
-        set({ pendingMessages: [...pending], doneMessageIds: [...done] });
+        set({ pendingMessages: [...pending] });
       });
       ws.addEventListener("close", (_) => {
         set({ socket: null, socketConnected: false });
         // Periodic retry
         setTimeout(() => {
-          get().socketConnect(url);
+          get().socketConnect();
         }, retryPeriod);
       });
     } else {
@@ -67,25 +65,25 @@ export const useSocket = create((set, get) => ({
       set({ socket: null, socketConnected: false });
     }
   },
-  addPendingMessages: (message) => {
+  sendMessage: (type, senderId, data) => {
     const ws = get().socket;
+    const count = get().pendingMessageCount;
+    const id = count.toString();
+    data.clientId = id;
+    set({ pendingMessageCount: count + 1 });
+    const packet = { type, senderId, data };
     if (ws) {
       try {
-        ws.send(JSON.stringify(message));
-        return null;
+        ws.send(JSON.stringify(packet));
+        return id;
       } catch (err) {
         console.log(err);
       }
     }
-    const count = get().pendingMessageCount;
     const pending = get().pendingMessages;
-    const id = count.toString()
-    message = { ...message, id };
-    pending.push(message);
-    set({ pendingMessages: [...pending], pendingMessageCount: count + 1 });
+    pending.push(packet);
+    set({ pendingMessages: [...pending] });
+    get().socketConnect();
     return id;
-  },
-  setDoneMessageIds: (messages) => {
-    set({ doneMessageIds: messages });
   },
 }));

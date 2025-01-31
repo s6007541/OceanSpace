@@ -346,7 +346,7 @@
         }
       }
 
-      &.failed {
+      &.pending {
         align-self: flex-end;
         .texts {
           
