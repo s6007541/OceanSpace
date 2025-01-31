@@ -11,6 +11,7 @@ import axios from "axios";
 import { getTimezone } from "../../lib/timezone";
 import { LLM_DICT, LLM_LIST } from "../../lib/llm_lists"
 import { WEBSOCKET_URL } from "../../lib/config";
+import {isMobile} from 'react-device-detect';
 
 const Chat = () => {
   const navigate = useNavigate(); 
@@ -166,6 +167,9 @@ const Chat = () => {
 
   // Function to request fullscreen
   const enterFullscreen = () => {
+    if (!isMobile) {
+      return;
+    }
     const elem = document.documentElement; // Get the entire document (html)
 
     if (elem.requestFullscreen) {
@@ -181,6 +185,9 @@ const Chat = () => {
 
   // Function to exit fullscreen
   const exitFullscreen = () => {
+    if (!isMobile) {
+      return;
+    }
     if (document.exitFullscreen) {
       document.exitFullscreen();
     } else if (document.mozCancelFullScreen) { // Firefox

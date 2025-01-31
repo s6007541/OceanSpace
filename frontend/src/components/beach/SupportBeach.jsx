@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useEffect, useRef, useState } from "react";
 import { supportive_text } from "./supportive_text"; // Import the list here
+import {isMobile} from 'react-device-detect';
 
 const FloatingImage = ({ sendUnrolling, id, show}) => {
   const [x, setX] = useState(-1);
@@ -143,6 +144,9 @@ const SupportBeach = () => {
   }
   // Function to request fullscreen
   const enterFullscreen = () => {
+    if (!isMobile) {
+      return ;
+    }
     const elem = document.documentElement; // Get the entire document (html)
 
     if (elem.requestFullscreen) {
@@ -158,6 +162,9 @@ const SupportBeach = () => {
 
   // Function to exit fullscreen
   const exitFullscreen = () => {
+    if (!isMobile) {
+      return ;
+    }
     if (document.exitFullscreen) {
       document.exitFullscreen();
     } else if (document.mozCancelFullScreen) { // Firefox
