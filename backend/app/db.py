@@ -429,9 +429,14 @@ async def get_ws_current_user(
             raise WebSocketException(
                 code=status.WS_1008_POLICY_VIOLATION, reason="Invalid session token"
             )
-        payload: Dict[str, Any] = jwt.decode(
-            token, AUTH_SECRET, algorithms=[JWT_ALGORITHM], audience=JWT_AUDIENCE
-        )
+        try:
+            payload: Dict[str, Any] = jwt.decode(
+                token, AUTH_SECRET, algorithms=[JWT_ALGORITHM], audience=JWT_AUDIENCE
+            )
+        except jwt.exceptions.ExpiredSignatureError:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION, reason="Session token expired"
+            )
         user_id = payload.get("sub")
         if user_id is None:
             raise WebSocketException(
