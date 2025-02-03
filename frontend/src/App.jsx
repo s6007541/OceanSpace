@@ -17,6 +17,8 @@ import WishBeach from "./components/beach/WishBeach";
 import SupportBeach from "./components/beach/SupportBeach";
 
 
+import { useChatStore } from "./lib/chatStore";
+import { useJwtStore } from "./lib/jwtStore";
 import { useError } from "./lib/error";
 import { useUserStore } from "./lib/userStore";
 import { useSocket } from "./lib/socket";
@@ -37,15 +39,17 @@ function authInterceptor(config) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-};
+}
 
 const App = () => {
   axios.defaults.baseURL = BACKEND_URL;
   axios.defaults.headers.post['Content-Type'] = 'application/json';
   axios.interceptors.request.use(authInterceptor);
 
-  const { currentUser, fetchCurrentUserInfo } = useUserStore();
-  const { socketConnect, socketDisconnect } = useSocket();
+  const { resetChat } = useChatStore();
+  const { currentUser, fetchCurrentUserInfo, resetCurrentUser } = useUserStore();
+  const { authError, socketConnect, socketDisconnect } = useSocket();
+  const { setToken_ } = useJwtStore();
 
   const { error_messages, loadErrorMessages } = useError();
 
@@ -59,7 +63,9 @@ const App = () => {
         }
         try {
           await fetchCurrentUserInfo();
-        } catch {}
+        } catch (err) {
+          console.log(err);
+        }
         return;
       }
 
@@ -67,6 +73,15 @@ const App = () => {
     }
     initialize();
   }, [currentUser]);
+
+  useEffect(() => {
+    if (authError) {
+      setToken_(null);
+      resetChat();
+      resetCurrentUser();
+      toast.error("การยืนยันตัวตนล้มเหลว กรุณาเข้าสู่ระบบอีกครั้ง");
+    }
+  }, [authError]);
 
   const query = new URLSearchParams(window.location.search);
   const error_code = useRef(query.get("error"));

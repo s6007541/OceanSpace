@@ -6,6 +6,7 @@ const retryPeriod = 5000;
 export const useSocket = create((set, get) => ({
   socket: null,
   socketConnected: false,
+  authError: false,
   pendingMessages: [],
   pendingMessageCount: 0,
   socketConnect: () => {
@@ -29,7 +30,7 @@ export const useSocket = create((set, get) => ({
       }
       set({ socketConnected: true });
       ws.addEventListener("open", (_) => {
-        set({ socket: ws });
+        set({ socket: ws, authError: false});
         ws.send(
           JSON.stringify({
             type: "authenticate",
@@ -47,12 +48,17 @@ export const useSocket = create((set, get) => ({
         }
         set({ pendingMessages: [...pending] });
       });
-      ws.addEventListener("close", (_) => {
+      ws.addEventListener("close", (event) => {
         set({ socket: null, socketConnected: false });
-        // Periodic retry
-        setTimeout(() => {
-          get().socketConnect();
-        }, retryPeriod);
+        if (event.code === 1008) {
+          console.log("Authentication error:", event.reason)
+          set({ authError: true });
+        } else {
+          // Periodic retry
+          setTimeout(() => {
+            get().socketConnect();
+          }, retryPeriod);
+        }
       });
     } else {
       console.log("No token found.");
