@@ -21,7 +21,7 @@ const Start = () => {
                             <img className='body-image' src={`${STATIC_BASE}/nobg_Whale.svg`}></img>
                             <div className='body_text'>
                                 <div className='quote'>“</div>
-                                <div className='texts'>พวกเราควรทำแบบทดสอบ<br/>วัดระดับความเครียดเดือนละ 1 ครั้ง</div>
+                                <div className='texts'>พวกเราควรทำแบบทดสอบ<br/>วัดระดับความเครียดเดือนละครั้ง</div>
                                 <div className='quote'>”</div>
                             </div>
                         </div>
