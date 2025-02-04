@@ -129,6 +129,14 @@ class LLMClient:
                 else f"pink_dolphin_{emotionMode}.txt"
             )
 
+        elif emotionMode == "dynamic":
+            print("emotionMode", emotionMode)
+            prompt_template_file = PROMPT_TEMPLATE_DIR / (
+                f"blue_whale_{emotionMode}.txt"
+                if llm_name == "สีน้ำเงิน"
+                else f"pink_dolphin_{emotionMode}.txt"
+            )
+
         else:
             prompt_template_file = PROMPT_TEMPLATE_DIR / (
                 "blue_whale.txt" if llm_name == "สีน้ำเงิน" else "pink_dolphin.txt"

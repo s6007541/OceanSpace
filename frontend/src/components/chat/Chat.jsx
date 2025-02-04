@@ -16,6 +16,7 @@ const Chat = () => {
   const navigate = useNavigate(); 
   
   const [chat, setChat] = useState([]);
+  const [chatready, setChatReady] = useState(false);
   const [pendingChat, setPendingChat] = useState([]);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -202,6 +203,7 @@ const Chat = () => {
         const messages = res.data;
         chatRef.current = messages;
         setChat([...chatRef.current]);
+        setChatReady(true);
       } catch (err) {
         console.log(err);
         if (err.response.status === 401) {
@@ -425,7 +427,7 @@ const Chat = () => {
 
       
       <div className="center" onClick={enterFullscreen} ref={endRef}> 
-        {(chat.length + pendingChat.length) === 0 ? 
+        {(chat.length + pendingChat.length === 0) && (chatready) ? 
         <div className="chat-greeting">
           <div className="img-topic">
             {/* <img src={(user && user.avatar) ? `${BACKEND_URL}/profile-image/${user.id}` : `${STATIC_BASE}/avatar.png`}></img> */}
@@ -435,12 +437,13 @@ const Chat = () => {
               <div className="greeting-text">สนับสนุนและเข้าใจคุณไม่ว่าเมื่อไหร่</div>
             </div>
           </div>
-          <div className="select-emotion-box">
+          {emotionMode === "" ? <div className="select-emotion-box">
             <div className="select-emotion-instr">เลือกวิธีการตอบที่คุณอยากฟัง:</div>
             <div className="select-emotion" id="supporter" onClick={()=>{setEmotionMode("ให้กำลังใจ")}}>❤️ ให้กำลังใจคุณ</div>
             <div className="select-emotion" id="listener" onClick={()=>{setEmotionMode("รับฟัง")}}>👂🏻รับฟังคุณ</div>
             <div className="select-emotion" id="advicer" onClick={()=>{setEmotionMode("ให้คำแนะนำ")}}>👍🏻 ให้ทางออกและคำแนะนำ</div>
-          </div>
+            <div className="select-emotion" id="dynamic" onClick={()=>{setEmotionMode("dynamic")}}>🌊 dynamic</div>
+          </div> : <></>}
         </div>
         :
         <></>
@@ -508,8 +511,13 @@ const Chat = () => {
         <div className="bottom-emotion-top-bar">เลือกวิธีการตอบที่คุณอยากฟัง:</div>
         <div className="bottom-emotion-select-list">
           <div className="bottom-emotion-select" onClick={()=>{
-            setEmotionMode("ให้กำลังใจ")
+            if (emotionMode === "ให้กำลังใจ") {
+              setEmotionMode("")
+            } else {
+              setEmotionMode("ให้กำลังใจ")
+            }
             setChoosing(false)}}>
+            
             <div className="first-bottom-emotion">❤️ ให้กำลังใจคุณ</div>
             {emotionMode === "ให้กำลังใจ" ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
               <g clip-path="url(#clip0_672_4921)">
@@ -526,7 +534,11 @@ const Chat = () => {
             
           </div>
           <div className="bottom-emotion-select" onClick={()=>{
-            setEmotionMode("รับฟัง")
+            if (emotionMode === "รับฟัง") {
+              setEmotionMode("")
+            } else {
+              setEmotionMode("รับฟัง")
+            }
             setChoosing(false)}}>
             <div className="first-bottom-emotion">👂🏻 รับฟังคุณ</div>
             {emotionMode === "รับฟัง" ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -544,10 +556,35 @@ const Chat = () => {
             
           </div>
           <div className="bottom-emotion-select" onClick={()=>{
-            setEmotionMode("ให้คำแนะนำ")
+            if (emotionMode === "ให้คำแนะนำ") {
+              setEmotionMode("")
+            } else {
+              setEmotionMode("ให้คำแนะนำ")
+            }
             setChoosing(false)}}>
             <div className="first-bottom-emotion">👍🏻 ให้ทางออกและคำแนะนำ</div>
             {emotionMode === "ให้คำแนะนำ" ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <g clip-path="url(#clip0_672_4921)">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#0D7FE8"/>
+              </g>
+              <defs>
+              <clipPath id="clip0_672_4921">
+              <rect width="24" height="24" fill="white"/>
+              </clipPath>
+              </defs>
+            </svg>
+            :
+            <></>}
+          </div>
+          <div className="bottom-emotion-select" onClick={()=>{
+            if (emotionMode === "dynamic") {
+              setEmotionMode("")
+            } else {
+              setEmotionMode("dynamic")
+            }
+            setChoosing(false)}}>
+            <div className="first-bottom-emotion">🌊 dynamic</div>
+            {emotionMode === "dynamic" ? <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
               <g clip-path="url(#clip0_672_4921)">
               <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM15.88 8.29L10 14.17L8.12 12.29C7.73 11.9 7.1 11.9 6.71 12.29C6.32 12.68 6.32 13.31 6.71 13.7L9.3 16.29C9.69 16.68 10.32 16.68 10.71 16.29L17.3 9.7C17.69 9.31 17.69 8.68 17.3 8.29C16.91 7.9 16.27 7.9 15.88 8.29Z" fill="#0D7FE8"/>
               </g>
