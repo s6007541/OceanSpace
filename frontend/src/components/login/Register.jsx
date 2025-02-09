@@ -61,6 +61,21 @@ const Register = () => {
       setLoading(false);
     }
   }
+
+  const handleContinueWithGoogle = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await axios.get("/auth/google/authorize");
+      window.location.href = res.data.authorization_url;
+    } catch (err) {
+      console.log(err);
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
       
   return (
     <div className="login">
@@ -97,7 +112,7 @@ const Register = () => {
         </div>
         <div className="signin-google-outer">
           <img src={`${STATIC_BASE}/google.png`}/>
-          <div className="google-text">Continue with Google</div>
+          <div className="google-text" onClick={handleContinueWithGoogle}>Continue with Google</div>
         </div>
         
       </div>
